@@ -1,7 +1,7 @@
 import NextAuth, { type NextAuthConfig, type NextAuthResult } from 'next-auth';
 import type { JWT } from 'next-auth/jwt';
 import Keycloak from 'next-auth/providers/keycloak';
-import { RefreshFailedError, refreshAccessToken } from './keycloak';
+import { endSession, RefreshFailedError, refreshAccessToken } from './keycloak';
 import { defaultRefreshTokenStore, newTokenRef, type RefreshTokenStore } from './token-store';
 
 /** Bốn app = bốn client Keycloak riêng (plan/frontend.md §4). */
@@ -178,9 +178,41 @@ function buildConfig(options: NexaAuthOptions, store: RefreshTokenStore): NextAu
       },
     },
     events: {
+      /**
+       * Đăng xuất phải kết thúc phiên ở CẢ HAI phía, không chỉ phía mình.
+       *
+       * Bản trước chỉ xoá bản ghi refresh token ở store. Nhìn thì có vẻ đủ — cookie mất, tham
+       * chiếu mất — nhưng bên Keycloak không có gì thay đổi: refresh token vẫn đổi được ra access
+       * token mới, và phiên SSO vẫn sống (realm đặt 30 ngày).
+       *
+       * Hệ quả người dùng gặp: bấm "Đăng xuất" rồi bấm "Đăng nhập" thì Keycloak thấy phiên còn
+       * hiệu lực, cấp code ngay mà không hỏi mật khẩu, và quay lại đúng tài khoản vừa thoát. Không
+       * có cách nào đăng nhập bằng tài khoản khác ngoài việc tự đi xoá cookie của trình duyệt.
+       *
+       * Thứ tự ở đây là cố ý: gọi Keycloak TRƯỚC, xoá store SAU. Xoá trước thì không còn refresh
+       * token để gửi đi, và phiên bên Keycloak sống sót vĩnh viễn mà không ai biết.
+       */
       async signOut(message) {
         const ref = 'token' in message ? message.token?.refreshRef : undefined;
-        if (ref) await store.delete(ref);
+        if (!ref) return;
+
+        const stored = await store.get(ref);
+        if (stored) {
+          try {
+            await endSession({
+              issuer,
+              clientId,
+              clientSecret,
+              refreshToken: stored.refreshToken,
+            });
+          } catch {
+            // Keycloak không phản hồi thì vẫn phải đăng xuất ở phía mình: giữ người dùng ở trạng
+            // thái đã đăng nhập chỉ vì IdP đang trục trặc là đổi sai chiều. Phiên bên kia sẽ tự
+            // hết hạn; phiên bên này thì mất ngay.
+          }
+        }
+
+        await store.delete(ref);
       },
     },
   };

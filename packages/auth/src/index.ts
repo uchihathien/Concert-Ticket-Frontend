@@ -16,7 +16,13 @@ export { safeReturnUrl } from './return-url';
 export { readAccessToken } from './server';
 export type { AccessTokenState } from './server';
 
-export { refreshAccessToken, RefreshFailedError, tokenEndpoint } from './keycloak';
+export {
+  endSession,
+  endSessionEndpoint,
+  refreshAccessToken,
+  RefreshFailedError,
+  tokenEndpoint,
+} from './keycloak';
 export type { RefreshResult } from './keycloak';
 
 export { defaultRefreshTokenStore, InMemoryRefreshTokenStore, newTokenRef } from './token-store';
