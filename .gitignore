@@ -1,0 +1,28 @@
+# --- Node ---
+node_modules/
+.next/
+.turbo/
+dist/
+out/
+*.tsbuildinfo
+.pnpm-store/
+
+# --- Env & secrets ---
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# --- IDE / OS ---
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# --- Runtime ---
+logs/
+*.log
+
+# Next.js tự sinh lại mỗi lần build — không commit để 4 app không lệch nhau.
+next-env.d.ts
