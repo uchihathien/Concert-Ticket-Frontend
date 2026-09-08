@@ -2,5 +2,37 @@
   "name": "@nexaticket/config",
   "version": "0.1.0",
   "private": true,
-  "files": ["tsconfig.base.json"]
+  "type": "module",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./tsconfig.package.json": "./tsconfig.package.json",
+    "./eslint.base.mjs": "./eslint.base.mjs",
+    "./eslint.next.mjs": "./eslint.next.mjs",
+    "./vitest.base.ts": "./vitest.base.ts"
+  },
+  "files": [
+    "tsconfig.base.json",
+    "tsconfig.package.json",
+    "eslint.base.mjs",
+    "eslint.next.mjs",
+    "vitest.base.ts"
+  ],
+  "dependencies": {
+    "@eslint/js": "^9.17.0",
+    "@next/eslint-plugin-next": "^15.1.3",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "typescript-eslint": "^8.19.0"
+  },
+  "peerDependencies": {
+    "eslint": "^9.17.0",
+    "vitest": "^2.1.8"
+  },
+  "peerDependenciesMeta": {
+    "eslint": {
+      "optional": true
+    },
+    "vitest": {
+      "optional": true
+    }
+  }
 }

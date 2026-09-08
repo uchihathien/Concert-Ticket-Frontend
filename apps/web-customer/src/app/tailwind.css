@@ -1,0 +1,51 @@
+/*
+ * Tailwind v4 cho web-customer.
+ *
+ * Cố ý **không** nạp preflight của Tailwind: dự án đã có `@nexaticket/tokens/reset.css`, và hai
+ * bộ reset chồng nhau sẽ âm thầm đổi diện mạo của mọi màn đang chạy bằng CSS Modules. Ở đây chỉ
+ * lấy phần tiện ích.
+ */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/*
+ * Khai báo nguồn tường minh.
+ *
+ * Nhập lẻ `theme.css` + `utilities.css` (thay vì cả gói `tailwindcss`) thì mất luôn phần tự dò
+ * nguồn: Tailwind vẫn nạp bảng biến nhưng không quét file nào, nên không sinh ra một utility nào
+ * và CSS trông "có Tailwind" mà class thì không tồn tại.
+ */
+@source '../';
+
+/*
+ * Tailwind đọc thẳng biến của `packages/tokens` thay vì mang bảng màu riêng vào.
+ *
+ * `inline` nghĩa là giá trị được thay tại chỗ, nên `bg-surface` sinh ra `var(--nt-surface)` —
+ * đổi token là mọi tiện ích đổi theo, và app soát vé nền tối vẫn đúng màu mà không cần cấu hình
+ * dark mode riêng.
+ */
+@theme inline {
+  --color-bg: var(--nt-bg);
+  --color-bg-subtle: var(--nt-bg-subtle);
+  --color-surface: var(--nt-surface);
+  --color-border: var(--nt-border);
+  --color-ink: var(--nt-text);
+  --color-muted: var(--nt-text-muted);
+
+  --color-primary: var(--nt-primary);
+  --color-primary-hover: var(--nt-primary-hover);
+  --color-primary-ink: var(--nt-primary-ink);
+  --color-accent: var(--nt-accent);
+  --color-accent-ink: var(--nt-accent-ink);
+
+  --color-success: var(--nt-success);
+  --color-warn: var(--nt-warn);
+  --color-danger: var(--nt-danger);
+
+  --radius-nt: var(--nt-radius);
+  --radius-nt-lg: var(--nt-radius-lg);
+
+  --font-sans: var(--nt-font);
+  --font-mono: var(--nt-font-mono);
+}

@@ -1,0 +1,193 @@
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-4);
+  padding: var(--nt-space-3) var(--nt-space-6);
+  border-bottom: 1px solid var(--nt-border);
+  position: sticky;
+  top: 0;
+  background: var(--nt-bg);
+  z-index: 10;
+}
+
+/* Logo là ảnh: link chỉ cần là khối để vùng bấm ôm đúng ảnh, không cần kiểu chữ nữa. */
+.brand {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  text-decoration: none;
+}
+
+/* Ô tìm kiếm chiếm chỗ rộng nhất: người vào site bán vé thường đã biết muốn xem gì. */
+.search {
+  flex: 1;
+  max-width: 560px;
+}
+
+.searchInput {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px var(--nt-space-4);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  background: var(--nt-bg-subtle);
+}
+
+.nav {
+  display: flex;
+  gap: var(--nt-space-4);
+  align-items: center;
+  margin-left: auto;
+}
+
+.nav a {
+  text-decoration: none;
+  color: var(--nt-text);
+  font-size: 15px;
+}
+
+.account {
+  padding: 10px var(--nt-space-4);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  font-weight: 600;
+}
+
+.login {
+  padding: 10px var(--nt-space-4);
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink) !important;
+  border-radius: var(--nt-radius);
+  font-weight: 600;
+}
+
+.content {
+  /* Chừa chỗ cho bottom nav trên mobile, nếu không nội dung cuối trang bị che. */
+  padding-bottom: var(--nt-space-8);
+}
+
+.footer {
+  border-top: 1px solid var(--nt-border);
+  padding: var(--nt-space-12) var(--nt-space-6) var(--nt-space-6);
+  color: var(--nt-text-muted);
+  font-size: 14px;
+}
+
+.footerGrid {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr repeat(3, 1fr);
+  gap: var(--nt-space-8);
+}
+
+.footerAbout {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--nt-space-3);
+}
+
+.footerText {
+  margin: 0;
+  max-width: 40ch;
+}
+
+.footerCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-2);
+}
+
+.footerHeading {
+  margin: 0 0 var(--nt-space-1);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--nt-text);
+}
+
+.footer a {
+  color: inherit;
+  /* Vùng chạm 44px cho link footer trên mobile — chúng đứng sát nhau nên dễ bấm nhầm nhất. */
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+}
+
+.footer a:hover {
+  color: var(--nt-primary);
+}
+
+.footerBottom {
+  max-width: 1200px;
+  margin: var(--nt-space-8) auto 0;
+  padding-top: var(--nt-space-4);
+  border-top: 1px solid var(--nt-border);
+}
+
+/* Bottom nav: ba việc người dùng thật sự làm (ui-direction.md §4). Chỉ trên mobile. */
+.bottomNav {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .header {
+    flex-wrap: wrap;
+    padding: var(--nt-space-3) var(--nt-space-4);
+  }
+
+  .nav a:not(.login) {
+    display: none;
+  }
+
+  .search {
+    order: 3;
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .content {
+    padding-bottom: 72px;
+  }
+
+  .footer {
+    padding: var(--nt-space-8) var(--nt-space-4) var(--nt-space-6);
+  }
+
+  /* Bốn cột xuống hai cột; khối giới thiệu chiếm trọn một hàng riêng. */
+  .footerGrid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--nt-space-6);
+  }
+
+  .footerAbout {
+    grid-column: 1 / -1;
+  }
+
+  .bottomNav {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: 20;
+    background: var(--nt-bg);
+    border-top: 1px solid var(--nt-border);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .bottomLink {
+    display: grid;
+    place-items: center;
+    min-height: 56px;
+    text-decoration: none;
+    color: var(--nt-text-muted);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .bottomLinkActive {
+    color: var(--nt-primary);
+    box-shadow: inset 0 2px 0 var(--nt-primary);
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "@nexaticket/ts-sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./identity": "./src/api/identity.ts",
+    "./inventory": "./src/api/inventory.ts",
+    "./ledger": "./src/api/ledger.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "@tanstack/react-query": "^5.62.11",
+    "react": "^19.0.0"
+  },
+  "devDependencies": {
+    "@nexaticket/config": "workspace:*",
+    "@tanstack/react-query": "^5.62.11",
+    "@testing-library/react": "^16.1.0",
+    "@types/react": "^19.0.2",
+    "eslint": "^9.17.0",
+    "jsdom": "^25.0.1",
+    "msw": "^2.7.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.19.0",
+    "vitest": "^2.1.8"
+  }
+}

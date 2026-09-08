@@ -1,0 +1,231 @@
+/* Button ------------------------------------------------------------------ */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nt-space-2);
+  border: 1px solid transparent;
+  border-radius: var(--nt-radius);
+  padding: 0 var(--nt-space-4);
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.button:disabled,
+.button[aria-busy='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Vùng chạm ≥ 44px trên mobile (ui-direction.md §6.6). Chiều cao hiển thị nhỏ hơn vẫn được,
+   nhưng vùng bấm thì không. */
+.md {
+  min-height: 44px;
+  font-size: 15px;
+}
+
+.lg {
+  min-height: 52px;
+  font-size: 17px;
+  padding: 0 var(--nt-space-6);
+}
+
+.primary {
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+}
+
+.primary:hover:not(:disabled) {
+  background: var(--nt-primary-hover);
+}
+
+.secondary {
+  background: var(--nt-surface);
+  color: var(--nt-text);
+  border-color: var(--nt-border);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--nt-bg-subtle);
+}
+
+.ghost {
+  background: transparent;
+  color: var(--nt-text);
+}
+
+.ghost:hover:not(:disabled) {
+  background: var(--nt-bg-subtle);
+}
+
+.danger {
+  background: var(--nt-danger);
+  color: #fff;
+}
+
+.block {
+  width: 100%;
+}
+
+.spinner {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
+}
+
+/* Field (Input / Select) --------------------------------------------------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-1);
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.required {
+  color: var(--nt-danger);
+  margin-inline-start: 2px;
+}
+
+.control {
+  min-height: 44px;
+  width: 100%;
+  padding: 0 var(--nt-space-3);
+  background: var(--nt-surface);
+  color: var(--nt-text);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+}
+
+.control[aria-invalid='true'] {
+  border-color: var(--nt-danger);
+}
+
+.control:disabled {
+  background: var(--nt-bg-subtle);
+  cursor: not-allowed;
+}
+
+.hint {
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+.error {
+  font-size: 13px;
+  color: var(--nt-danger);
+}
+
+/* Badge -------------------------------------------------------------------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nt-space-1);
+  padding: 2px var(--nt-space-2);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.6;
+  border: 1px solid transparent;
+}
+
+.badgeNeutral {
+  background: var(--nt-bg-subtle);
+  color: var(--nt-text-muted);
+  border-color: var(--nt-border);
+}
+
+.badgeAccent {
+  background: var(--nt-accent);
+  color: var(--nt-accent-ink);
+}
+
+.badgeSuccess {
+  background: color-mix(in srgb, var(--nt-success) 12%, transparent);
+  color: var(--nt-success);
+  border-color: color-mix(in srgb, var(--nt-success) 35%, transparent);
+}
+
+.badgeWarn {
+  background: color-mix(in srgb, var(--nt-warn) 14%, transparent);
+  color: var(--nt-warn);
+  border-color: color-mix(in srgb, var(--nt-warn) 35%, transparent);
+}
+
+.badgeDanger {
+  background: color-mix(in srgb, var(--nt-danger) 12%, transparent);
+  color: var(--nt-danger);
+  border-color: color-mix(in srgb, var(--nt-danger) 35%, transparent);
+}
+
+/* Skeleton ----------------------------------------------------------------- */
+
+.skeleton {
+  display: block;
+  background: var(--nt-bg-subtle);
+  border-radius: var(--nt-radius);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--nt-border) 60%, transparent),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: shimmer 1.4s infinite;
+}
+
+@keyframes shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+}
+
+/* MoneyText ---------------------------------------------------------------- */
+
+.money {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.moneyStrong {
+  font-weight: 700;
+  color: var(--nt-primary);
+}

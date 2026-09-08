@@ -6,20 +6,29 @@
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@nexaticket/auth": "workspace:*",
+    "@nexaticket/brand": "workspace:*",
+    "@nexaticket/tokens": "workspace:*",
+    "@nexaticket/ts-sdk": "workspace:*",
+    "@nexaticket/ui": "workspace:*",
+    "@tanstack/react-query": "^5.62.11",
     "next": "^15.1.3",
+    "next-auth": "^5.0.0-beta.25",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "@nexaticket/tokens": "workspace:*"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@nexaticket/config": "workspace:*",
+    "@tailwindcss/postcss": "^4",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "eslint": "^9.17.0",
+    "tailwindcss": "^4",
     "typescript": "^5.7.2"
   }
 }

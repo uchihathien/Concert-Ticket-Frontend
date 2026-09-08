@@ -1,0 +1,49 @@
+.screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--nt-space-6);
+  background: var(--nt-bg-subtle);
+}
+
+.card {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-4);
+  padding: var(--nt-space-8);
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-2);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--nt-primary);
+}
+
+/* Scanner nền tối: đỏ ấm trên nền #14100f không đạt tương phản, dùng vàng kim. */
+[data-app='scanner'] .brand {
+  color: var(--nt-accent);
+}
+
+.title {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.description {
+  margin: 0;
+  color: var(--nt-text-muted);
+}
+
+.footer {
+  margin: 0;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}

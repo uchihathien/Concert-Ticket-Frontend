@@ -1,0 +1,24 @@
+/* Chỉ còn phần bố cục của riêng trang chủ. Header/footer nằm ở `components/site.module.css`,
+   còn thẻ sự kiện, chip và dải cuộn nằm ở `@nexaticket/ui` để trang danh sách dùng lại y hệt. */
+
+.hero {
+  padding: var(--nt-space-6);
+}
+
+.chips {
+  padding: 0 var(--nt-space-6) var(--nt-space-6);
+}
+
+.row {
+  padding: 0 var(--nt-space-6) var(--nt-space-8);
+}
+
+@media (max-width: 720px) {
+  /* Lề 16px thay vì 24px — màn hẹp cần chỗ cho nội dung hơn là cho lề. */
+  .hero,
+  .chips,
+  .row {
+    padding-left: var(--nt-space-4);
+    padding-right: var(--nt-space-4);
+  }
+}

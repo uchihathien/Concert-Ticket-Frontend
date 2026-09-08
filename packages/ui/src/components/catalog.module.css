@@ -1,0 +1,172 @@
+/* EventCard --------------------------------------------------------------- */
+
+.card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border-radius: var(--nt-radius);
+}
+
+.card:hover .title {
+  color: var(--nt-primary);
+}
+
+/* Nhấc nhẹ khi rê chuột — đủ để biết thẻ bấm được, không đủ để thành hiệu ứng. */
+.card:hover .media {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 14%);
+}
+
+.media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--nt-radius);
+  background: linear-gradient(120deg, var(--nt-bg-subtle), #ece7e2);
+  overflow: hidden;
+  margin-bottom: var(--nt-space-2);
+  transition:
+    transform 150ms ease-out,
+    box-shadow 150ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .media {
+    transition: none;
+  }
+}
+
+/* Lớp phủ chéo rất nhạt: bìa sinh sẵn có chút chiều sâu thay vì là một mảng màu phẳng. */
+.media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(200deg, rgb(255 255 255 / 14%), transparent 45%, rgb(0 0 0 / 18%));
+}
+
+.media img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Trên lớp phủ, nếu không huy hiệu bị làm mờ đi. */
+.badge {
+  z-index: 2;
+  position: absolute;
+  inset-block-start: var(--nt-space-2);
+  inset-inline-start: var(--nt-space-2);
+}
+
+/* Thẻ đúng 4 dòng, cùng thứ tự ở mọi nơi thẻ xuất hiện (ui-direction.md §5).
+   Không thêm mô tả, không thêm lượt xem, không thêm nút chia sẻ. */
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.meta {
+  margin: 0;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+.price {
+  margin: 4px 0 0;
+  font-weight: 700;
+  color: var(--nt-primary);
+}
+
+/* CategoryChips ------------------------------------------------------------ */
+
+.chips {
+  display: flex;
+  gap: var(--nt-space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+/* Chip là <a> chứ không phải <button>: bộ lọc sống trên URL, nên nó phải mở được ở tab mới,
+   chia sẻ được, và chạy được khi JS chưa tải xong. */
+.chip {
+  padding: 10px var(--nt-space-4);
+  border: 1px solid var(--nt-border);
+  border-radius: 999px;
+  background: var(--nt-bg);
+  color: var(--nt-text);
+  text-decoration: none;
+  white-space: nowrap;
+  font-size: 15px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+}
+
+.chip:hover {
+  background: var(--nt-bg-subtle);
+}
+
+.chipActive,
+.chipActive:hover {
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  border-color: var(--nt-primary);
+}
+
+/* CarouselRow -------------------------------------------------------------- */
+
+.row {
+  display: block;
+}
+
+.rowHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--nt-space-4);
+  margin-bottom: var(--nt-space-4);
+}
+
+.rowTitle {
+  font-size: 20px;
+  margin: 0;
+}
+
+.rowLink {
+  color: var(--nt-primary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(200px, 240px);
+  gap: var(--nt-space-4);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding-bottom: var(--nt-space-2);
+}
+
+.track > * {
+  scroll-snap-align: start;
+}
+
+@media (max-width: 720px) {
+  /* Thẻ hẹp hơn để lộ một phần thẻ kế tiếp — gợi ý rằng dải này cuộn được. */
+  .track {
+    grid-auto-columns: minmax(150px, 62vw);
+  }
+}

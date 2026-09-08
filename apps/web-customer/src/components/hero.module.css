@@ -1,0 +1,102 @@
+.hero {
+  position: relative;
+}
+
+.viewport {
+  position: relative;
+  aspect-ratio: 21 / 6;
+  border-radius: var(--nt-radius-lg);
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: var(--nt-space-2);
+  padding: var(--nt-space-8);
+  text-decoration: none;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 400ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide {
+    transition: none;
+  }
+}
+
+.slideActive {
+  opacity: 1;
+}
+
+/* Slide không hoạt động vẫn nằm trong DOM: chuyển cảnh mượt hơn, nhưng phải rút khỏi thứ tự
+   tab, nếu không người dùng bàn phím sẽ focus vào link vô hình. */
+.slide:not(.slideActive) {
+  pointer-events: none;
+}
+
+.slideKicker {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.slideTitle {
+  margin: 0;
+  font-size: clamp(22px, 3.2vw, 38px);
+  line-height: 1.15;
+  text-shadow: 0 2px 12px rgb(0 0 0 / 35%);
+}
+
+.slideMeta {
+  margin: 0;
+  font-size: 15px;
+  opacity: 0.95;
+}
+
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: var(--nt-space-2);
+  margin-top: var(--nt-space-3);
+}
+
+.dot {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.dot::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--nt-border);
+}
+
+.dotActive::after {
+  background: var(--nt-primary);
+  width: 24px;
+}
+
+@media (max-width: 720px) {
+  .viewport {
+    aspect-ratio: 16 / 9;
+  }
+
+  .slide {
+    padding: var(--nt-space-4);
+  }
+}

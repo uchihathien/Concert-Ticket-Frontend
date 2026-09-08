@@ -1,0 +1,63 @@
+/* Bảng rộng cuộn trong khung của chính nó — trang không bao giờ cuộn ngang. */
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  background: var(--nt-surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.caption {
+  text-align: start;
+  padding: var(--nt-space-3) var(--nt-space-4);
+  font-weight: 700;
+  color: var(--nt-text);
+}
+
+.th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--nt-bg-subtle);
+  text-align: start;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--nt-text-muted);
+  padding: var(--nt-space-3) var(--nt-space-4);
+  border-bottom: 1px solid var(--nt-border);
+  white-space: nowrap;
+}
+
+.td {
+  padding: var(--nt-space-3) var(--nt-space-4);
+  border-bottom: 1px solid var(--nt-border);
+  vertical-align: top;
+}
+
+.numeric {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.row:last-child .td {
+  border-bottom: none;
+}
+
+.rowClickable {
+  cursor: pointer;
+}
+
+.rowClickable:hover {
+  background: var(--nt-bg-subtle);
+}
+
+.stateCell {
+  padding: 0;
+}

@@ -1,0 +1,203 @@
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--nt-space-6) var(--nt-space-6) var(--nt-space-12);
+}
+
+.crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nt-space-2);
+  margin-bottom: var(--nt-space-4);
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+.crumbs a {
+  color: inherit;
+}
+
+.crumbs a:hover {
+  color: var(--nt-primary);
+}
+
+/* Nền do trang đặt qua style inline, theo đúng dải màu của thẻ sự kiện. */
+.banner {
+  aspect-ratio: 21 / 7;
+  border-radius: var(--nt-radius-lg);
+  background: var(--nt-bg-subtle);
+  margin-bottom: var(--nt-space-6);
+}
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: var(--nt-space-8);
+  align-items: start;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-3);
+  flex-wrap: wrap;
+}
+
+.title {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.2;
+}
+
+.summary {
+  margin: var(--nt-space-2) 0 var(--nt-space-6);
+  color: var(--nt-text-muted);
+  font-size: 17px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  margin: var(--nt-space-8) 0 var(--nt-space-3);
+}
+
+.paragraph {
+  margin: 0 0 var(--nt-space-3);
+  max-width: 68ch;
+}
+
+.sessions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--nt-space-3);
+}
+
+.session {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nt-space-4);
+  flex-wrap: wrap;
+  padding: var(--nt-space-4);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  background: var(--nt-surface);
+}
+
+.sessionTime {
+  margin: 0;
+  font-weight: 700;
+}
+
+.sessionVenue {
+  margin: 2px 0 0;
+  color: var(--nt-text-muted);
+  font-size: 14px;
+}
+
+.sessionAction {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-4);
+}
+
+.sessionPrice {
+  color: var(--nt-text-muted);
+  font-size: 14px;
+}
+
+.notOnSale {
+  color: var(--nt-warn);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.note {
+  margin-top: var(--nt-space-6);
+  padding: var(--nt-space-3) var(--nt-space-4);
+  border-inline-start: 3px solid var(--nt-border);
+  color: var(--nt-text-muted);
+  font-size: 14px;
+}
+
+.aside {
+  position: sticky;
+  top: 88px;
+}
+
+.card {
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  padding: var(--nt-space-6);
+  background: var(--nt-surface);
+}
+
+.cardLabel {
+  margin: 0 0 2px;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+.cardValue {
+  margin: 0 0 var(--nt-space-4);
+  font-weight: 600;
+}
+
+.cardValue:last-child {
+  margin-bottom: 0;
+}
+
+.stickyCta {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .body {
+    grid-template-columns: 1fr;
+  }
+
+  .aside {
+    position: static;
+  }
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: var(--nt-space-4) var(--nt-space-4) 96px;
+  }
+
+  .banner {
+    aspect-ratio: 16 / 9;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  /* Thẻ tóm tắt lặp lại đúng thông tin đã có ở CTA dính đáy — bỏ đi trên màn hẹp. */
+  .aside {
+    display: none;
+  }
+
+  .stickyCta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--nt-space-4);
+    position: fixed;
+    inset-inline: 0;
+    /* Nằm trên bottom nav, không đè lên nó. */
+    inset-block-end: 56px;
+    z-index: 15;
+    padding: var(--nt-space-3) var(--nt-space-4);
+    background: var(--nt-surface);
+    border-top: 1px solid var(--nt-border);
+  }
+
+  .stickyPrice {
+    font-size: 14px;
+    color: var(--nt-text-muted);
+  }
+}
