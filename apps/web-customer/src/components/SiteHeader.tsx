@@ -1,4 +1,5 @@
 import { BrandLogo } from '@nexaticket/ui';
+import { googleSignInEnabled } from '@/lib/auth-providers';
 import { AccountNav } from './AccountNav';
 import Link from 'next/link';
 import { Suspense } from 'react';
@@ -44,7 +45,7 @@ export function SiteHeader({ query = '' }: { query?: string }) {
             </Link>
           }
         >
-          <AccountNav />
+          <AccountNav googleEnabled={googleSignInEnabled()} />
         </Suspense>
       </nav>
     </header>

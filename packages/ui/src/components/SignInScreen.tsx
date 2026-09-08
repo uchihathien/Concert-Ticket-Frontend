@@ -23,6 +23,18 @@ export interface SignInScreenProps {
    */
   hiddenFields?: ReactNode;
   /**
+   * Đăng nhập qua nhà cung cấp ngoài — hiện là Google, đặt TRÊN đường mật khẩu.
+   *
+   * Thứ tự này là có chủ ý: phần lớn người dùng đã đăng nhập Google sẵn trên máy, nên đặt nó
+   * trước giúp họ xong trong một cú bấm. Ai không dùng Google vẫn thấy đường quen thuộc ngay bên
+   * dưới, không phải tìm.
+   *
+   * Bỏ trống thì cả khối phân cách cũng biến mất — ba app nội bộ không có đăng nhập mạng xã hội.
+   */
+  social?: ReactNode;
+  /** Nhãn giữa đường kẻ phân cách. */
+  dividerLabel?: string;
+  /**
    * Hành động phụ dưới nút chính — ở app khách là form "Tạo tài khoản mới".
    *
    * Ba app còn lại không truyền gì: tài khoản của ban tổ chức, nhân viên soát vé và superadmin
@@ -31,13 +43,21 @@ export interface SignInScreenProps {
   secondary?: ReactNode;
   /** Thông tin phụ dưới nút, ví dụ nhắc về MFA hoặc về mã truy cập của nhân viên soát vé. */
   footer?: ReactNode;
+  /**
+   * Cột giới thiệu bên cạnh thẻ, chỉ hiện trên màn hình rộng.
+   *
+   * Ẩn hẳn dưới 900px chứ không xếp chồng lên trên form: trên điện thoại, thứ người dùng cần là
+   * nút đăng nhập nằm trong tầm ngón cái, không phải một khối quảng cáo phải cuộn qua.
+   */
+  aside?: ReactNode;
 }
 
 /**
  * Màn đăng nhập.
  *
- * Chỉ một nút dẫn sang IdP — không có ô email/mật khẩu. Mật khẩu do Keycloak giữ; dựng form đăng
- * nhập ở đây là tự rước nghĩa vụ bảo mật mà cả hệ thống đã cố ý đẩy sang IdP.
+ * Không có ô email/mật khẩu. Mật khẩu do Keycloak giữ; dựng form đăng nhập ở đây là tự rước nghĩa
+ * vụ bảo mật mà cả hệ thống đã cố ý đẩy sang IdP — và làm người dùng mất thanh địa chỉ, thứ duy
+ * nhất giúp họ phân biệt trang thật với trang giả.
  */
 export function SignInScreen({
   brand,
@@ -46,24 +66,71 @@ export function SignInScreen({
   action,
   buttonLabel = 'Đăng nhập',
   hiddenFields,
+  social,
+  dividerLabel = 'hoặc',
   secondary,
   footer,
+  aside,
 }: SignInScreenProps) {
   return (
-    <main className={styles.screen}>
-      <div className={styles.card}>
-        <span className={styles.brand}>{brand}</span>
-        <h1 className={styles.title}>{title}</h1>
-        {description ? <p className={styles.description}>{description}</p> : null}
-        <form action={action}>
-          {hiddenFields}
-          <Button type="submit" size="lg" block>
-            {buttonLabel}
-          </Button>
-        </form>
-        {secondary}
-        {footer ? <p className={styles.footer}>{footer}</p> : null}
-      </div>
-    </main>
+    <div className={aside ? styles.screenSplit : styles.screen}>
+      {aside ? <aside className={styles.panel}>{aside}</aside> : null}
+
+      <main className={styles.pane}>
+        <div className={styles.card}>
+          <span className={styles.brand}>{brand}</span>
+          <div className={styles.heading}>
+            <h1 className={styles.title}>{title}</h1>
+            {description ? <p className={styles.description}>{description}</p> : null}
+          </div>
+
+          {social ? (
+            <>
+              {social}
+              <div className={styles.divider}>
+                <span>{dividerLabel}</span>
+              </div>
+            </>
+          ) : null}
+
+          <div className={styles.actions}>
+            <form action={action}>
+              {hiddenFields}
+              <Button type="submit" size="lg" block>
+                {buttonLabel}
+              </Button>
+            </form>
+            {secondary}
+          </div>
+
+          {footer ? <p className={styles.footer}>{footer}</p> : null}
+        </div>
+      </main>
+    </div>
+  );
+}
+
+export interface SignInHighlightsProps {
+  title: ReactNode;
+  items: ReactNode[];
+}
+
+/**
+ * Nội dung mặc định cho cột giới thiệu.
+ *
+ * Ba dòng lợi ích, không phải một đoạn văn: người đang ở màn đăng nhập không đọc, họ liếc.
+ */
+export function SignInHighlights({ title, items }: SignInHighlightsProps) {
+  return (
+    <div className={styles.panelInner}>
+      <p className={styles.panelTitle}>{title}</p>
+      <ul className={styles.panelList}>
+        {items.map((item, index) => (
+          // Danh sách tĩnh do trang khai báo, không sắp xếp lại và không thêm bớt — chỉ số làm
+          // khoá là đủ và không gây lỗi tái sử dụng state.
+          <li key={index}>{item}</li>
+        ))}
+      </ul>
+    </div>
   );
 }

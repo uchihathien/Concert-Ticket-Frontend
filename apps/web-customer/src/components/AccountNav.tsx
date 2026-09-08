@@ -17,7 +17,7 @@ import styles from './site.module.css';
  * Trong lúc chưa biết trạng thái thì hiện nút đăng nhập: khách vãng lai là số đông, nên đoán về
  * phía đó là ít nhấp nháy nhất.
  */
-export function AccountNav() {
+export function AccountNav({ googleEnabled = false }: { googleEnabled?: boolean }) {
   const { state, refresh } = useSessionState();
   const [dialogOpen, setDialogOpen] = useState(false);
   const pathname = usePathname();
@@ -51,6 +51,7 @@ export function AccountNav() {
       </Link>
 
       <AuthDialog
+        googleEnabled={googleEnabled}
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         onAuthenticated={refresh}

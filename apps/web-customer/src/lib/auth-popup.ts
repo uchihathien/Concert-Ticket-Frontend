@@ -1,7 +1,13 @@
 /** Tín hiệu popup gửi về cửa sổ cha khi luồng OIDC kết thúc. */
 export const AUTH_POPUP_MESSAGE = 'nexaticket:auth-complete';
 
-export type AuthMode = 'login' | 'register';
+/**
+ * Ba đường vào, cùng một luồng OIDC.
+ *
+ * `google` không phải nhà cung cấp riêng: vẫn là client Keycloak cũ và callback cũ, chỉ kèm
+ * `kc_idp_hint` để Keycloak bỏ qua trang mật khẩu của nó và chuyển thẳng sang Google.
+ */
+export type AuthMode = 'login' | 'register' | 'google';
 
 const POPUP_WIDTH = 480;
 const POPUP_HEIGHT = 720;

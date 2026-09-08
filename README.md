@@ -48,6 +48,10 @@ Next riêng, đọc `.env.local` của chính nó, và dùng một client Keyclo
 
 Backend cần chạy sẵn để đăng nhập và gọi API — xem hướng dẫn ở repo backend.
 
+`AUTH_GOOGLE_ENABLED` mặc định `false`. Chỉ bật sau khi đã chạy `scripts/setup-google-idp.sh` ở
+repo backend để khai identity provider `google` trong Keycloak — bật trước thì nút có hiện, nhưng
+bấm vào là ra trang lỗi của Keycloak.
+
 ## Bốn app
 
 | App            | Cổng | Persona                             | Nền     |

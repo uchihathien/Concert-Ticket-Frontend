@@ -9,6 +9,8 @@ export type { NexaApp, NexaAuth, NexaAuthOptions } from './config';
 export { createTokenRoute } from './route';
 export type { AccessTokenResponse } from './route';
 
+export { IDP_GOOGLE, idpHint } from './idp';
+
 export { safeReturnUrl } from './return-url';
 
 export { readAccessToken } from './server';

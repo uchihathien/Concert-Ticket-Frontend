@@ -1,21 +1,125 @@
-.screen {
+/* Bố cục -------------------------------------------------------------------
+   Hai biến thể: thẻ đơn giữa màn (ba app nội bộ) và bố cục hai cột (app khách).
+   Cùng một component, khác nhau ở chỗ có truyền `aside` hay không. */
+
+.screen,
+.screenSplit {
   min-height: 100dvh;
+  background: var(--nt-bg-subtle);
+}
+
+.screen {
   display: grid;
   place-items: center;
   padding: var(--nt-space-6);
-  background: var(--nt-bg-subtle);
+}
+
+.screenSplit {
+  display: grid;
+  /* Cột giới thiệu hẹp hơn cột form: form mới là việc cần làm, phần còn lại là bối cảnh. */
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+}
+
+.pane {
+  display: grid;
+  place-items: center;
+  padding: var(--nt-space-6);
 }
 
 .card {
   width: min(420px, 100%);
   display: flex;
   flex-direction: column;
-  gap: var(--nt-space-4);
+  gap: var(--nt-space-6);
   padding: var(--nt-space-8);
   background: var(--nt-surface);
   border: 1px solid var(--nt-border);
   border-radius: var(--nt-radius-lg);
 }
+
+/* Thẻ nổi lên khỏi nền khi có cột giới thiệu; ở bố cục một cột thì viền là đủ. */
+.screenSplit .card {
+  border-color: transparent;
+  box-shadow: 0 1px 2px rgba(26, 22, 20, 0.06), 0 12px 32px rgba(26, 22, 20, 0.08);
+}
+
+/* Cột giới thiệu ------------------------------------------------------------ */
+
+.panel {
+  display: grid;
+  align-content: center;
+  padding: var(--nt-space-12);
+  color: var(--nt-primary-ink);
+  background: linear-gradient(150deg, var(--nt-primary) 0%, #7d1414 100%);
+}
+
+.panelInner {
+  max-width: 34ch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-6);
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: clamp(26px, 2.4vw, 34px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.panelList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-3);
+  font-size: 15px;
+  /* Không dùng màu mờ trên nền gradient: tương phản đã sát ngưỡng, làm mờ thêm là rớt chuẩn. */
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.panelList li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nt-space-3);
+  line-height: 1.5;
+}
+
+/* Dấu tick vẽ bằng CSS thay vì icon: một hình trang trí không đáng thêm một dependency,
+   và ::before không lọt vào cây accessibility nên trình đọc màn hình chỉ đọc nội dung. */
+.panelList li::before {
+  content: '';
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18 18'%3E%3Cpath d='M4.5 9.2l3 3 6-6.4' fill='none' stroke='%237d1414' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+      center / 18px 18px no-repeat,
+    var(--nt-accent);
+}
+
+/* Dưới 900px bỏ hẳn cột giới thiệu. Xếp chồng nó lên trên form sẽ đẩy nút đăng nhập
+   xuống dưới màn hình đầu tiên trên điện thoại. */
+@media (max-width: 900px) {
+  .screenSplit {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    display: none;
+  }
+
+  .screenSplit .card {
+    box-shadow: none;
+    border-color: var(--nt-border);
+  }
+}
+
+/* Nội dung thẻ -------------------------------------------------------------- */
 
 .brand {
   display: flex;
@@ -31,19 +135,111 @@
   color: var(--nt-accent);
 }
 
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-2);
+}
+
 .title {
   margin: 0;
-  font-size: 24px;
-  line-height: 1.25;
+  font-size: 26px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .description {
   margin: 0;
   color: var(--nt-text-muted);
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-3);
 }
 
 .footer {
   margin: 0;
   font-size: 13px;
+  line-height: 1.5;
   color: var(--nt-text-muted);
+}
+
+/* Đường phân cách ----------------------------------------------------------- */
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-3);
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--nt-border);
+}
+
+/* Nút Google ----------------------------------------------------------------
+   Theo hướng dẫn thương hiệu của Google: nền trắng, viền trung tính, chữ tối, logo bốn màu
+   nguyên bản. Bo góc lấy theo token của hệ thống — Google cho phép vuông, bo hoặc bo tròn hẳn. */
+
+.google {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nt-space-3);
+  /* Bằng chiều cao nút size="lg" để hai đường đăng nhập nhìn ngang hàng nhau. */
+  min-height: 52px;
+  padding: 0 var(--nt-space-6);
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1;
+  color: #1f1f1f;
+  background: #ffffff;
+  border: 1px solid #747775;
+  border-radius: var(--nt-radius);
+  cursor: pointer;
+}
+
+.googleBlock {
+  width: 100%;
+}
+
+.google:hover {
+  /* Lớp phủ mờ thay vì đổi hẳn màu nền: nền trắng là một phần quy định thương hiệu. */
+  background: #f7f8f8;
+}
+
+.google:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+.google:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Biến thể nền tối của Google, dùng khi app chạy giao diện tối. */
+[data-app='scanner'] .google {
+  color: #e3e3e3;
+  background: #131314;
+  border-color: #8e918f;
+}
+
+[data-app='scanner'] .google:hover {
+  background: #1e1f20;
+}
+
+.googleMark {
+  flex: none;
+  width: 20px;
+  height: 20px;
 }

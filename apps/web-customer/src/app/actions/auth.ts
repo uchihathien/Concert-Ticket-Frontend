@@ -1,6 +1,6 @@
 'use server';
 
-import { REGISTER_PROVIDER_ID, safeReturnUrl } from '@nexaticket/auth';
+import { IDP_GOOGLE, REGISTER_PROVIDER_ID, idpHint, safeReturnUrl } from '@nexaticket/auth';
 import { signIn } from '@/auth';
 
 /**
@@ -20,6 +20,20 @@ export async function startSignIn(formData: FormData): Promise<void> {
 
 export async function startRegister(formData: FormData): Promise<void> {
   await signIn(REGISTER_PROVIDER_ID, { redirectTo: readReturnUrl(formData) });
+}
+
+/**
+ * Đăng nhập bằng Google.
+ *
+ * Vẫn là client Keycloak cũ và callback cũ — chỉ thêm `kc_idp_hint` để Keycloak bỏ qua trang
+ * đăng nhập của nó và chuyển thẳng sang Google. Nhờ vậy không phải khai thêm redirect URI, và
+ * người đã đăng nhập Google sẵn trên máy xong trong một cú bấm.
+ *
+ * Cùng một nút dùng cho cả người mới lẫn người cũ: Google tự quyết định hiện màn chọn tài khoản
+ * hay màn tạo tài khoản, nên không cần tách "đăng ký bằng Google" thành đường riêng.
+ */
+export async function startGoogleSignIn(formData: FormData): Promise<void> {
+  await signIn('keycloak', { redirectTo: readReturnUrl(formData) }, idpHint(IDP_GOOGLE));
 }
 
 /** `returnUrl` do trang gửi lên, gốc là query string — luôn phải lọc, nếu không là open redirect. */

@@ -1,6 +1,7 @@
 import { safeReturnUrl } from '@nexaticket/auth';
-import { BrandLogo, Button, SignInScreen } from '@nexaticket/ui';
-import { startRegister, startSignIn } from '@/app/actions/auth';
+import { BrandLogo, Button, GoogleButton, SignInHighlights, SignInScreen } from '@nexaticket/ui';
+import { startGoogleSignIn, startRegister, startSignIn } from '@/app/actions/auth';
+import { googleSignInEnabled } from '@/lib/auth-providers';
 
 /**
  * C-LOGIN — trang thật, không phải bản dự phòng của modal.
@@ -19,18 +20,37 @@ export default async function LoginPage({
   const params = await searchParams;
   const raw = typeof params.returnUrl === 'string' ? params.returnUrl : null;
   const returnUrl = safeReturnUrl(raw, '/');
+  const hidden = <input type="hidden" name="returnUrl" value={returnUrl} />;
 
   return (
     <SignInScreen
       brand={<BrandLogo height={36} priority />}
       title="Đăng nhập để mua vé"
       description="Giữ chỗ, thanh toán và xem vé của bạn ở một tài khoản duy nhất."
+      aside={
+        <SignInHighlights
+          title="Vé của bạn, gọn trong một tài khoản"
+          items={[
+            'Giữ chỗ trong lúc thanh toán, không lo mất ghế đã chọn',
+            'Vé điện tử luôn sẵn trong máy, quét thẳng ở cửa vào',
+            'Xem lại lịch sử mua và hoá đơn bất cứ lúc nào',
+          ]}
+        />
+      }
+      social={
+        googleSignInEnabled() ? (
+          <form action={startGoogleSignIn}>
+            {hidden}
+            <GoogleButton />
+          </form>
+        ) : null
+      }
       action={startSignIn}
-      buttonLabel="Đăng nhập"
-      hiddenFields={<input type="hidden" name="returnUrl" value={returnUrl} />}
+      buttonLabel="Đăng nhập bằng email"
+      hiddenFields={hidden}
       secondary={
         <form action={startRegister}>
-          <input type="hidden" name="returnUrl" value={returnUrl} />
+          {hidden}
           <Button type="submit" size="lg" block variant="secondary">
             Tạo tài khoản mới
           </Button>

@@ -61,8 +61,10 @@ export type { MoneyTextProps } from './components/MoneyText';
 export { Select } from './components/Select';
 export type { SelectOption, SelectProps } from './components/Select';
 
-export { SignInScreen } from './components/SignInScreen';
-export type { SignInScreenProps } from './components/SignInScreen';
+export { SignInHighlights, SignInScreen } from './components/SignInScreen';
+export type { SignInHighlightsProps, SignInScreenProps } from './components/SignInScreen';
+export { GoogleButton } from './components/GoogleButton';
+export type { GoogleButtonProps } from './components/GoogleButton';
 
 export { Skeleton } from './components/Skeleton';
 export type { SkeletonProps } from './components/Skeleton';

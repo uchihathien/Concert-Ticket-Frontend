@@ -1,6 +1,7 @@
 'use client';
 
 import { clearAccessToken } from '@nexaticket/auth/client';
+import { GoogleButton } from '@nexaticket/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AUTH_POPUP_MESSAGE, openAuthPopup, redirectToAuth, type AuthMode } from '@/lib/auth-popup';
 
@@ -11,6 +12,14 @@ export interface AuthDialogProps {
   onAuthenticated: () => void;
   /** Chỗ người dùng đang đứng — dùng cho đường dự phòng khi popup bị chặn. */
   returnUrl: string;
+  /**
+   * Có hiện "Tiếp tục với Google" hay không.
+   *
+   * Quyết định ở server rồi truyền xuống, chứ không đọc biến `NEXT_PUBLIC_` tại chỗ: nút chỉ chạy
+   * được khi realm Keycloak đã khai identity provider `google`, và một nút dẫn thẳng tới trang lỗi
+   * còn tệ hơn là không có nút nào.
+   */
+  googleEnabled?: boolean;
 }
 
 /**
@@ -23,7 +32,13 @@ export interface AuthDialogProps {
  * Dựng trên `<dialog>` thật thay vì một `<div>` có `position: fixed`: bẫy focus, phím Esc và
  * việc làm trơ phần nền đều do trình duyệt lo. Tự viết lại ba thứ đó là nguồn lỗi a11y kinh điển.
  */
-export function AuthDialog({ open, onClose, onAuthenticated, returnUrl }: AuthDialogProps) {
+export function AuthDialog({
+  open,
+  onClose,
+  onAuthenticated,
+  returnUrl,
+  googleEnabled = false,
+}: AuthDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const popupRef = useRef<Window | null>(null);
   const [pending, setPending] = useState<AuthMode | null>(null);
@@ -137,6 +152,22 @@ export function AuthDialog({ open, onClose, onAuthenticated, returnUrl }: AuthDi
           đang xem vẫn giữ nguyên.
         </p>
 
+        {googleEnabled ? (
+          <div className="mt-6 grid gap-4">
+            <GoogleButton
+              type="button"
+              onClick={() => start('google')}
+              disabled={pending !== null}
+              aria-busy={pending === 'google'}
+            />
+            {/* Kẻ ngang hai bên chữ bằng ::before/::after: một phần tử, không có <hr> rỗng nào
+                lọt vào cây accessibility. */}
+            <div className="flex items-center gap-3 text-[13px] text-muted before:h-px before:flex-1 before:bg-border before:content-[''] after:h-px after:flex-1 after:bg-border after:content-['']">
+              hoặc
+            </div>
+          </div>
+        ) : null}
+
         <div className="mt-6 grid gap-3">
           <button
             type="button"
@@ -146,7 +177,7 @@ export function AuthDialog({ open, onClose, onAuthenticated, returnUrl }: AuthDi
             className="flex min-h-13 cursor-pointer items-center justify-center gap-2 rounded-nt border-0 bg-primary px-6 text-[17px] font-semibold text-primary-ink hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-55"
           >
             {pending === 'login' ? <Spinner /> : null}
-            Đăng nhập
+            Đăng nhập bằng email
           </button>
 
           <button

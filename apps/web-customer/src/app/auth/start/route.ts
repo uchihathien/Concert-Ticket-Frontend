@@ -1,4 +1,4 @@
-import { REGISTER_PROVIDER_ID, safeReturnUrl } from '@nexaticket/auth';
+import { IDP_GOOGLE, REGISTER_PROVIDER_ID, idpHint, safeReturnUrl } from '@nexaticket/auth';
 import { signIn } from '@/auth';
 
 /**
@@ -17,15 +17,21 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: Request): Promise<Response> {
   const params = new URL(request.url).searchParams;
 
-  // Không bao giờ chuyển thẳng tham số của người dùng vào `signIn`: chỉ nhận đúng hai giá trị.
-  const provider = params.get('mode') === 'register' ? REGISTER_PROVIDER_ID : 'keycloak';
+  // Không bao giờ chuyển thẳng tham số của người dùng vào `signIn`: chỉ nhận đúng ba giá trị
+  // đã biết trước, mọi thứ khác rơi về đăng nhập thường.
+  const mode = params.get('mode');
+  const provider = mode === 'register' ? REGISTER_PROVIDER_ID : 'keycloak';
+
+  // `google` dùng chung client và callback với đăng nhập thường; khác biệt duy nhất là tham số
+  // gợi ý IdP, và nó phải là đối số THỨ BA của `signIn` mới có tác dụng.
+  const authorizationParams = mode === 'google' ? idpHint(IDP_GOOGLE) : undefined;
 
   // Có `returnTo` nghĩa là đang chạy trên cả trang (popup bị chặn) — về đúng chỗ người dùng đứng.
   // Không có thì đang ở trong popup, hạ cánh xuống trang báo hiệu rồi tự đóng.
   const returnTo = params.get('returnTo');
   const redirectTo = returnTo ? safeReturnUrl(returnTo, '/') : '/auth/popup-done';
 
-  await signIn(provider, { redirectTo });
+  await signIn(provider, { redirectTo }, authorizationParams);
 
   // `signIn` kết thúc bằng một redirect (ném ra NEXT_REDIRECT), nên dòng này không chạy tới.
   return new Response(null, { status: 302, headers: { Location: '/login' } });
