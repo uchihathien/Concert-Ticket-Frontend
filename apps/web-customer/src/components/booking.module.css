@@ -1,0 +1,253 @@
+/* Trang chọn chỗ ---------------------------------------------------------- */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--nt-space-8);
+  align-items: start;
+}
+
+/* Dưới 900px, phần tóm tắt xuống dưới sơ đồ — nhưng vẫn dính đáy màn hình, vì nút "Giữ chỗ" là
+   thứ duy nhất trên trang này thật sự cần bấm được mọi lúc. */
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .summary {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+  }
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-4);
+}
+
+.zones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-6);
+}
+
+.soldOut {
+  margin: 0;
+  padding: var(--nt-space-6);
+  text-align: center;
+  color: var(--nt-text-muted);
+  background: var(--nt-bg-subtle);
+  border-radius: var(--nt-radius);
+}
+
+.zone {
+  padding: var(--nt-space-5);
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+}
+
+.zoneHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--nt-space-3);
+}
+
+.zoneName {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.zonePrice {
+  font-weight: 700;
+  color: var(--nt-primary);
+}
+
+.zoneMeta {
+  margin: var(--nt-space-1) 0 var(--nt-space-4);
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+/* Sơ đồ ghế ---------------------------------------------------------------
+   Cuộn ngang trong khung riêng: một khu 30 ghế mỗi hàng không vừa màn điện thoại, và để cả
+   trang cuộn ngang là làm hỏng mọi thứ khác trên trang. */
+
+.grid {
+  margin-top: var(--nt-space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-2);
+  overflow-x: auto;
+  padding-bottom: var(--nt-space-2);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-1);
+}
+
+.rowLabel {
+  flex: none;
+  width: 24px;
+  font-size: 12px;
+  color: var(--nt-text-muted);
+  text-align: right;
+}
+
+/* 32px là ngưỡng dưới của vùng bấm được trên cảm ứng. Nhỏ hơn nữa thì vừa được nhiều ghế hơn
+   trên màn hình, đổi lại khách bấm nhầm sang ghế bên cạnh. */
+.seat {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  font-size: 11px;
+  font-family: inherit;
+  border-radius: 6px;
+  border: 1px solid var(--nt-border);
+  background: var(--nt-surface);
+  color: var(--nt-text);
+  cursor: pointer;
+}
+
+.seat[data-state='selected'] {
+  background: var(--nt-primary);
+  border-color: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font-weight: 700;
+}
+
+/* Ghế đã bán KHÔNG chỉ đổi màu nhạt: người mù màu sẽ không phân biệt được với ghế trống. Gạch
+   chéo bằng gradient cho một dấu hiệu thứ hai không phụ thuộc màu. */
+.seat[data-state='taken'] {
+  cursor: not-allowed;
+  color: transparent;
+  background:
+    linear-gradient(
+      to top right,
+      transparent calc(50% - 1px),
+      var(--nt-border) calc(50% - 1px),
+      var(--nt-border) calc(50% + 1px),
+      transparent calc(50% + 1px)
+    ),
+    var(--nt-bg-subtle);
+}
+
+.seat:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+/* Số lượng vé đứng -------------------------------------------------------- */
+
+.quantity {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-3);
+}
+
+.quantityButton {
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  font-family: inherit;
+  line-height: 1;
+  border-radius: var(--nt-radius);
+  border: 1px solid var(--nt-border);
+  background: var(--nt-surface);
+  color: var(--nt-text);
+  cursor: pointer;
+}
+
+.quantityButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.quantityButton:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+.quantityValue {
+  min-width: 2ch;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tóm tắt ------------------------------------------------------------------ */
+
+.summary {
+  position: sticky;
+  top: var(--nt-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-4);
+  padding: var(--nt-space-5);
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+}
+
+.summaryTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.summaryEmpty {
+  margin: 0;
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+.picked {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-2);
+  font-size: 14px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.picked li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--nt-space-3);
+}
+
+.total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: var(--nt-space-3);
+  border-top: 1px solid var(--nt-border);
+  font-size: 15px;
+}
+
+.allowance,
+.note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--nt-text-muted);
+}
+
+.failure {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--nt-danger, #b3261e);
+}

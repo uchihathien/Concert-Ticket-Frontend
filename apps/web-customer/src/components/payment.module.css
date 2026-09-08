@@ -1,0 +1,182 @@
+/* Trang thanh toán --------------------------------------------------------- */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--nt-space-8);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-4);
+}
+
+.transfer,
+.summary {
+  padding: var(--nt-space-6);
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--nt-space-3);
+}
+
+.headTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.countdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.qr {
+  margin-top: var(--nt-space-5);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--nt-space-3);
+}
+
+.qrNote {
+  margin: 0;
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+/* Nội dung chuyển khoản là thứ dễ gõ sai nhất và tốn kém nhất khi sai, nên nó có khung riêng
+   thay vì nằm lẫn trong danh sách thông tin. */
+.reference {
+  margin-top: var(--nt-space-6);
+  padding: var(--nt-space-4);
+  background: var(--nt-bg-subtle);
+  border-radius: var(--nt-radius);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-2);
+}
+
+.referenceLabel {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--nt-text-muted);
+}
+
+.referenceWarn {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--nt-text-muted);
+}
+
+/* Tóm tắt ------------------------------------------------------------------ */
+
+.summary {
+  position: sticky;
+  top: var(--nt-space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-4);
+}
+
+.summaryTitle {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-2);
+  font-size: 14px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.items li,
+.line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--nt-space-3);
+}
+
+.line {
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+.total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-top: var(--nt-space-3);
+  border-top: 1px solid var(--nt-border);
+  font-size: 15px;
+}
+
+.note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--nt-text-muted);
+}
+
+/* Trạng thái cuối ---------------------------------------------------------- */
+
+.done,
+.closed {
+  padding: var(--nt-space-8);
+  text-align: center;
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-3);
+  align-items: center;
+}
+
+.doneTitle,
+.closedTitle {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.doneTitle {
+  color: var(--nt-success, #1b7f4b);
+}
+
+.doneNote,
+.closedNote {
+  margin: 0;
+  color: var(--nt-text-muted);
+  line-height: 1.5;
+}
+
+.doneLink {
+  font-weight: 700;
+  color: var(--nt-primary);
+}
