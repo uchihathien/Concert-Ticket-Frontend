@@ -7,7 +7,10 @@
     ".": "./src/index.ts",
     "./client": "./src/client.tsx",
     "./middleware": "./src/middleware.ts",
-    "./store": "./src/token-store.ts"
+    "./store": "./src/token-store.ts",
+    "./redis-store": "./src/redis-store.ts",
+    "./redis-node": "./src/redis-store-node.ts",
+    "./edge": "./src/edge.ts"
   },
   "files": [
     "src"
@@ -20,13 +23,15 @@
   "peerDependencies": {
     "next": "^15.1.3",
     "next-auth": "^5.0.0-beta.25",
-    "react": "^19.0.0"
+    "react": "^19.0.0",
+    "ioredis": "^5.4.1"
   },
   "devDependencies": {
     "@nexaticket/config": "workspace:*",
     "@testing-library/react": "^16.1.0",
     "@types/react": "^19.0.2",
     "eslint": "^9.17.0",
+    "ioredis": "^5.4.1",
     "jsdom": "^25.0.1",
     "next": "^15.1.3",
     "next-auth": "^5.0.0-beta.25",
@@ -35,5 +40,10 @@
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.19.0",
     "vitest": "^2.1.8"
+  },
+  "peerDependenciesMeta": {
+    "ioredis": {
+      "optional": true
+    }
   }
 }
