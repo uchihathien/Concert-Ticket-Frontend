@@ -13,10 +13,41 @@ export const queryKeys = {
       ['identity', 'organizations', organizationId, 'members'] as const,
     platformOrganizations: (params: { limit: number; offset: number }) =>
       ['identity', 'platform', 'organizations', params] as const,
+    invitations: (organizationId: string) =>
+      ['identity', 'organizations', organizationId, 'invitations'] as const,
+    // Ma trận vai trò là hằng số của hệ thống: một khoá duy nhất, không tham số.
+    roles: () => ['identity', 'roles'] as const,
+    myPermissions: () => ['identity', 'me', 'permissions'] as const,
+    auditLogs: (organizationId: string, params: { action: string | null; limit: number; offset: number }) =>
+      ['identity', 'organizations', organizationId, 'audit-logs', params] as const,
+    platformAuditLogs: (params: { action: string | null; limit: number; offset: number }) =>
+      ['identity', 'platform', 'audit-logs', params] as const,
+  },
+  catalog: {
+    venues: (organizationId: string) =>
+      ['catalog', 'organizations', organizationId, 'venues'] as const,
+    events: (organizationId: string) =>
+      ['catalog', 'organizations', organizationId, 'events'] as const,
+    event: (organizationId: string, eventId: string) =>
+      ['catalog', 'organizations', organizationId, 'events', eventId] as const,
   },
   inventory: {
     seatMap: (eventSessionId: string) =>
       ['inventory', 'sessions', eventSessionId, 'seats'] as const,
+  },
+  ordering: {
+    myOrders: (params: { limit: number; offset: number }) =>
+      ['ordering', 'me', 'orders', params] as const,
+    order: (orderId: string) => ['ordering', 'orders', orderId] as const,
+  },
+  ticketing: {
+    myTickets: (params: { limit: number; offset: number }) =>
+      ['ticketing', 'me', 'tickets', params] as const,
+    orderTickets: (orderId: string) => ['ticketing', 'orders', orderId, 'tickets'] as const,
+  },
+  analytics: {
+    organizationSales: (organizationId: string) =>
+      ['analytics', 'organizations', organizationId, 'sales'] as const,
   },
   ledger: {
     trialBalance: () => ['ledger', 'trial-balance'] as const,
@@ -35,4 +66,11 @@ export const staleTime = {
   PUBLIC_CATALOG: 60_000,
   SEAT_MAP: 0,
   ADMIN_TABLE: 30_000,
+  /**
+   * Ví vé và đơn hàng của chính mình.
+   *
+   * Ngắn hơn bảng quản trị vì hai màn này là nơi khách quay lại ngay sau khi chuyển khoản để xem
+   * đơn đã sang PAID chưa — dữ liệu cũ nửa phút ở đây đọc như thể tiền chưa tới.
+   */
+  MY_WALLET: 10_000,
 } as const;
