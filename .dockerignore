@@ -1,0 +1,10 @@
+# Bối cảnh build là gốc repo frontend. node_modules phải do pnpm cài lại trong ảnh Linux —
+# bản ở máy dev là bản Windows và symlink của nó không dùng được ở đó.
+**/node_modules/
+**/.next/
+**/.next-check/
+**/.turbo/
+.git/
+**/.env
+**/.env.local
+**/tsconfig.tsbuildinfo

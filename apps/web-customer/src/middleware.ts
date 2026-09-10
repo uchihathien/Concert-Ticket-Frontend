@@ -1,5 +1,5 @@
 import { createAuthMiddleware } from '@nexaticket/auth/middleware';
-import { nexaAuth } from '@/auth';
+import { nexaAuthEdge } from '@/auth.edge';
 
 /**
  * Chỉ chặn ở mức "đã đăng nhập hay chưa".
@@ -7,7 +7,7 @@ import { nexaAuth } from '@/auth';
  * Quyền theo tổ chức do backend quyết định (TenantFilter trả 404 nếu không phải thành viên).
  * Kiểm lại ở middleware là tạo điểm tin cậy thứ hai, sớm muộn cũng lệch với điểm thật.
  */
-export default createAuthMiddleware(nexaAuth, {
+export default createAuthMiddleware(nexaAuthEdge, {
   // '/auth' phải công khai: popup hạ cánh xuống '/auth/popup-done', và nếu người dùng huỷ
   // giữa chừng thì middleware sẽ đá popup sang '/login' — một trang đăng nhập lồng trong
   // popup đăng nhập.

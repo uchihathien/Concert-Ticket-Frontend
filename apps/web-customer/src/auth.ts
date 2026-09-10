@@ -1,4 +1,7 @@
 import { createNexaAuth } from '@nexaticket/auth';
+import { redisRefreshTokenStoreFromEnv } from '@nexaticket/auth/redis-node';
+
+import { authOptions } from './auth.edge';
 
 /**
  * Auth.js cho web-customer.
@@ -7,10 +10,9 @@ import { createNexaAuth } from '@nexaticket/auth';
  * chính tiến trình app — bốn app chạy bốn tiến trình nên dùng chung tên biến là an toàn.
  */
 export const nexaAuth = createNexaAuth({
-  app: 'web-customer',
-  signInPage: '/login',
-  // Chỉ app khách mới có đăng ký tự phục vụ; ba app còn lại tài khoản do người khác cấp.
-  registration: true,
+  ...authOptions,
+  // Chỉ bản Node mới có store: xem `auth.edge.ts`.
+  refreshTokenStore: redisRefreshTokenStoreFromEnv(),
 });
 
 export const { handlers, auth, signIn, signOut } = nexaAuth;
