@@ -19,32 +19,103 @@ export { createQueryClient, NexaQueryProvider, useApiClient } from './query/prov
 export type { NexaQueryProviderProps } from './query/provider';
 export { queryKeys, staleTime } from './query/keys';
 
+export * from './types/catalog';
 export * from './types/identity';
+export * from './types/analytics';
 export * from './types/inventory';
 export * from './types/ledger';
+export * from './types/ordering';
+export * from './types/public-catalog';
+export * from './types/ticketing';
 
 export {
   acceptInvitation,
+  activateOrganization,
+  changeMemberRole,
   createOrganization,
+  getAuditLogs,
   getMembers,
   getMyOrganizations,
+  getMyPermissions,
   getOrganization,
+  getPendingInvitations,
+  getPlatformAuditLogs,
+  getRoles,
+  grantMember,
   inviteMember,
   listPlatformOrganizations,
+  removeMember,
+  revokeInvitation,
+  revokeMemberSessions,
+  sendMemberPasswordReset,
+  suspendOrganization,
 } from './api/identity';
+export {
+  createEvent,
+  createSession,
+  createTicketType,
+  createVenue,
+  createZone,
+  deleteSession,
+  deleteTicketType,
+  getEvent,
+  listEvents,
+  listVenues,
+  publishEvent,
+  unpublishEvent,
+  updateEvent,
+  updateSession,
+  updateTicketType,
+} from './api/catalog';
+export { getPublicEvent, listPublicEvents } from './api/public-catalog';
+export { listMyTickets, listOrderTickets, scanTicket } from './api/ticketing';
+export { cancelOrder, getOrder, listMyOrders, placeOrder } from './api/ordering';
+export { fetchOrganizationSales } from './api/analytics';
 export { fetchSeatMap, placeHold, releaseHold } from './api/inventory';
 export type { SeatMapSnapshot } from './api/inventory';
 export { getOrganizationBalance, getTrialBalance } from './api/ledger';
 
 export {
   useAcceptInvitation,
+  useAuditLogs,
+  useChangeMemberRole,
   useCreateOrganization,
+  useGrantMember,
+  useHasPermission,
   useInviteMember,
   useMyOrganizations,
+  useMyPermissions,
   useOrganization,
+  useOrganizationLifecycle,
   useOrganizationMembers,
+  usePendingInvitations,
+  usePlatformAuditLogs,
   usePlatformOrganizations,
+  useRemoveMember,
+  useRevokeInvitation,
+  useRevokeMemberSessions,
+  useRoles,
+  useSendMemberPasswordReset,
 } from './hooks/identity';
+export {
+  useAdminEvent,
+  useAdminEvents,
+  useCreateEvent,
+  useCreateSession,
+  useCreateTicketType,
+  useCreateVenue,
+  useCreateZone,
+  useDeleteSession,
+  useDeleteTicketType,
+  usePublishEvent,
+  useUpdateEvent,
+  useUpdateSession,
+  useUpdateTicketType,
+  useVenues,
+} from './hooks/catalog';
+export { useMyTickets, useOrderTickets, useScanTicket } from './hooks/ticketing';
+export { useCancelOrder, useMyOrders, useOrder } from './hooks/ordering';
+export { useOrganizationSales } from './hooks/analytics';
 export { usePlaceHold, useReleaseHold, useSeatMap } from './hooks/inventory';
 export type { PlaceHoldInput, UseSeatMapOptions } from './hooks/inventory';
 export { useOrganizationBalance, useTrialBalance } from './hooks/ledger';
