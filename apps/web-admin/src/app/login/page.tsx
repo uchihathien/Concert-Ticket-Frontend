@@ -1,4 +1,4 @@
-import { safeReturnUrl } from '@nexaticket/auth';
+import { resetPasswordUrlFromEnv, safeReturnUrl } from '@nexaticket/auth';
 import { BrandLogo, SignInScreen } from '@nexaticket/ui';
 import { signIn } from '@/auth';
 
@@ -24,6 +24,7 @@ export default async function LoginPage({
 
   return (
     <SignInScreen
+      forgotPasswordHref={resetPasswordUrlFromEnv('web-admin')}
       brand={
         <>
           <BrandLogo height={34} priority />

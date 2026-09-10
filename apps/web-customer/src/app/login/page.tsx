@@ -1,4 +1,4 @@
-import { safeReturnUrl } from '@nexaticket/auth';
+import { resetPasswordUrlFromEnv, safeReturnUrl } from '@nexaticket/auth';
 import { BrandLogo, Button, GoogleButton, SignInHighlights, SignInScreen } from '@nexaticket/ui';
 import { startGoogleSignIn, startRegister, startSignIn } from '@/app/actions/auth';
 import { googleSignInEnabled } from '@/lib/auth-providers';
@@ -24,6 +24,7 @@ export default async function LoginPage({
 
   return (
     <SignInScreen
+      forgotPasswordHref={resetPasswordUrlFromEnv('web-customer')}
       brand={<BrandLogo height={36} priority />}
       title="Đăng nhập để mua vé"
       description="Giữ chỗ, thanh toán và xem vé của bạn ở một tài khoản duy nhất."

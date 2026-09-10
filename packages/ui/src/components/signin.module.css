@@ -40,7 +40,7 @@
 /* Thẻ nổi lên khỏi nền khi có cột giới thiệu; ở bố cục một cột thì viền là đủ. */
 .screenSplit .card {
   border-color: transparent;
-  box-shadow: 0 1px 2px rgba(26, 22, 20, 0.06), 0 12px 32px rgba(26, 22, 20, 0.08);
+  box-shadow: var(--nt-shadow-card);
 }
 
 /* Cột giới thiệu ------------------------------------------------------------ */
@@ -127,12 +127,7 @@
   gap: var(--nt-space-2);
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: var(--nt-primary);
-}
-
-/* Scanner nền tối: đỏ ấm trên nền #14100f không đạt tương phản, dùng vàng kim. */
-[data-app='scanner'] .brand {
-  color: var(--nt-accent);
+  color: var(--nt-primary-text);
 }
 
 .heading {
@@ -165,6 +160,30 @@
   font-size: 13px;
   line-height: 1.5;
   color: var(--nt-text-muted);
+}
+
+/*
+ * Căn phải, ngay dưới nút đăng nhập.
+ *
+ * Đây là vị trí người dùng đã quen tìm ở mọi trang đăng nhập khác. Đặt nó xuống cuối thẻ, lẫn với
+ * dòng chú thích về xác thực hai bước, là bắt đúng người đang bối rối nhất phải đọc cả khối chữ.
+ */
+.forgot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: calc(var(--nt-space-3) * -1 + 4px);
+}
+
+.forgotLink {
+  font-size: 13px;
+  color: var(--nt-text-muted);
+  text-decoration: none;
+}
+
+.forgotLink:hover,
+.forgotLink:focus-visible {
+  color: var(--nt-text);
+  text-decoration: underline;
 }
 
 /* Đường phân cách ----------------------------------------------------------- */
@@ -201,9 +220,11 @@
   font-size: 17px;
   font-weight: 600;
   line-height: 1;
-  color: #1f1f1f;
-  background: #ffffff;
-  border: 1px solid #747775;
+  /* Bảng màu nền tối chính thức của Google. Cả bốn app đều chạy nền tối nên đây là mặc định;
+     bản nền trắng không dùng nữa. */
+  color: #e3e3e3;
+  background: #131314;
+  border: 1px solid #8e918f;
   border-radius: var(--nt-radius);
   cursor: pointer;
 }
@@ -213,8 +234,7 @@
 }
 
 .google:hover {
-  /* Lớp phủ mờ thay vì đổi hẳn màu nền: nền trắng là một phần quy định thương hiệu. */
-  background: #f7f8f8;
+  background: #1e1f20;
 }
 
 .google:focus-visible {
@@ -225,17 +245,6 @@
 .google:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-}
-
-/* Biến thể nền tối của Google, dùng khi app chạy giao diện tối. */
-[data-app='scanner'] .google {
-  color: #e3e3e3;
-  background: #131314;
-  border-color: #8e918f;
-}
-
-[data-app='scanner'] .google:hover {
-  background: #1e1f20;
 }
 
 .googleMark {
