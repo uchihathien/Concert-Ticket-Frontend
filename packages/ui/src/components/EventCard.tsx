@@ -24,6 +24,13 @@ export interface EventCardProps {
    * cái gì.
    */
   coverSeed?: string;
+  /**
+   * Nhãn danh mục ("Nhạc sống", "Thể thao"…), góc trên bên trái poster.
+   *
+   * Tách khỏi `badge` vì hai thứ khác loại: danh mục luôn đúng và luôn có, còn `badge` chỉ xuất
+   * hiện khi có tin đáng nói. Gộp chung thì một sự kiện sắp hết vé sẽ mất luôn nhãn danh mục.
+   */
+  tag?: ReactNode;
   /** "Sắp mở bán" / "Sắp hết vé". Chỉ một nhãn, và chỉ khi thật sự có ý nghĩa. */
   badge?: ReactNode;
   className?: string;
@@ -43,6 +50,7 @@ export function EventCard({
   fromPriceVnd,
   imageUrl,
   coverSeed,
+  tag,
   badge,
   className,
 }: EventCardProps) {
@@ -54,6 +62,7 @@ export function EventCard({
           style={imageUrl ? undefined : { background: coverGradient(coverSeed ?? title) }}
         >
           {imageUrl ? <img src={imageUrl} alt="" loading="lazy" /> : null}
+          {tag ? <span className={styles.tag}>{tag}</span> : null}
           {badge ? (
             <span className={styles.badge}>
               <Badge tone="accent">{badge}</Badge>

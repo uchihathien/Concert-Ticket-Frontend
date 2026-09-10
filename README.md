@@ -35,11 +35,38 @@ pnpm test
 > mỗi app, nên bản build production sẽ ghi đè chunk ngay dưới chân dev server đang chạy. Triệu
 > chứng là trang trắng không có CSS — thật ra đó là trang lỗi 500 của Next với
 > `Cannot find module './xxx.js'`. Cách chữa: dừng dev, `rm -rf apps/*/.next`, chạy `pnpm dev` lại.
+>
+> Cần kiểm tra build mà không muốn dừng dev thì build ra thư mục khác:
+> `cd apps/web-customer && NEXT_DIST_DIR=.next-check npx next build`. Xong nhớ `rm -rf .next-check`
+> và bỏ dòng `.next-check/types/**/*.ts` mà Next tự thêm vào `tsconfig.json`.
 
 > `turbo` gọi `pnpm` qua PATH. Nếu chỉ có `corepack pnpm` mà không có shim `pnpm`, mọi lệnh gọi
 > qua turbo (`dev`, `build`, `lint`, `typecheck`, `test`) sẽ dừng ở
 > `Unable to find package manager binary`. Chạy từng package bằng
 > `corepack pnpm --filter @nexaticket/ui test` để đi vòng.
+
+> Chạy cả backend lẫn frontend từ máy trắng: xem [docs/chay-local.md](docs/chay-local.md) —
+> thứ tự khởi động, service nào cần cho màn nào, và các bẫy đã gặp thật.
+
+### Dữ liệu demo cho ví vé và đơn hàng
+
+Catalog có sẵn sự kiện mẫu, nhưng `ordering_db` và `ticketing_db` khởi đầu rỗng, nên "Vé của tôi",
+"Đơn hàng của tôi" và app soát vé đều là màn trống. Sinh dữ liệu bằng:
+
+```bash
+node scripts/seed-demo-orders.mjs            # tạo 8 đơn, đơn cuối để nguyên chờ thanh toán
+node scripts/seed-demo-orders.mjs --dry-run  # xem sẽ làm gì, không ghi
+```
+
+Script đi qua **API thật**: giữ chỗ → đặt đơn → xác nhận thanh toán → ticketing tự phát hành vé.
+Không chèn SQL, vì vé mang chữ ký Ed25519 và số liệu analytics dựng từ sự kiện miền — chèn tay thì
+máy quét từ chối hết và số liệu không bao giờ khớp.
+
+> Chỉ dùng ở môi trường dev. Bước xác nhận thanh toán gọi thẳng `/internal/orders/{id}/confirm-payment`
+> của ordering-service, endpoint cố ý không đi qua gateway.
+
+Script cũng tự tạo khoá ký vé nếu `ticketing_db.signing_keys` còn rỗng — xem phần "Việc phía
+backend" bên dưới.
 
 ### Biến môi trường
 
@@ -76,7 +103,8 @@ packages/
               EmptyState, ErrorState, Countdown, CopyField, MoneyText
               + errors.ts (mã lỗi → tiếng Việt) + format.ts (VND, giờ Asia/Ho_Chi_Minh)
   ts-sdk/     ApiClient + type + hook TanStack Query cho identity / inventory / ledger
-  auth/       Auth.js + Keycloak, 4 client, refresh token giữ phía server
+  auth/       Auth.js + Keycloak, 4 client, refresh token VÀ access token giữ phía server
+              (cookie chỉ mang `refreshRef` — xem đầu file src/access-token.ts)
 ```
 
 Sẽ thêm theo giai đoạn: `seatmap/` (renderer SVG dùng chung customer + admin preview).

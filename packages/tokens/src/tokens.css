@@ -1,47 +1,78 @@
 /*
- * NexaTicket — design tokens v2
- * Nguồn: docs/architecture-v2/ui-direction.md §3
+ * NexaTicket — design tokens v3: nền tối cho cả bốn app.
  *
- * Đổi hệ so với v1: nền SÁNG + đỏ ấm, thay cho nền tối + lime.
- * Scanner giữ nền tối — dùng ngoài trời buổi tối ở cửa soát vé, nền tối đỡ chói
- * và đỡ tốn pin. Đây là quyết định có lý do, không phải thiếu nhất quán.
+ * Đổi so với v2 (nền sáng). `docs/architecture-v2/ui-direction.md` §3 và §8 vẫn mô tả nền sáng —
+ * tài liệu đó cần cập nhật, xem ghi chú ở README của repo này.
+ *
+ * MỘT ĐIỀU PHẢI NHỚ KHI SỬA FILE NÀY
+ * ----------------------------------
+ * Trên nền tối, một màu thương hiệu dùng làm **nền** và dùng làm **chữ** không thể là cùng một
+ * giá trị. Đã đo: `#c02a2a` trên nền `#171211` chỉ đạt 3.19:1 — rớt chuẩn AA cho chữ thường —
+ * trong khi chữ trắng trên chính màu đó đạt 5.82:1, hoàn toàn ổn cho nút.
+ *
+ * Nên mỗi màu ngữ nghĩa có hai biến:
+ *   --nt-primary        nền (nút, huy hiệu đặc) — đi kèm --nt-primary-ink
+ *   --nt-primary-text   chữ, link, giá trên nền tối
+ *
+ * Dùng nhầm chiều là hỏng tương phản mà nhìn mắt thường không thấy ngay.
  */
 
 :root {
-  /* Nền & chữ */
-  --nt-bg: #ffffff;
-  --nt-bg-subtle: #f7f5f3;
-  --nt-surface: #ffffff;
-  --nt-border: #e6e2de;
-  --nt-text: #1a1614;
-  --nt-text-muted: #6b625c;
+  /* Nền & chữ ---------------------------------------------------------------
+     Nền tối dựng chiều sâu bằng bề mặt SÁNG DẦN, không bằng bóng đổ: bóng đổ trên nền tối gần
+     như vô hình. Thứ tự: subtle (lõm) < bg (trang) < surface (thẻ) < elevated (hộp thoại). */
+  --nt-bg: #171211;
+  --nt-bg-subtle: #100d0c;
+  --nt-surface: #211b19;
+  --nt-elevated: #2a2321;
+  --nt-border: #362e2b;
+  --nt-text: #f5f1ef;
+  --nt-text-muted: #a89e99;
 
-  /* Thương hiệu */
+  /* Nền khi rê chuột. Trên nền tối phải SÁNG lên, nên không dùng lại `--nt-bg-subtle` như bản
+     nền sáng — biến đó giờ là màu lõm xuống. */
+  --nt-hover: #2c2523;
+
+  /* Thương hiệu — cặp nền/chữ */
   --nt-primary: #c02a2a;
-  --nt-primary-hover: #a32222;
+  --nt-primary-hover: #d13636;
   --nt-primary-ink: #ffffff;
+  --nt-primary-text: #f4796b; /* 6.89:1 trên --nt-bg */
   --nt-accent: #f2b705;
   --nt-accent-ink: #2a1f00;
+  --nt-accent-text: #f2b705; /* 10.21:1 — vàng kim vốn đã sáng, không cần biến thể riêng */
 
-  /* Trạng thái */
+  /* Trạng thái — cặp nền/chữ */
   --nt-success: #1f7a4d;
+  --nt-success-text: #4cb782; /* 7.43:1 */
   --nt-warn: #b06a00;
+  --nt-warn-text: #e0a33e; /* 8.38:1 */
   --nt-danger: #b3261e;
+  --nt-danger-text: #ff7a6e; /* 7.30:1 */
 
-  /* Sơ đồ chỗ ngồi — phải phân biệt được trên nền sáng */
-  --nt-seat-available: #1f7a4d;
-  --nt-seat-mine: #c02a2a;
-  --nt-seat-held-other: #b8b2ac;
+  /* Sơ đồ chỗ ngồi — chỉnh lại cho nền tối: ghế trống phải nổi bật nhất, ghế đã bán phải chìm
+     nhưng vẫn phân biệt được với nền. */
+  --nt-seat-available: #3fae74;
+  --nt-seat-mine: #f4796b;
+  --nt-seat-held-other: #6b615d;
   --nt-seat-reserved: #d99a00;
-  --nt-seat-sold: #d6d1cc;
-  --nt-seat-blocked: #efece9;
-  --nt-zone-standing-bg: rgba(242, 183, 5, 0.13);
+  --nt-seat-sold: #3a322f;
+  --nt-seat-blocked: #241e1c;
+  --nt-zone-standing-bg: rgba(242, 183, 5, 0.16);
   --nt-zone-standing-border: #f2b705;
+
+  /* Lớp phủ & bóng ----------------------------------------------------------
+     Bóng vẫn dùng cho hộp thoại nổi — không phải để tạo chiều sâu mà để tách khỏi nền khi hai
+     bề mặt gần nhau về độ sáng. */
+  --nt-scrim: rgba(0, 0, 0, 0.65);
+  --nt-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px rgba(0, 0, 0, 0.45);
 
   /* Hình khối */
   --nt-radius: 10px;
   --nt-radius-lg: 16px;
-  --nt-focus: 0 0 0 2px #fff, 0 0 0 4px var(--nt-primary);
+  /* Vòng focus: vòng trong lấy màu nền để tách khỏi phần tử, vòng ngoài lấy vàng kim vì đỏ trên
+     nền tối không đủ nổi. */
+  --nt-focus: 0 0 0 2px var(--nt-bg), 0 0 0 4px var(--nt-accent);
 
   /* Chữ */
   --nt-font: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -55,18 +86,14 @@
   --nt-space-6: 24px;
   --nt-space-8: 32px;
   --nt-space-12: 48px;
+
+  /* Trình duyệt tự chỉnh thanh cuộn, ô chọn và các control mặc định theo giá trị này. Thiếu nó
+     thì `<select>` và thanh cuộn vẫn trắng giữa một giao diện tối. */
+  color-scheme: dark;
 }
 
-/* Scanner: nền tối, cùng bộ token nghĩa vụ */
-[data-app='scanner'] {
-  --nt-bg: #14100f;
-  --nt-bg-subtle: #1d1817;
-  --nt-surface: #1d1817;
-  --nt-border: #352d2b;
-  --nt-text: #f5f1ef;
-  --nt-text-muted: #a3968f;
-  --nt-focus: 0 0 0 2px #14100f, 0 0 0 4px var(--nt-accent);
-}
+/* App soát vé từng có bộ token tối riêng. Giờ cả bốn app đều tối nên nó dùng chung — giữ lại
+   selector rỗng chỉ để ai đó tìm `data-app='scanner'` không tưởng là đã mất. */
 
 /* Ba hiệu ứng có mục đích, không hơn (ui-direction.md §7) */
 @media (prefers-reduced-motion: no-preference) {

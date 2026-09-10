@@ -1,13 +1,23 @@
+/* Header ------------------------------------------------------------------- */
+
+/* Hai tầng: tầng trên là thương hiệu + tìm kiếm + tài khoản, tầng dưới là danh mục.
+   Cả khối dính trên đỉnh vì tìm kiếm và danh mục là hai thứ người dùng quay lại nhiều nhất
+   khi đang lướt giữa chừng một trang dài. */
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--nt-bg);
+  border-bottom: 1px solid var(--nt-border);
+}
+
+.headerMain {
   display: flex;
   align-items: center;
   gap: var(--nt-space-4);
+  max-width: 1280px;
+  margin: 0 auto;
   padding: var(--nt-space-3) var(--nt-space-6);
-  border-bottom: 1px solid var(--nt-border);
-  position: sticky;
-  top: 0;
-  background: var(--nt-bg);
-  z-index: 10;
 }
 
 /* Logo là ảnh: link chỉ cần là khối để vùng bấm ôm đúng ảnh, không cần kiểu chữ nữa. */
@@ -20,17 +30,82 @@
 
 /* Ô tìm kiếm chiếm chỗ rộng nhất: người vào site bán vé thường đã biết muốn xem gì. */
 .search {
+  position: relative;
   flex: 1;
+  min-width: 0;
   max-width: 560px;
+}
+
+/* Kính lúp nằm trong ô chứ không phải nút bấm: bấm vào nó chỉ nên đưa con trỏ vào ô nhập,
+   nên tắt pointer-events và nhường cú bấm cho chính input. */
+.searchIcon {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: var(--nt-space-3);
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+  color: var(--nt-text-muted);
+  font-size: 20px;
+  line-height: 1;
 }
 
 .searchInput {
   width: 100%;
   min-height: 44px;
-  padding: 10px var(--nt-space-4);
+  padding: 10px var(--nt-space-4) 10px 40px;
   border: 1px solid var(--nt-border);
-  border-radius: var(--nt-radius);
+  border-radius: 999px;
   background: var(--nt-bg-subtle);
+  color: var(--nt-text);
+}
+
+.searchInput::placeholder {
+  color: var(--nt-text-muted);
+}
+
+.searchInput:focus-visible {
+  outline: none;
+  border-color: var(--nt-primary);
+  box-shadow: var(--nt-focus);
+}
+
+/* Chọn thành phố: cùng bo tròn với ô tìm kiếm để hai thứ đọc như một cụm. */
+.city {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nt-space-1);
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0 var(--nt-space-3);
+  border: 1px solid var(--nt-border);
+  border-radius: 999px;
+  background: var(--nt-bg-subtle);
+  color: var(--nt-text-muted);
+}
+
+.city:focus-within {
+  border-color: var(--nt-primary);
+}
+
+.cityIcon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* select gốc nhưng bỏ khung mặc định — khung đã nằm ở nhãn bao ngoài rồi. */
+.citySelect {
+  border: 0;
+  background: transparent;
+  color: var(--nt-text);
+  font: inherit;
+  font-weight: 600;
+  max-width: 140px;
+  padding: 0;
+}
+
+.citySelect:focus-visible {
+  outline: none;
 }
 
 .nav {
@@ -38,12 +113,18 @@
   gap: var(--nt-space-4);
   align-items: center;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .nav a {
   text-decoration: none;
   color: var(--nt-text);
   font-size: 15px;
+  white-space: nowrap;
+}
+
+.nav a:hover {
+  color: var(--nt-primary-text);
 }
 
 .account {
@@ -61,20 +142,161 @@
   font-weight: 600;
 }
 
+.login:hover {
+  background: var(--nt-primary-hover);
+}
+
+/* Thanh danh mục cuộn ngang chứ không xuống dòng. Xuống dòng làm chiều cao header đổi theo
+   độ rộng cửa sổ, mà header dính thì mọi thứ bên dưới nhảy theo. */
+.categoryBar {
+  display: flex;
+  gap: var(--nt-space-6);
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--nt-space-6) var(--nt-space-2);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.categoryBar::-webkit-scrollbar {
+  display: none;
+}
+
+.categoryBar a {
+  text-decoration: none;
+  color: var(--nt-text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  padding-bottom: 6px;
+  border-bottom: 2px solid transparent;
+}
+
+.categoryBar a:hover {
+  color: var(--nt-text);
+  border-bottom-color: var(--nt-primary);
+}
+
+/* Hamburger: ẩn trên desktop, hiện dưới 900px. */
+.burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 44px;
+  height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--nt-radius);
+  background: transparent;
+  cursor: pointer;
+}
+
+.burger span {
+  display: block;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--nt-text);
+}
+
+.burger:hover {
+  background: var(--nt-hover);
+}
+
+/* Ngăn kéo menu ------------------------------------------------------------ */
+
+/* dialog thật nên trình duyệt lo bẫy focus và phím Esc; ở đây chỉ cần đặt nó thành cột
+   sát mép trái, cao hết màn. */
+.drawer {
+  width: min(320px, 86vw);
+  max-width: none;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0 auto 0 0;
+  padding: var(--nt-space-4);
+  border: 0;
+  border-inline-end: 1px solid var(--nt-border);
+  background: var(--nt-surface);
+  color: var(--nt-text);
+  overflow-y: auto;
+}
+
+.drawer::backdrop {
+  background: var(--nt-scrim);
+}
+
+.drawerHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--nt-space-4);
+}
+
+.drawerTitle {
+  margin: var(--nt-space-4) 0 var(--nt-space-2);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--nt-text-muted);
+}
+
+.drawerHead .drawerTitle {
+  margin: 0;
+}
+
+.drawerClose {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--nt-radius);
+  background: transparent;
+  color: var(--nt-text);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.drawerClose:hover {
+  background: var(--nt-hover);
+}
+
+.drawerNav {
+  display: flex;
+  flex-direction: column;
+}
+
+.drawerNav a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: none;
+  color: var(--nt-text);
+  font-size: 15px;
+  border-bottom: 1px solid var(--nt-border);
+}
+
+.drawerNav a:hover {
+  color: var(--nt-primary-text);
+}
+
 .content {
   /* Chừa chỗ cho bottom nav trên mobile, nếu không nội dung cuối trang bị che. */
   padding-bottom: var(--nt-space-8);
 }
 
+/* Footer ------------------------------------------------------------------- */
+
 .footer {
   border-top: 1px solid var(--nt-border);
+  background: var(--nt-bg-subtle);
   padding: var(--nt-space-12) var(--nt-space-6) var(--nt-space-6);
   color: var(--nt-text-muted);
   font-size: 14px;
 }
 
 .footerGrid {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 2fr repeat(3, 1fr);
@@ -108,21 +330,69 @@
 
 .footer a {
   color: inherit;
-  /* Vùng chạm 44px cho link footer trên mobile — chúng đứng sát nhau nên dễ bấm nhầm nhất. */
+  /* Vùng chạm rộng cho link footer trên mobile — chúng đứng sát nhau nên dễ bấm nhầm nhất. */
   display: inline-flex;
   align-items: center;
   min-height: 32px;
 }
 
 .footer a:hover {
-  color: var(--nt-primary);
+  color: var(--nt-primary-text);
+}
+
+/* Mạng xã hội: ô tròn có viền, đủ lớn để bấm bằng ngón cái. */
+.socials {
+  display: flex;
+  gap: var(--nt-space-2);
+  margin-top: var(--nt-space-1);
+}
+
+.social {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  min-height: 40px;
+  border: 1px solid var(--nt-border);
+  border-radius: 999px;
+  background: var(--nt-surface);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.social:hover {
+  border-color: var(--nt-primary);
 }
 
 .footerBottom {
-  max-width: 1200px;
+  max-width: 1280px;
   margin: var(--nt-space-8) auto 0;
   padding-top: var(--nt-space-4);
   border-top: 1px solid var(--nt-border);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nt-space-4);
+}
+
+.footerBottom p {
+  margin: 0;
+}
+
+/* Chỗ dành cho dấu đã thông báo Bộ Công Thương. Là ô rỗng có chú thích chứ không phải huy hiệu
+   giả: dán logo Bộ khi chưa đăng ký thật là hành vi bị phạt theo Nghị định 98/2020. */
+.legalBadge {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-2);
+  padding: var(--nt-space-2) var(--nt-space-3);
+  border: 1px dashed var(--nt-border);
+  border-radius: var(--nt-radius);
+  font-size: 12px;
+  line-height: 1.4;
+  max-width: 34ch;
 }
 
 /* Bottom nav: ba việc người dùng thật sự làm (ui-direction.md §4). Chỉ trên mobile. */
@@ -130,14 +400,32 @@
   display: none;
 }
 
-@media (max-width: 720px) {
-  .header {
-    flex-wrap: wrap;
-    padding: var(--nt-space-3) var(--nt-space-4);
+/* Dưới 900px thanh danh mục và các link phụ dồn vào hamburger — nhồi tám mục vào một hàng
+   360px thì mục nào cũng bé hơn ngưỡng chạm 44px. */
+@media (max-width: 900px) {
+  .headerMain {
+    gap: var(--nt-space-2);
+    padding: var(--nt-space-2) var(--nt-space-4);
   }
 
-  .nav a:not(.login) {
+  .burger {
+    display: flex;
+  }
+
+  .categoryBar,
+  .city {
     display: none;
+  }
+
+  .nav a:not(.login):not(.account) {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  /* Ô tìm kiếm xuống hàng riêng: ở 360px, chia hàng với logo thì chỉ còn chỗ cho ba chữ. */
+  .headerMain {
+    flex-wrap: wrap;
   }
 
   .search {
@@ -187,7 +475,7 @@
   }
 
   .bottomLinkActive {
-    color: var(--nt-primary);
+    color: var(--nt-primary-text);
     box-shadow: inset 0 2px 0 var(--nt-primary);
   }
 }

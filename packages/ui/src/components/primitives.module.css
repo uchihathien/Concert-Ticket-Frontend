@@ -50,7 +50,7 @@
 }
 
 .secondary:hover:not(:disabled) {
-  background: var(--nt-bg-subtle);
+  background: var(--nt-hover);
 }
 
 .ghost {
@@ -59,7 +59,7 @@
 }
 
 .ghost:hover:not(:disabled) {
-  background: var(--nt-bg-subtle);
+  background: var(--nt-hover);
 }
 
 .danger {
@@ -106,7 +106,7 @@
 }
 
 .required {
-  color: var(--nt-danger);
+  color: var(--nt-danger-text);
   margin-inline-start: 2px;
 }
 
@@ -121,7 +121,7 @@
 }
 
 .control[aria-invalid='true'] {
-  border-color: var(--nt-danger);
+  border-color: var(--nt-danger-text);
 }
 
 .control:disabled {
@@ -136,7 +136,7 @@
 
 .error {
   font-size: 13px;
-  color: var(--nt-danger);
+  color: var(--nt-danger-text);
 }
 
 /* Badge -------------------------------------------------------------------- */
@@ -166,19 +166,19 @@
 
 .badgeSuccess {
   background: color-mix(in srgb, var(--nt-success) 12%, transparent);
-  color: var(--nt-success);
+  color: var(--nt-success-text);
   border-color: color-mix(in srgb, var(--nt-success) 35%, transparent);
 }
 
 .badgeWarn {
   background: color-mix(in srgb, var(--nt-warn) 14%, transparent);
-  color: var(--nt-warn);
+  color: var(--nt-warn-text);
   border-color: color-mix(in srgb, var(--nt-warn) 35%, transparent);
 }
 
 .badgeDanger {
   background: color-mix(in srgb, var(--nt-danger) 12%, transparent);
-  color: var(--nt-danger);
+  color: var(--nt-danger-text);
   border-color: color-mix(in srgb, var(--nt-danger) 35%, transparent);
 }
 
@@ -227,5 +227,5 @@
 
 .moneyStrong {
   font-weight: 700;
-  color: var(--nt-primary);
+  color: var(--nt-primary-text);
 }

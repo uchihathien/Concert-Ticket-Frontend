@@ -1,7 +1,7 @@
 'use client';
 
 import { clearAccessToken } from '@nexaticket/auth/client';
-import { GoogleButton } from '@nexaticket/ui';
+import { AuthOptions, Button, GoogleButton } from '@nexaticket/ui';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AUTH_POPUP_MESSAGE, openAuthPopup, redirectToAuth, type AuthMode } from '@/lib/auth-popup';
 
@@ -130,7 +130,7 @@ export function AuthDialog({
       onClick={(event) => {
         if (event.target === dialogRef.current) onClose();
       }}
-      className="w-[min(26rem,calc(100vw-2rem))] rounded-nt-lg border border-border bg-surface p-0 text-ink backdrop:bg-black/50"
+      className="w-[min(26rem,calc(100vw-2rem))] rounded-nt-lg border border-border bg-elevated p-0 text-ink backdrop:bg-black/65"
     >
       <div className="flex items-start justify-between gap-4 border-b border-border px-6 py-4">
         <h2 id="auth-dialog-title" className="m-0 text-lg font-bold">
@@ -140,7 +140,7 @@ export function AuthDialog({
           type="button"
           onClick={onClose}
           aria-label="Đóng"
-          className="-mr-2 grid size-11 cursor-pointer place-items-center rounded-nt border-0 bg-transparent text-2xl leading-none text-muted hover:bg-bg-subtle"
+          className="-mr-2 grid size-11 cursor-pointer place-items-center rounded-nt border-0 bg-transparent text-2xl leading-none text-muted hover:bg-hover"
         >
           ×
         </button>
@@ -152,61 +152,53 @@ export function AuthDialog({
           đang xem vẫn giữ nguyên.
         </p>
 
-        {googleEnabled ? (
-          <div className="mt-6 grid gap-4">
-            <GoogleButton
-              type="button"
-              onClick={() => start('google')}
-              disabled={pending !== null}
-              aria-busy={pending === 'google'}
-            />
-            {/* Kẻ ngang hai bên chữ bằng ::before/::after: một phần tử, không có <hr> rỗng nào
-                lọt vào cây accessibility. */}
-            <div className="flex items-center gap-3 text-[13px] text-muted before:h-px before:flex-1 before:bg-border before:content-[''] after:h-px after:flex-1 after:bg-border after:content-['']">
-              hoặc
-            </div>
-          </div>
-        ) : null}
-
-        <div className="mt-6 grid gap-3">
-          <button
-            type="button"
-            onClick={() => start('login')}
-            disabled={pending !== null}
-            aria-busy={pending === 'login'}
-            className="flex min-h-13 cursor-pointer items-center justify-center gap-2 rounded-nt border-0 bg-primary px-6 text-[17px] font-semibold text-primary-ink hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-55"
-          >
-            {pending === 'login' ? <Spinner /> : null}
-            Đăng nhập bằng email
-          </button>
-
-          <button
-            type="button"
-            onClick={() => start('register')}
-            disabled={pending !== null}
-            aria-busy={pending === 'register'}
-            className="flex min-h-13 cursor-pointer items-center justify-center gap-2 rounded-nt border border-solid border-border bg-surface px-6 text-[17px] font-semibold text-ink hover:bg-bg-subtle disabled:cursor-not-allowed disabled:opacity-55"
-          >
-            {pending === 'register' ? <Spinner /> : null}
-            Tạo tài khoản mới
-          </button>
+        {/* Đúng khối mà trang `/login` dùng — cùng component, cùng stylesheet. Modal chỉ khác ở
+            hành vi: bấm là mở popup, không phải submit form. */}
+        <div className="mt-6 flex flex-col gap-6">
+          <AuthOptions
+            social={
+              googleEnabled ? (
+                <GoogleButton
+                  type="button"
+                  onClick={() => start('google')}
+                  disabled={pending !== null}
+                  aria-busy={pending === 'google'}
+                />
+              ) : null
+            }
+            primary={
+              <Button
+                size="lg"
+                block
+                onClick={() => start('login')}
+                loading={pending === 'login'}
+                disabled={pending !== null}
+              >
+                Đăng nhập bằng email
+              </Button>
+            }
+            secondary={
+              <Button
+                size="lg"
+                block
+                variant="secondary"
+                onClick={() => start('register')}
+                loading={pending === 'register'}
+                disabled={pending !== null}
+              >
+                Tạo tài khoản mới
+              </Button>
+            }
+            note={
+              <span aria-live="polite">
+                {pending
+                  ? 'Đang chờ bạn hoàn tất ở cửa sổ vừa mở. Nếu không thấy, kiểm tra xem trình duyệt có chặn cửa sổ bật lên không.'
+                  : 'Chỉ nhập mật khẩu khi thanh địa chỉ của cửa sổ đó hiện đúng tên miền NexaTicket.'}
+              </span>
+            }
+          />
         </div>
-
-        <p className="mt-6 mb-0 text-[13px] text-muted" aria-live="polite">
-          {pending
-            ? 'Đang chờ bạn hoàn tất ở cửa sổ vừa mở. Nếu không thấy, kiểm tra xem trình duyệt có chặn cửa sổ bật lên không.'
-            : 'Chỉ nhập mật khẩu khi thanh địa chỉ của cửa sổ đó hiện đúng tên miền NexaTicket.'}
-        </p>
       </div>
     </dialog>
-  );
-}
-
-function Spinner() {
-  return (
-    <span
-      aria-hidden="true"
-      className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none"
-    />
   );
 }

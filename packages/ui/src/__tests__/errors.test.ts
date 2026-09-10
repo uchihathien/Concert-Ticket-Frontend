@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { errorCopy, errorMessage, isKnownErrorCode } from '../errors';
+import { errorCopy, errorMessage, isKnownErrorCode, publishBlockerLabel } from '../errors';
 
 describe('từ điển lỗi', () => {
   it('dịch mã backend sang câu tiếng Việt và chọn cách hiện', () => {
@@ -39,5 +39,22 @@ describe('từ điển lỗi', () => {
     expect(errorMessage({ code: 'CUSTOMER_LIMIT_EXCEEDED', meta: { remaining: 'x' } })).toBe(
       'Bạn đã đạt giới hạn vé cho suất này',
     );
+  });
+
+  it('publish bị chặn thì liệt kê đủ vướng mắc, vì "chưa xuất bản được" không nói được gì', () => {
+    expect(
+      errorMessage({
+        code: 'PUBLISH_BLOCKED',
+        meta: { blockers: ['NO_SESSION', 'VENUE_WITHOUT_ZONE'] },
+      }),
+    ).toBe('Chưa xuất bản được: Chưa có suất diễn nào; Địa điểm chưa có khu vực nào');
+
+    // Không có meta thì vẫn là một câu hoàn chỉnh, không phải "Chưa xuất bản được: ".
+    expect(errorMessage({ code: 'PUBLISH_BLOCKED' })).toBe('Chưa xuất bản được');
+  });
+
+  it('vướng mắc lạ hiện nguyên tên thay vì biến mất khỏi checklist', () => {
+    expect(publishBlockerLabel('SESSION_WITHOUT_TICKET_TYPE')).toContain('hạng vé');
+    expect(publishBlockerLabel('VƯỚNG_MẮC_MỚI')).toBe('VƯỚNG_MẮC_MỚI');
   });
 });

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { cx } from '../cx';
 import { errorCopy, errorMessage, isKnownErrorCode, type ApiErrorLike } from '../errors';
 import { Button } from './Button';
@@ -12,10 +13,20 @@ export interface ErrorStateProps {
    * nối một màn hình lỗi với log phía server.
    */
   correlationId?: string | null;
+  /**
+   * Lối đi tiếp khi "Thử lại" không phải câu trả lời.
+   *
+   * Có những lỗi mà thử lại chắc chắn hỏng — phiên hết hạn là ví dụ rõ nhất: bấm bao nhiêu lần
+   * cũng vậy, thứ cần là một đường đăng nhập lại. Không có chỗ này thì màn lỗi là ngõ cụt.
+   *
+   * Nhận `ReactNode` chứ không nhận `href`: `packages/ui` dùng chung cho bốn app, mỗi app một
+   * bộ đường dẫn riêng, nên nó không được biết `/login` nằm ở đâu.
+   */
+  action?: ReactNode;
   className?: string;
 }
 
-export function ErrorState({ error, onRetry, correlationId, className }: ErrorStateProps) {
+export function ErrorState({ error, onRetry, correlationId, action, className }: ErrorStateProps) {
   const copy = errorCopy(error?.code);
 
   return (
@@ -30,6 +41,7 @@ export function ErrorState({ error, onRetry, correlationId, className }: ErrorSt
           Thử lại
         </Button>
       ) : null}
+      {action}
     </div>
   );
 }

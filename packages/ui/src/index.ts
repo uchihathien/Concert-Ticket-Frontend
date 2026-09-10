@@ -4,20 +4,45 @@
  * Export theo tên, không có barrel side-effect: `web-scanner` có ngân sách 150KB JS và chỉ được
  * kéo về đúng thứ nó dùng (plan/frontend.md §11).
  */
+export { EVENT_CATEGORIES, EVENT_CATEGORY_FILTERS, eventCategoryLabel } from './categories';
+export type { EventCategory } from './categories';
+
+export {
+  PRICE_FILTERS,
+  TIME_FILTERS,
+  applyQuickFilters,
+  needsLocalFiltering,
+  priceRange,
+  timeRange,
+} from './quick-filters';
+export type { FilterableEvent, QuickFilterOption } from './quick-filters';
+
 export { coverGradient } from './cover';
 export { cx } from './cx';
 
-export { errorCopy, errorMessage, isKnownErrorCode } from './errors';
+export { errorCopy, errorMessage, isKnownErrorCode, publishBlockerLabel } from './errors';
 export type { ApiErrorLike, ErrorCopy, ErrorDisplay } from './errors';
 
 export {
   formatDate,
+  formatDateLong,
   formatDateTime,
   formatDuration,
   formatNumber,
   formatTime,
   formatVnd,
+  isoToVnLocal,
+  vnLocalToIso,
 } from './format';
+
+export { AccountScreen, AccountSection } from './components/AccountScreen';
+export type { AccountScreenProps, AccountSectionProps } from './components/AccountScreen';
+
+export { AppShell, BrandSuffix, PageHeader, Panel } from './components/AppShell';
+export type { AppNavItem, AppShellProps, PageHeaderProps } from './components/AppShell';
+
+export { AuthOptions } from './components/AuthOptions';
+export type { AuthOptionsProps } from './components/AuthOptions';
 
 export { Badge } from './components/Badge';
 export type { BadgeProps, BadgeTone } from './components/Badge';
@@ -52,11 +77,17 @@ export type { EventCardProps } from './components/EventCard';
 export { ErrorState } from './components/ErrorState';
 export type { ErrorStateProps } from './components/ErrorState';
 
+export { DetailRows, IdentityCard } from './components/IdentityCard';
+export type { DetailRow, DetailRowsProps, IdentityCardProps } from './components/IdentityCard';
+
 export { Input } from './components/Input';
 export type { InputProps } from './components/Input';
 
 export { MoneyText } from './components/MoneyText';
 export type { MoneyTextProps } from './components/MoneyText';
+
+export { QrCode } from './components/QrCode';
+export type { QrCodeProps } from './components/QrCode';
 
 export { Select } from './components/Select';
 export type { SelectOption, SelectProps } from './components/Select';
@@ -65,6 +96,9 @@ export { SignInHighlights, SignInScreen } from './components/SignInScreen';
 export type { SignInHighlightsProps, SignInScreenProps } from './components/SignInScreen';
 export { GoogleButton } from './components/GoogleButton';
 export type { GoogleButtonProps } from './components/GoogleButton';
+
+export { SignOutForm } from './components/SignOutForm';
+export type { SignOutFormProps } from './components/SignOutForm';
 
 export { Skeleton } from './components/Skeleton';
 export type { SkeletonProps } from './components/Skeleton';

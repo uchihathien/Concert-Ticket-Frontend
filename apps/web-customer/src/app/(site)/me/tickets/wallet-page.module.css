@@ -1,0 +1,30 @@
+.page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: var(--nt-space-8) var(--nt-space-6) var(--nt-space-12);
+}
+
+.head {
+  margin-bottom: var(--nt-space-6);
+}
+
+.title {
+  margin: 0 0 var(--nt-space-1);
+  font-size: 26px;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--nt-text-muted);
+}
+
+.subtitle a {
+  color: var(--nt-primary-text);
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: var(--nt-space-6) var(--nt-space-4) var(--nt-space-12);
+  }
+}

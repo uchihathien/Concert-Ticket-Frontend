@@ -1,7 +1,9 @@
 import NextAuth, { type NextAuthConfig, type NextAuthResult } from 'next-auth';
-import type { JWT } from 'next-auth/jwt';
 import Keycloak from 'next-auth/providers/keycloak';
-import { endSession, RefreshFailedError, refreshAccessToken } from './keycloak';
+import { type AccessTokenDeps, type AccessTokenState, ensureAccessToken } from './access-token';
+import { authCookieNames, useSecureCookies } from './cookies';
+import { endSession } from './keycloak';
+import { readSessionCookie } from './server';
 import { defaultRefreshTokenStore, newTokenRef, type RefreshTokenStore } from './token-store';
 
 /** Bốn app = bốn client Keycloak riêng (plan/frontend.md §4). */
@@ -13,8 +15,8 @@ export interface NexaAuthOptions {
   clientId?: string;
   clientSecret?: string;
   /**
-   * Nơi giữ refresh token. Mặc định là bản trong tiến trình — chỉ đủ cho `next dev`.
-   * Production phải cắm store dùng chung (Redis).
+   * Nơi giữ token của phiên. Mặc định là bản trong tiến trình — chỉ đủ cho `next dev`, và ở
+   * production nó ném lỗi thay vì chạy tiếp (xem `defaultRefreshTokenStore`).
    */
   refreshTokenStore?: RefreshTokenStore;
   /** Trang đăng nhập của app. Auth.js chuyển hướng tới đây khi cần xác thực. */
@@ -33,51 +35,56 @@ export interface NexaAuthOptions {
 /** Id của provider dùng cho đường đăng ký. Truyền vào `signIn()` để mở đúng trang. */
 export const REGISTER_PROVIDER_ID = 'keycloak-register';
 
-/**
- * Đổi token sớm hơn hạn 30 giây.
- *
- * Đúng hạn mới đổi thì request đang bay dở sẽ mang token vừa hết hạn và nhận 401 — người dùng
- * thấy "phiên hết hạn" giữa lúc đang thao tác.
- */
-const REFRESH_SKEW_MS = 30_000;
-
 /** Refresh token của Keycloak mặc định sống 30 ngày; giữ bản ghi server đúng bằng ngần đó. */
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    /** Access token sống ngắn. Nằm trong cookie JWE httpOnly, không bao giờ vào storage. */
-    accessToken?: string;
-    /** Epoch ms. */
-    accessTokenExpiresAt?: number;
-    /** Tham chiếu tới refresh token phía server — bản thân nó vô dụng nếu bị lộ. */
+    /**
+     * Tham chiếu tới bản ghi phiên phía server — bản thân nó vô dụng nếu bị lộ.
+     *
+     * Đây là thứ DUY NHẤT của phiên nằm trong cookie, và nó **không đổi** suốt phiên. Access
+     * token lẫn refresh token đều nằm ở store; lý do nằm ở đầu file `access-token.ts`.
+     */
     refreshRef?: string;
-    /** Đặt khi làm mới token thất bại không cứu được: UI phải đẩy người dùng đi đăng nhập lại. */
-    authError?: 'RefreshFailed';
   }
 }
 
-declare module 'next-auth' {
-  interface Session {
-    authError?: 'RefreshFailed';
-  }
-}
+/**
+ * Cookie KHÔNG mang cờ "phiên đã hỏng".
+ *
+ * Bản trước có `authError`, đặt từ callback `jwt`. Nhưng callback đó cũng chạy trong middleware —
+ * Edge runtime, không nhìn thấy store — nên nó sẽ đánh dấu hỏng cho những phiên hoàn toàn khoẻ.
+ * Kết luận "phiên đã chết" chỉ đúng ở nơi thấy store, và nơi đó xử lý bằng cách xoá thẳng cookie
+ * (`expiredSessionCookies`) thay vì ghi một cờ vào nó.
+ */
 
 export interface NexaAuth {
+  /** App nào — quyết định tên cookie phiên, nên mọi nơi đọc/xoá cookie bằng tay đều cần nó. */
+  app: NexaApp;
   handlers: NextAuthResult['handlers'];
   auth: NextAuthResult['auth'];
   signIn: NextAuthResult['signIn'];
   signOut: NextAuthResult['signOut'];
   refreshTokenStore: RefreshTokenStore;
+  /**
+   * Access token còn hạn của người đang gửi request, làm mới nếu cần.
+   *
+   * Dùng ở route handler `/api/auth/token` và ở RSC / Server Action khi cần gọi API thay mặt
+   * người dùng. Không đọc access token từ cookie, nên không phụ thuộc vào việc `Set-Cookie` có
+   * được ghi lại hay không — chỗ mà bản trước sai.
+   */
+  readAccessToken(request: Request): Promise<AccessTokenState>;
 }
 
 /**
  * Dựng Auth.js cho một app.
  *
- * Hai luật cứng được ép ở đây, không phải bằng quy ước:
+ * Ba luật cứng được ép ở đây, không phải bằng quy ước:
  *
  * 1. Refresh token nằm ở `refreshTokenStore` phía server; cookie chỉ mang `refreshRef`.
- * 2. Session trả cho client **không** chứa access token. Client lấy token qua `/api/auth/token`
+ * 2. Access token cũng nằm ở đó — cookie không mang bản sao nào, kể cả đã mã hoá.
+ * 3. Session trả cho client **không** chứa access token. Client lấy token qua `/api/auth/token`
  *    và giữ trong memory (`@nexaticket/auth/client`).
  *
  * Vai trò trong tổ chức **không** lấy từ token: backend phân quyền theo membership tra ở
@@ -96,6 +103,7 @@ export function createNexaAuth(options: NexaAuthOptions): NexaAuth {
   const result = NextAuth(() => buildConfig(options, getStore()));
 
   return {
+    app: options.app,
     handlers: result.handlers,
     auth: result.auth,
     signIn: result.signIn,
@@ -103,19 +111,32 @@ export function createNexaAuth(options: NexaAuthOptions): NexaAuth {
     get refreshTokenStore() {
       return getStore();
     },
+    async readAccessToken(request: Request): Promise<AccessTokenState> {
+      const cookie = await readSessionCookie(request, options.app);
+      if (!cookie.present) return { status: 'anonymous' };
+      return ensureAccessToken(cookie.ref, accessTokenDeps(options, getStore()));
+    },
+  };
+}
+
+function accessTokenDeps(options: NexaAuthOptions, store: RefreshTokenStore): AccessTokenDeps {
+  return {
+    store,
+    issuer: required(options.issuer ?? process.env.KEYCLOAK_ISSUER, 'KEYCLOAK_ISSUER'),
+    clientId: required(
+      options.clientId ?? process.env.KEYCLOAK_CLIENT_ID ?? options.app,
+      'KEYCLOAK_CLIENT_ID',
+    ),
+    clientSecret: required(
+      options.clientSecret ?? process.env.KEYCLOAK_CLIENT_SECRET,
+      'KEYCLOAK_CLIENT_SECRET',
+    ),
   };
 }
 
 function buildConfig(options: NexaAuthOptions, store: RefreshTokenStore): NextAuthConfig {
-  const issuer = required(options.issuer ?? process.env.KEYCLOAK_ISSUER, 'KEYCLOAK_ISSUER');
-  const clientId = required(
-    options.clientId ?? process.env.KEYCLOAK_CLIENT_ID ?? options.app,
-    'KEYCLOAK_CLIENT_ID',
-  );
-  const clientSecret = required(
-    options.clientSecret ?? process.env.KEYCLOAK_CLIENT_SECRET,
-    'KEYCLOAK_CLIENT_SECRET',
-  );
+  const deps = accessTokenDeps(options, store);
+  const { issuer, clientId, clientSecret } = deps;
 
   const providers = [Keycloak({ clientId, clientSecret, issuer })];
 
@@ -138,41 +159,62 @@ function buildConfig(options: NexaAuthOptions, store: RefreshTokenStore): NextAu
     );
   }
 
+  const secure = useSecureCookies();
+
   return {
     providers,
     session: { strategy: 'jwt' },
+    // Bốn app chạy trên cùng host `localhost` ở dev, và cookie không phân biệt cổng. Tên mặc định
+    // của Auth.js làm chúng ghi đè lên nhau; xem `cookies.ts` để biết đủ bốn hậu quả.
+    //
+    // Ghim luôn `useSecureCookies` thay vì để Auth.js suy ra từ giao thức của request: tên cookie
+    // ở đây phải khớp tuyệt đối với tên mà `readSessionCookie` đi tìm, nên cả hai chỉ được nhìn
+    // vào đúng một nguồn.
+    useSecureCookies: secure,
+    cookies: authCookieNames(options.app, secure),
     pages: options.signInPage ? { signIn: options.signInPage } : undefined,
     callbacks: {
       async jwt({ token, account }) {
         if (account) {
-          const refreshToken = account.refresh_token;
+          // Đăng nhập lại trên một phiên còn cookie cũ: bản ghi cũ phải bị xoá tại đây.
+          //
+          // Bản trước cấp `refreshRef` mới và bỏ mặc bản cũ. Không ai còn tham chiếu tới nó, nên
+          // nó nằm lại store đúng 30 ngày — cùng với một refresh token Keycloak vẫn đổi được ra
+          // access token. Rác thì nhẹ, nhưng một thông tin đăng nhập còn hiệu lực mà không ai
+          // theo dõi thì không nhẹ.
+          if (token.refreshRef) await store.delete(token.refreshRef);
+
           const ref = newTokenRef();
-          if (refreshToken && token.sub) {
-            await store.set(ref, {
-              refreshToken,
-              subject: token.sub,
-              expiresAt: Date.now() + REFRESH_TOKEN_TTL_MS,
-            });
-            token.refreshRef = ref;
-          }
-          token.accessToken = account.access_token;
-          token.accessTokenExpiresAt = account.expires_at
-            ? account.expires_at * 1000
-            : Date.now() + 60_000;
-          delete token.authError;
+          await store.set(ref, {
+            refreshToken: account.refresh_token ?? '',
+            subject: token.sub ?? '',
+            expiresAt: Date.now() + REFRESH_TOKEN_TTL_MS,
+            accessToken: account.access_token,
+            accessTokenExpiresAt: account.expires_at
+              ? account.expires_at * 1000
+              : Date.now() + 60_000,
+          });
+          token.refreshRef = ref;
           return token;
         }
 
-        const expiresAt = token.accessTokenExpiresAt ?? 0;
-        if (Date.now() < expiresAt - REFRESH_SKEW_MS) return token;
-
-        return refreshToken(token, { store, issuer, clientId, clientSecret });
+        // Các request sau: KHÔNG chạm vào store. Đây là điều kiện bắt buộc, không phải tối ưu.
+        //
+        // Callback này chạy ở MỌI nơi gọi `auth()`, kể cả middleware — mà middleware của Next.js
+        // chạy trong **Edge runtime**: một realm JavaScript riêng, không dùng chung `globalThis`
+        // với route handler, nên store in-memory ở đó luôn rỗng. Hỏi store tại đây thì middleware
+        // luôn kết luận "phiên đã chết" và giết phiên ngay ở lần điều hướng đầu tiên, dù phiên
+        // hoàn toàn khoẻ.
+        //
+        // Cookie vì vậy chỉ trả lời đúng câu mà nó tự trả lời được: "có phiên hay không". Câu
+        // "token còn hạn không" do `readAccessToken` trả lời, và nó chỉ chạy ở route handler phía
+        // Node — nơi thật sự nhìn thấy store.
+        return token;
       },
 
       async session({ session, token }) {
         // Cố ý KHÔNG gắn accessToken vào session: `/api/auth/session` là endpoint công khai với
         // JS của trang, và token phải đi qua đúng một cửa là `/api/auth/token`.
-        if (token.authError) session.authError = token.authError;
         if (token.sub) session.user = { ...session.user, id: token.sub };
         return session;
       },
@@ -197,7 +239,7 @@ function buildConfig(options: NexaAuthOptions, store: RefreshTokenStore): NextAu
         if (!ref) return;
 
         const stored = await store.get(ref);
-        if (stored) {
+        if (stored?.refreshToken) {
           try {
             await endSession({
               issuer,
@@ -216,56 +258,6 @@ function buildConfig(options: NexaAuthOptions, store: RefreshTokenStore): NextAu
       },
     },
   };
-}
-
-async function refreshToken(
-  token: JWT,
-  deps: {
-    store: RefreshTokenStore;
-    issuer: string;
-    clientId: string;
-    clientSecret: string;
-  },
-): Promise<JWT> {
-  const ref = token.refreshRef;
-  if (!ref) {
-    token.authError = 'RefreshFailed';
-    return token;
-  }
-
-  const stored = await deps.store.get(ref);
-  if (!stored) {
-    // Server khởi động lại (store trong tiến trình) hoặc phiên đã bị thu hồi.
-    token.authError = 'RefreshFailed';
-    return token;
-  }
-
-  try {
-    const refreshed = await refreshAccessToken({
-      issuer: deps.issuer,
-      clientId: deps.clientId,
-      clientSecret: deps.clientSecret,
-      refreshToken: stored.refreshToken,
-    });
-
-    // Keycloak xoay vòng refresh token: không ghi đè là lần đổi sau sẽ hỏng.
-    await deps.store.set(ref, { ...stored, refreshToken: refreshed.refreshToken });
-
-    token.accessToken = refreshed.accessToken;
-    token.accessTokenExpiresAt = refreshed.expiresAt;
-    delete token.authError;
-    return token;
-  } catch (cause) {
-    if (cause instanceof RefreshFailedError && cause.recoverable) {
-      // Keycloak trục trặc tạm thời: giữ nguyên phiên, lần gọi sau thử lại. Đá người dùng ra
-      // đăng nhập lại vì một lần 503 là phản ứng thái quá.
-      return token;
-    }
-    await deps.store.delete(ref);
-    token.authError = 'RefreshFailed';
-    delete token.accessToken;
-    return token;
-  }
 }
 
 function required(value: string | undefined, name: string): string {

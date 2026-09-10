@@ -1,5 +1,6 @@
 .page {
-  max-width: 1120px;
+  /* Cùng 1280px với header và các trang còn lại — mép trái phải thẳng hàng với logo. */
+  max-width: 1280px;
   margin: 0 auto;
   padding: var(--nt-space-6);
   display: flex;

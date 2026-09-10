@@ -5,7 +5,8 @@ Tài sản thương hiệu dùng chung cho cả 4 app. **Một nguồn duy nhấ
 
 | File | Kích thước | Dùng ở đâu |
 | --- | --- | --- |
-| `logo.png` | 408×128 | Lockup **không có tagline** — mặc định cho giao diện |
+| `logo-dark.png` | 408×128 | Lockup chữ sáng — **mặc định**, vì cả bốn app chạy nền tối |
+| `logo.png` | 408×128 | Cùng bố cục, chữ màu gốc — cho nền sáng (in ấn, email) |
 | `logo-full.png` | 816×256 | Có cả dòng "CONCERT & EVENT TICKETS", chỉ dùng khi hiện lớn |
 | `logo-mark.png` | 361×256 | Chỉ biểu tượng — cho nền tối và chỗ hẹp |
 | `icon.png` | 512×512 | Nguồn của favicon từng app (`src/app/icon.png`) |
@@ -28,5 +29,9 @@ TICKETS" chỉ cao 3–4px: không đọc được, chỉ làm logo trông bẩn
 
 ## Nền tối
 
-App soát vé chạy nền `#14100f`. Chữ NEXATICKET màu navy `#00376F` gần như biến mất ở đó, nên
-màn hình của app đó dùng `variant="mark"` và tự vẽ chữ bằng CSS với màu `--nt-accent`.
+Từ v3 cả bốn app đều chạy nền tối `#171211`. Chữ NEXATICKET màu navy `#00376F` gần như biến mất
+ở đó, nên `logo-dark.png` đổi phần chữ sang sáng — **giữ nguyên biểu tượng gradient**, và giữ cả
+hai sắc độ NEXA/TICKET của bản gốc.
+
+Một cái bẫy khi tạo lại file này: mũi tên của biểu tượng vươn qua `x=540` nhưng nằm **phía trên**
+`y=350`. Chỉ cắt theo cột là đổi màu luôn cả mũi tên. Phải giới hạn theo **cả hai chiều**.

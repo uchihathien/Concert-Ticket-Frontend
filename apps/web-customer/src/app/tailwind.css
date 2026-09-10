@@ -29,6 +29,8 @@
   --color-bg: var(--nt-bg);
   --color-bg-subtle: var(--nt-bg-subtle);
   --color-surface: var(--nt-surface);
+  --color-elevated: var(--nt-elevated);
+  --color-hover: var(--nt-hover);
   --color-border: var(--nt-border);
   --color-ink: var(--nt-text);
   --color-muted: var(--nt-text-muted);
@@ -36,6 +38,7 @@
   --color-primary: var(--nt-primary);
   --color-primary-hover: var(--nt-primary-hover);
   --color-primary-ink: var(--nt-primary-ink);
+  --color-primary-text: var(--nt-primary-text);
   --color-accent: var(--nt-accent);
   --color-accent-ink: var(--nt-accent-ink);
 

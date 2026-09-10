@@ -15,9 +15,7 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  gap: var(--nt-space-2);
   padding: var(--nt-space-8);
-  text-decoration: none;
   color: #fff;
   opacity: 0;
   transition: opacity 400ms ease;
@@ -39,6 +37,42 @@
   pointer-events: none;
 }
 
+/* Poster nằm dưới chữ, phủ một lớp tối dần từ đáy lên: tiêu đề trắng phải đọc được trên
+   mọi tấm ảnh, kể cả ảnh sáng. Không có lớp phủ này thì chữ biến mất trên nền trời. */
+.slideImage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.slide::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.78) 0%,
+    rgba(0, 0, 0, 0.2) 55%,
+    transparent 100%
+  );
+}
+
+/* Chữ và nút phải nằm trên cả ảnh lẫn lớp phủ.
+   `z-index` không kèm `position: relative` là cố ý: đây là flex item nên nó vẫn nghe z-index,
+   mà không tự biến thành mốc định vị — nhờ vậy `::before` của nút CTA bên dưới còn neo được vào
+   `.slide` để phủ trọn băng rôn. */
+.slideBody {
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--nt-space-2);
+  max-width: 62ch;
+}
+
 .slideKicker {
   font-size: 13px;
   font-weight: 700;
@@ -58,6 +92,32 @@
   margin: 0;
   font-size: 15px;
   opacity: 0.95;
+}
+
+/* Nút CTA. `::before` phủ kín slide nên bấm chỗ nào trên băng rôn cũng vào được sự kiện, trong
+   khi bàn phím chỉ có đúng một điểm dừng là chính cái nút này.
+   Nút KHÔNG được `position: relative`: `::before` phải neo vào `.slide`, không phải vào nút. */
+.slideCta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: var(--nt-space-2);
+  padding: 0 var(--nt-space-6);
+  border-radius: 999px;
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.slideCta::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+.slideCta:hover {
+  background: var(--nt-primary-hover);
 }
 
 .dots {
@@ -93,7 +153,7 @@
 
 @media (max-width: 720px) {
   .viewport {
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 4 / 3;
   }
 
   .slide {

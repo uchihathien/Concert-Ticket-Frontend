@@ -1,20 +1,28 @@
-import { Button } from '@nexaticket/ui';
+import {
+  AccountScreen,
+  AccountSection,
+  DetailRows,
+  IdentityCard,
+  SignOutForm,
+} from '@nexaticket/ui';
 import type { Metadata } from 'next';
 import { auth, signOut } from '@/auth';
-import styles from '../legal.module.css';
 
 export const metadata: Metadata = {
   title: 'Tài khoản — NexaTicket',
 };
 
 /**
- * C-ACCOUNT — bản tối thiểu.
+ * C-ACCOUNT.
  *
  * Middleware đã chặn khách chưa đăng nhập trước khi tới đây, nên trang không phải tự kiểm lại.
  *
- * Hồ sơ (tên, số điện thoại, email liên hệ) do Keycloak quản lý và chưa có endpoint đọc/ghi qua
- * gateway, nên ở đây chỉ hiện đúng những gì phiên đăng nhập biết. Bịa thêm ô nhập rồi không lưu
- * được đi đâu thì tệ hơn là chưa có.
+ * Chỉ hiện những gì phiên đăng nhập thật sự biết. Hồ sơ (tên, ảnh, mật khẩu) do Keycloak giữ và
+ * chưa có endpoint nào qua gateway để ghi lại — dựng form sửa rồi không lưu được đi đâu thì tệ
+ * hơn là chưa có.
+ *
+ * Cũng không hiện "đăng nhập bằng Google hay mật khẩu": với `kc_idp_hint`, cả hai đường đều về
+ * cùng một provider `keycloak`, nên phiên không phân biệt được. Đoán bừa còn tệ hơn im lặng.
  */
 export default async function AccountPage() {
   const session = await auth();
@@ -25,29 +33,29 @@ export default async function AccountPage() {
   }
 
   return (
-    <main className={styles.page}>
-      <h1 className={styles.title}>Tài khoản</h1>
-      <p className={styles.updated}>Thông tin lấy từ phiên đăng nhập hiện tại</p>
+    <AccountScreen title="Tài khoản" description="Thông tin lấy từ phiên đăng nhập hiện tại.">
+      <IdentityCard
+        name={session?.user?.name}
+        email={session?.user?.email}
+        imageUrl={session?.user?.image}
+      />
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Đăng nhập bằng</h2>
-        <p>{session?.user?.email ?? session?.user?.name ?? 'Không có thông tin hiển thị'}</p>
-        {session?.user?.id ? <p className={styles.updated}>ID: {session.user.id}</p> : null}
-      </section>
+      {session?.user?.id ? (
+        <AccountSection title="Chi tiết">
+          <DetailRows rows={[{ label: 'Mã người dùng', value: session.user.id, mono: true }]} />
+        </AccountSection>
+      ) : null}
 
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Hồ sơ</h2>
+      <AccountSection title="Hồ sơ">
         <p>
           Tên, ảnh đại diện và mật khẩu do hệ thống định danh quản lý. Màn sửa hồ sơ sẽ mở khi có
           endpoint tương ứng.
         </p>
-      </section>
+      </AccountSection>
 
-      <form action={doSignOut}>
-        <Button type="submit" variant="secondary">
-          Đăng xuất
-        </Button>
-      </form>
-    </main>
+      <AccountSection title="Phiên đăng nhập">
+        <SignOutForm action={doSignOut} />
+      </AccountSection>
+    </AccountScreen>
   );
 }

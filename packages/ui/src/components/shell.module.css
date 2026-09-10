@@ -1,0 +1,150 @@
+/* Khung app quản trị: cột điều hướng cố định + vùng nội dung cuộn.
+   Dùng chung cho web-admin và web-platform — hai persona khác nhau nhưng cùng một kiểu làm việc:
+   nhiều bảng, ít đồ hoạ, chuyển qua lại giữa vài khu vực. */
+
+.shell {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  background: var(--nt-bg-subtle);
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-6);
+  padding: var(--nt-space-6) var(--nt-space-4);
+  background: var(--nt-surface);
+  border-right: 1px solid var(--nt-border);
+  /* Cột điều hướng đứng yên khi bảng dài cuộn — bảng ở đây thường dài. */
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-2);
+  padding: 0 var(--nt-space-2);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--nt-text);
+  text-decoration: none;
+}
+
+.brandSuffix {
+  color: var(--nt-text-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--nt-space-3);
+  border-radius: var(--nt-radius);
+  color: var(--nt-text);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.navItem:hover {
+  background: var(--nt-hover);
+}
+
+/* Mục đang mở: nền đặc + chữ đậm. Không chỉ dựa vào màu — chữ đậm giữ nghĩa khi in đen trắng
+   hoặc khi người dùng bật chế độ tương phản cao. */
+.navItemActive,
+.navItemActive:hover {
+  background: color-mix(in srgb, var(--nt-primary) 10%, transparent);
+  color: var(--nt-primary-text);
+  font-weight: 700;
+}
+
+.sidebarFoot {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-2);
+  padding-top: var(--nt-space-4);
+  border-top: 1px solid var(--nt-border);
+}
+
+.content {
+  min-width: 0;
+  padding: var(--nt-space-8);
+}
+
+.pageHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--nt-space-4);
+  margin-bottom: var(--nt-space-6);
+}
+
+.pageTitle {
+  margin: 0 0 var(--nt-space-1);
+  font-size: clamp(22px, 2vw, 28px);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.pageDescription {
+  margin: 0;
+  color: var(--nt-text-muted);
+  max-width: 70ch;
+}
+
+.panel {
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  padding: var(--nt-space-6);
+}
+
+@media (max-width: 900px) {
+  /* Dưới 900px cột điều hướng nằm ngang trên đầu: một sidebar cố định 248px trên màn hẹp ăn mất
+     quá nửa chiều rộng, mà bảng thì cần chỗ. */
+  .shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--nt-space-3);
+    border-right: none;
+    border-bottom: 1px solid var(--nt-border);
+  }
+
+  .nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .sidebarFoot {
+    margin-top: 0;
+    margin-left: auto;
+    flex-direction: row;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .content {
+    padding: var(--nt-space-4);
+  }
+}

@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { formatDate, formatDateTime, formatDuration, formatVnd } from '../format';
+import {
+  formatDate,
+  formatDateLong,
+  formatDateTime,
+  formatDuration,
+  formatVnd,
+  isoToVnLocal,
+  vnLocalToIso,
+} from '../format';
 
 describe('định dạng', () => {
   it('tiền là số nguyên đồng, không phần thập phân', () => {
@@ -27,5 +35,28 @@ describe('định dạng', () => {
     expect(formatDate('2026-11-01T12:00:00Z')).toBe('01/11/2026');
     // 17:00Z ngày 01 là 00:00 ngày 02 ở Việt Nam — ngày phải theo múi giờ Việt Nam.
     expect(formatDate('2026-11-01T17:00:00Z')).toBe('02/11/2026');
+  });
+
+  it('dạng dài có thứ trong tuần, và thứ cũng tính theo giờ Việt Nam', () => {
+    // 01/11/2026 là Chủ nhật.
+    expect(formatDateLong('2026-11-01T12:00:00Z')).toBe('Chủ Nhật, 01/11/2026');
+    // 17:00Z vẫn là ngày 01 theo UTC nhưng đã sang thứ Hai 02/11 ở Việt Nam.
+    expect(formatDateLong('2026-11-01T17:00:00Z')).toBe('Thứ Hai, 02/11/2026');
+  });
+
+  it('ô datetime-local đọc theo giờ Việt Nam, không theo giờ máy', () => {
+    // 19:00 giờ VN = 12:00Z. Máy chạy test có thể ở bất kỳ múi giờ nào, kết quả vẫn phải như nhau.
+    expect(vnLocalToIso('2026-11-01T19:00')).toBe('2026-11-01T12:00:00.000Z');
+    expect(isoToVnLocal('2026-11-01T12:00:00Z')).toBe('2026-11-01T19:00');
+    // Nửa đêm phải là 00:00, không phải 24:00 — ô nhập từ chối "24:00".
+    expect(isoToVnLocal('2026-11-01T17:00:00Z')).toBe('2026-11-02T00:00');
+  });
+
+  it('ô rỗng hoặc giá trị rác không dựng ra mốc thời gian giả', () => {
+    expect(vnLocalToIso('')).toBeUndefined();
+    expect(vnLocalToIso(null)).toBeUndefined();
+    expect(vnLocalToIso('không phải ngày')).toBeUndefined();
+    expect(isoToVnLocal(null)).toBe('');
+    expect(isoToVnLocal('không phải ngày')).toBe('');
   });
 });

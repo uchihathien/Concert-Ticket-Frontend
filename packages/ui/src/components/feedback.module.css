@@ -39,11 +39,11 @@
 /* Đổi màu khi sắp hết giờ (ui-direction.md §7.2). Kèm chữ ở `aria-label` để người dùng
    trình đọc màn hình cũng biết là gấp, chứ không chỉ người nhìn thấy màu. */
 .countdownWarn {
-  color: var(--nt-warn);
+  color: var(--nt-warn-text);
 }
 
 .countdownExpired {
-  color: var(--nt-danger);
+  color: var(--nt-danger-text);
 }
 
 /* CopyField ---------------------------------------------------------------- */
@@ -70,7 +70,7 @@
 }
 
 .copied {
-  color: var(--nt-success);
+  color: var(--nt-success-text);
   font-size: 13px;
   font-weight: 600;
 }

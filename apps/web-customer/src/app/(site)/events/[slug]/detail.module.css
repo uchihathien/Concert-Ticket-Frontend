@@ -1,7 +1,51 @@
-.page {
-  max-width: 1100px;
+/* Băng rôn ---------------------------------------------------------------- */
+
+/* Tràn hết chiều ngang, không nằm trong khung 1280px: đây là mảng gây ấn tượng đầu tiên, cắt nó
+   vào giữa trang thì nó chỉ còn là một tấm ảnh to. Nội dung bên trong vẫn bị kẹp lại cho thẳng
+   hàng với header. */
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* Poster phóng to và làm mờ làm nền. Không phải hiệu ứng cho vui: poster là ảnh ngang 16/9, kéo
+   nó phủ một dải rộng 1440px sẽ vỡ, còn làm mờ thì chỉ còn lại mảng màu của chính sự kiện đó. */
+.heroBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.heroBackdropImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* `scale` để mép ảnh không bị blur ăn vào thành viền sáng. */
+  transform: scale(1.2);
+  filter: blur(48px) saturate(140%);
+  opacity: 0.75;
+}
+
+/* Hai lớp phủ chồng nhau.
+   Lớp ngang: đậm ở nửa trái nơi có chữ, nhạt dần sang phải để màu của poster còn lộ ra. Poster
+   do ban tổ chức tải lên nên sáng tối không kiểm soát được — không có lớp này thì chữ trắng biến
+   mất trên một tấm ảnh nền trời.
+   Lớp dọc: chỉ ăn ở đáy, để băng rôn tan vào nền trang thay vì kết thúc bằng một đường kẻ. */
+.hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(to right, rgb(0 0 0 / 80%) 0%, rgb(0 0 0 / 62%) 55%, rgb(0 0 0 / 42%) 100%),
+    linear-gradient(to bottom, transparent 55%, var(--nt-bg) 100%);
+}
+
+.heroInner {
+  max-width: 1280px;
   margin: 0 auto;
-  padding: var(--nt-space-6) var(--nt-space-6) var(--nt-space-12);
+  padding: var(--nt-space-4) var(--nt-space-6) var(--nt-space-12);
 }
 
 .crumbs {
@@ -9,7 +53,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--nt-space-2);
-  margin-bottom: var(--nt-space-4);
+  margin-bottom: var(--nt-space-8);
   font-size: 14px;
   color: var(--nt-text-muted);
 }
@@ -19,79 +63,240 @@
 }
 
 .crumbs a:hover {
-  color: var(--nt-primary);
+  color: var(--nt-primary-text);
 }
 
-/* Nền do trang đặt qua style inline, theo đúng dải màu của thẻ sự kiện. */
-.banner {
-  aspect-ratio: 21 / 7;
-  border-radius: var(--nt-radius-lg);
-  background: var(--nt-bg-subtle);
-  margin-bottom: var(--nt-space-6);
-}
-
-.body {
+/* Thông tin bên trái, poster bên phải. Poster hẹp hơn nửa trang: phần khách cần đọc để quyết
+   định là ngày, địa điểm và giá, không phải tấm ảnh. */
+.heroGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 460px);
   gap: var(--nt-space-8);
-  align-items: start;
+  align-items: center;
 }
 
-.titleRow {
+.heroInfo {
+  min-width: 0;
+}
+
+.heroTags {
   display: flex;
-  align-items: center;
-  gap: var(--nt-space-3);
   flex-wrap: wrap;
+  gap: var(--nt-space-2);
+  margin-bottom: var(--nt-space-3);
 }
 
 .title {
   margin: 0;
-  font-size: 30px;
-  line-height: 1.2;
+  font-size: clamp(26px, 3.4vw, 40px);
+  line-height: 1.15;
+  text-shadow: 0 2px 16px rgb(0 0 0 / 45%);
 }
 
 .summary {
-  margin: var(--nt-space-2) 0 var(--nt-space-6);
-  color: var(--nt-text-muted);
+  margin: var(--nt-space-3) 0 0;
+  max-width: 56ch;
   font-size: 17px;
+  color: var(--nt-text-muted);
 }
 
-.sectionTitle {
-  font-size: 18px;
-  margin: var(--nt-space-8) 0 var(--nt-space-3);
+/* `<dl>` thật: nhãn nằm trong `<dt>`, giá trị trong `<dd>`, nên trình đọc màn hình ghép được
+   thành cặp "Thời gian: …" / "Địa điểm: …". Icon là `<span aria-hidden>` bên trong `<dt>` —
+   để icon làm `<dt>` thì cặp thuật ngữ/định nghĩa mất luôn phần thuật ngữ. */
+.facts {
+  margin: var(--nt-space-6) 0 0;
+  display: grid;
+  gap: var(--nt-space-4);
 }
 
-.paragraph {
+.factLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-2);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--nt-text-muted);
+}
+
+.factIcon {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 12%);
+  font-size: 12px;
+  line-height: 1;
+  color: var(--nt-text);
+}
+
+/* Thụt vào 32px cho thẳng chữ của nhãn ở trên (24px icon + 8px khoảng cách). */
+.factBody {
+  margin: var(--nt-space-1) 0 0;
+  padding-inline-start: 32px;
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+}
+
+.factNote {
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+/* Giá và nút mua đứng cùng hàng, tách khỏi khối thông tin bằng một đường kẻ: đây là dòng cuối
+   cùng khách đọc trước khi quyết định. */
+.heroBuy {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nt-space-4);
+  margin-top: var(--nt-space-6);
+  padding-top: var(--nt-space-6);
+  border-top: 1px solid rgb(255 255 255 / 14%);
+}
+
+.heroPrice {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 22px;
+}
+
+.heroPriceLabel {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--nt-text-muted);
+}
+
+.heroPriceOff {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--nt-warn-text);
+}
+
+/* Là `<a>` chứ không phải `<button>`: nó cuộn tới khối vé, nên phải mở tab mới được và chạy được
+   khi JavaScript chưa tải xong. */
+.heroCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 var(--nt-space-8);
+  border-radius: 999px;
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.heroCta:hover {
+  background: var(--nt-primary-hover);
+}
+
+.heroPoster {
+  min-width: 0;
+}
+
+.heroPosterFrame {
+  aspect-ratio: 16 / 9;
+  border-radius: var(--nt-radius-lg);
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgb(0 0 0 / 55%);
+}
+
+.heroPosterFrame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Thân trang ---------------------------------------------------------------- */
+
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--nt-space-8) var(--nt-space-6) var(--nt-space-12);
+  display: grid;
+  gap: var(--nt-space-6);
+}
+
+.panel {
+  padding: var(--nt-space-6);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  background: var(--nt-surface);
+}
+
+.panelTitle {
+  margin: 0 0 var(--nt-space-4);
+  font-size: 20px;
+}
+
+/* Đoạn văn kẹp ở 68ch. Khung ngoài rộng 1280px, để chữ chạy hết chiều đó thì mắt mất dấu đầu
+   dòng khi xuống hàng. */
+.prose p {
   margin: 0 0 var(--nt-space-3);
   max-width: 68ch;
+  line-height: 1.7;
 }
+
+.prose p:last-child {
+  margin-bottom: 0;
+}
+
+.note {
+  margin: 0 0 var(--nt-space-4);
+  padding: var(--nt-space-3) var(--nt-space-4);
+  border-inline-start: 3px solid var(--nt-border);
+  color: var(--nt-text-muted);
+  font-size: 14px;
+}
+
+.note:last-child {
+  margin-bottom: 0;
+}
+
+/* Suất diễn ---------------------------------------------------------------- */
 
 .sessions {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  gap: var(--nt-space-3);
+  gap: var(--nt-space-4);
 }
 
 .session {
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  background: var(--nt-bg-subtle);
+  overflow: hidden;
+}
+
+.sessionHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--nt-space-4);
   flex-wrap: wrap;
+  gap: var(--nt-space-4);
   padding: var(--nt-space-4);
-  border: 1px solid var(--nt-border);
-  border-radius: var(--nt-radius);
-  background: var(--nt-surface);
+}
+
+.sessionDate {
+  margin: 0;
+  font-weight: 700;
+  font-size: 16px;
 }
 
 .sessionTime {
-  margin: 0;
-  font-weight: 700;
-}
-
-.sessionVenue {
   margin: 2px 0 0;
   color: var(--nt-text-muted);
   font-size: 14px;
@@ -106,79 +311,167 @@
 .sessionPrice {
   color: var(--nt-text-muted);
   font-size: 14px;
+  white-space: nowrap;
 }
 
 .notOnSale {
-  color: var(--nt-warn);
+  color: var(--nt-warn-text);
   font-weight: 600;
   font-size: 14px;
 }
 
-.note {
-  margin-top: var(--nt-space-6);
+.saleWindow {
+  margin: 0;
+  padding: var(--nt-space-2) var(--nt-space-4);
+  background: var(--nt-elevated);
+  border-block: 1px solid var(--nt-border);
+  color: var(--nt-warn-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Bảng hạng vé: tên | khu | giá. Grid chứ không phải flex để cột giá thẳng hàng giữa các dòng —
+   giá so le nhau thì không so sánh được, mà so sánh giá chính là việc khách đang làm ở đây. */
+.tiers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--nt-border);
+}
+
+.tier {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--nt-space-4);
   padding: var(--nt-space-3) var(--nt-space-4);
-  border-inline-start: 3px solid var(--nt-border);
-  color: var(--nt-text-muted);
-  font-size: 14px;
 }
 
-.aside {
-  position: sticky;
-  top: 88px;
+.tier + .tier {
+  border-top: 1px solid var(--nt-border);
 }
 
-.card {
-  border: 1px solid var(--nt-border);
-  border-radius: var(--nt-radius-lg);
-  padding: var(--nt-space-6);
-  background: var(--nt-surface);
+.tierName {
+  font-weight: 600;
+  min-width: 0;
 }
 
-.cardLabel {
-  margin: 0 0 2px;
+.tierZone {
   font-size: 13px;
   color: var(--nt-text-muted);
+  white-space: nowrap;
 }
 
-.cardValue {
-  margin: 0 0 var(--nt-space-4);
+.tierPrice {
+  font-weight: 700;
+  color: var(--nt-primary-text);
+  white-space: nowrap;
+  /* Cột giá rộng cố định để mọi dòng thẳng hàng phải, kể cả khi số chữ số khác nhau. */
+  min-width: 11ch;
+  text-align: end;
+}
+
+/* Địa điểm ----------------------------------------------------------------- */
+
+.venueName {
+  margin: 0;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.venueAddress {
+  margin: var(--nt-space-1) 0 0;
+  color: var(--nt-text-muted);
+}
+
+.mapLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: var(--nt-space-2);
+  color: var(--nt-primary-text);
   font-weight: 600;
 }
 
-.cardValue:last-child {
-  margin-bottom: 0;
-}
+/* CTA dính đáy ------------------------------------------------------------- */
 
 .stickyCta {
   display: none;
 }
 
 @media (max-width: 900px) {
-  .body {
-    grid-template-columns: 1fr;
+  /* Một cột: chữ trải hết bề ngang nên lớp phủ ngang không còn che đúng chỗ — đổi sang phủ đều. */
+  .hero::after {
+    background:
+      linear-gradient(rgb(0 0 0 / 68%), rgb(0 0 0 / 68%)),
+      linear-gradient(to bottom, transparent 70%, var(--nt-bg) 100%);
   }
 
-  .aside {
-    position: static;
+  /* Poster xuống dưới thông tin: ở đây một cột 460px cho ảnh sẽ bóp phần chữ xuống còn quá hẹp. */
+  .heroGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--nt-space-6);
+  }
+
+  /* Poster lên trước, giống thứ tự người ta lướt trên điện thoại: thấy ảnh rồi mới đọc. */
+  .heroPoster {
+    order: -1;
   }
 }
 
 @media (max-width: 720px) {
+  .heroInner {
+    padding: var(--nt-space-3) var(--nt-space-4) var(--nt-space-8);
+  }
+
+  .crumbs {
+    margin-bottom: var(--nt-space-4);
+  }
+
   .page {
-    padding: var(--nt-space-4) var(--nt-space-4) 96px;
+    /* Chừa chỗ cho CTA dính đáy VÀ bottom nav ở dưới nó. */
+    padding: var(--nt-space-6) var(--nt-space-4) 140px;
   }
 
-  .banner {
-    aspect-ratio: 16 / 9;
+  .panel {
+    padding: var(--nt-space-4);
   }
 
-  .title {
-    font-size: 24px;
+  .heroBuy {
+    /* Nút chiếm trọn chiều ngang: ở 360px, giá và nút chia nhau một hàng thì nút còn quá hẹp. */
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  /* Thẻ tóm tắt lặp lại đúng thông tin đã có ở CTA dính đáy — bỏ đi trên màn hẹp. */
-  .aside {
-    display: none;
+  .heroCta {
+    width: 100%;
+  }
+
+  .sessionHead {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sessionAction {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Khu vực xuống dòng dưới tên vé: ba cột trong 320px thì tên vé chỉ còn vài ký tự. */
+  .tier {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 2px;
+  }
+
+  .tierZone {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .tierPrice {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    min-width: 0;
   }
 
   .stickyCta {
@@ -199,5 +492,39 @@
   .stickyPrice {
     font-size: 14px;
     color: var(--nt-text-muted);
+    white-space: nowrap;
   }
+
+  .stickyCta .heroCta {
+    width: auto;
+    min-height: 44px;
+    padding: 0 var(--nt-space-6);
+  }
+}
+
+/* Nút "Chọn chỗ" của từng suất diễn.
+   Là <a> chứ không phải <button>: điều hướng thật thì phải Ctrl+click được. Dáng lấy theo nút
+   chính nhưng gọn hơn heroCta, vì nó nằm trong hàng của suất diễn chứ không phải ở hero. */
+.sessionCta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 var(--nt-space-6);
+  border-radius: var(--nt-radius);
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sessionCta:hover {
+  background: var(--nt-primary-hover);
+}
+
+.sessionCta:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
 }

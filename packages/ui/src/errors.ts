@@ -67,6 +67,19 @@ const CATALOG: Record<string, ErrorCopy> = {
     retryable: true,
   },
 
+  // --- catalog-service (khu quản trị) ---
+  EVENT_NOT_FOUND: { message: 'Không tìm thấy sự kiện', display: 'banner' },
+  VENUE_NOT_FOUND: { message: 'Không tìm thấy địa điểm', display: 'banner' },
+  ZONE_NOT_FOUND: { message: 'Không tìm thấy khu vực', display: 'banner' },
+  TICKET_TYPE_NOT_FOUND: { message: 'Không tìm thấy hạng vé', display: 'toast' },
+  ZONE_ALREADY_PRICED: { message: 'Khu này đã có hạng vé ở suất diễn đó', display: 'inline' },
+  PUBLISH_BLOCKED: { message: 'Chưa xuất bản được', display: 'toast' },
+  EVENT_NOT_PUBLISHED: { message: 'Sự kiện chưa lên bán', display: 'banner' },
+  INVALID_EVENT_STATE: {
+    message: 'Gỡ sự kiện xuống trước khi sửa suất diễn hoặc giá vé',
+    display: 'toast',
+  },
+
   // --- identity-service ---
   ORGANIZATION_NOT_FOUND: { message: 'Không tìm thấy tổ chức', display: 'banner' },
   SLUG_ALREADY_TAKEN: { message: 'Đường dẫn này đã có tổ chức khác dùng', display: 'inline' },
@@ -98,6 +111,25 @@ const ALIASES: Record<string, string> = {
   WRONG_ORGANIZATION: 'FORBIDDEN',
 };
 
+/**
+ * Vướng mắc publish (`PublishBlocker` của catalog) → câu cho ban tổ chức.
+ *
+ * Backend gửi cùng bộ tên này ở hai chỗ: `meta.blockers` khi từ chối publish, và
+ * `AdminEventDetail.blockers` ở đường đọc để màn hình dựng checklist trước khi người dùng bấm.
+ * Một bảng dùng cho cả hai, nếu không thì cùng một vướng mắc đọc ra hai câu khác nhau.
+ */
+const PUBLISH_BLOCKERS: Record<string, string> = {
+  NO_SESSION: 'Chưa có suất diễn nào',
+  SESSION_WITHOUT_TICKET_TYPE:
+    'Có suất diễn chưa khai hạng vé nào — chưa có giá thì không bán được',
+  INVALID_SALES_WINDOW: 'Cửa bán không hợp lệ: đóng trước khi mở, hoặc mở sau khi suất đã diễn ra',
+  VENUE_WITHOUT_ZONE: 'Địa điểm chưa có khu vực nào',
+};
+
+export function publishBlockerLabel(blocker: string): string {
+  return PUBLISH_BLOCKERS[blocker] ?? blocker;
+}
+
 const FALLBACK: ErrorCopy = {
   message: 'Có lỗi xảy ra, thử lại sau',
   display: 'toast',
@@ -127,6 +159,12 @@ export function errorMessage(error: ApiErrorLike | null | undefined): string {
   }
   if (error?.code === 'CUSTOMER_LIMIT_EXCEEDED' && remaining !== null) {
     return `${copy.message} (còn được mua ${remaining} vé)`;
+  }
+  // "Chưa xuất bản được" một mình không nói được gì; backend đã gửi kèm đủ danh sách vướng mắc.
+  if (error?.code === 'PUBLISH_BLOCKED') {
+    const blockers = Array.isArray(meta.blockers) ? meta.blockers : [];
+    const labels = blockers.filter((item) => typeof item === 'string').map(publishBlockerLabel);
+    if (labels.length > 0) return `${copy.message}: ${labels.join('; ')}`;
   }
   return copy.message;
 }
