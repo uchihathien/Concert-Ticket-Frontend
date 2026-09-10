@@ -1,4 +1,4 @@
-import { getAccessToken } from '@nexaticket/auth/client';
+import { createSignInRedirect, getAccessToken } from '@nexaticket/auth/client';
 import { createApiClient } from '@nexaticket/ts-sdk';
 
 /**
@@ -10,4 +10,5 @@ import { createApiClient } from '@nexaticket/ts-sdk';
 export const apiClient = createApiClient({
   baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080',
   getAccessToken,
+  onUnauthenticated: createSignInRedirect('/login'),
 });
