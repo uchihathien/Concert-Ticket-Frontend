@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AuthOptions } from './AuthOptions';
 import { Button } from './Button';
 import styles from './signin.module.css';
 
@@ -35,6 +36,13 @@ export interface SignInScreenProps {
   /** Nhãn giữa đường kẻ phân cách. */
   dividerLabel?: string;
   /**
+   * Đường tới màn hình "quên mật khẩu" của Keycloak — dựng bằng `resetPasswordUrlFromEnv`.
+   *
+   * Trang đăng nhập của Keycloak vốn đã có sẵn nút đó, nhưng người quên mật khẩu chưa chắc đã bấm
+   * "Đăng nhập" trước: họ vào trang, nhớ ra mình quên, và tìm chữ "Quên mật khẩu?" ngay tại chỗ.
+   */
+  forgotPasswordHref?: string | null;
+  /**
    * Hành động phụ dưới nút chính — ở app khách là form "Tạo tài khoản mới".
    *
    * Ba app còn lại không truyền gì: tài khoản của ban tổ chức, nhân viên soát vé và superadmin
@@ -68,6 +76,7 @@ export function SignInScreen({
   hiddenFields,
   social,
   dividerLabel = 'hoặc',
+  forgotPasswordHref,
   secondary,
   footer,
   aside,
@@ -84,26 +93,22 @@ export function SignInScreen({
             {description ? <p className={styles.description}>{description}</p> : null}
           </div>
 
-          {social ? (
-            <>
-              {social}
-              <div className={styles.divider}>
-                <span>{dividerLabel}</span>
-              </div>
-            </>
-          ) : null}
-
-          <div className={styles.actions}>
-            <form action={action}>
-              {hiddenFields}
-              <Button type="submit" size="lg" block>
-                {buttonLabel}
-              </Button>
-            </form>
-            {secondary}
-          </div>
-
-          {footer ? <p className={styles.footer}>{footer}</p> : null}
+          {/* Cùng khối này với modal ở header — xem `AuthOptions`. */}
+          <AuthOptions
+            social={social}
+            dividerLabel={dividerLabel}
+            primary={
+              <form action={action}>
+                {hiddenFields}
+                <Button type="submit" size="lg" block>
+                  {buttonLabel}
+                </Button>
+              </form>
+            }
+            forgotPasswordHref={forgotPasswordHref}
+            secondary={secondary}
+            note={footer}
+          />
         </div>
       </main>
     </div>
