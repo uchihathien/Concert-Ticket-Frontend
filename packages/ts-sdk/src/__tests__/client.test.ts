@@ -5,7 +5,7 @@
 // gặp chuyện này — đây là hạn chế của môi trường test, không phải của client.
 import { HttpResponse, http } from 'msw';
 import { setupServer } from 'msw/node';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '../http/api-error';
 import { createApiClient } from '../http/client';
 
@@ -135,6 +135,39 @@ describe('ApiClient', () => {
     expect(response.status).toBe(204);
   });
 
+  it('401 từ gateway gọi onUnauthenticated — đường thoát duy nhất khi phiên bị thu hồi', async () => {
+    // Keycloak KHÔNG biết identity-service đã thu hồi phiên hay khoá tài khoản, nên `/api/auth/token`
+    // vẫn trả token mới đều đặn trong khi mọi lời gọi gateway trả 401. Thiếu móc này thì người dùng
+    // mắc kẹt: cookie nói đã đăng nhập, màn hình nào cũng lỗi, không có đường tự thoát.
+    server.use(
+      http.get(`${BASE_URL}/v1/me/organizations`, () =>
+        HttpResponse.json({ code: 'UNAUTHENTICATED' }, { status: 401 }),
+      ),
+    );
+    const onUnauthenticated = vi.fn();
+    const api = createApiClient({ baseUrl: BASE_URL, onUnauthenticated });
+
+    await expect(api.get('/v1/me/organizations')).rejects.toBeInstanceOf(ApiError);
+
+    expect(onUnauthenticated).toHaveBeenCalledTimes(1);
+  });
+
+  it('403 KHÔNG gọi onUnauthenticated — thiếu quyền không phải mất phiên', async () => {
+    // Nhầm hai thứ này là đăng xuất người dùng mỗi lần họ chạm vào một nút không thuộc vai trò của
+    // mình — và họ sẽ nghĩ hệ thống hỏng chứ không nghĩ mình thiếu quyền.
+    server.use(
+      http.get(`${BASE_URL}/v1/organizations/x/audit-logs`, () =>
+        HttpResponse.json({ code: 'FORBIDDEN' }, { status: 403 }),
+      ),
+    );
+    const onUnauthenticated = vi.fn();
+    const api = createApiClient({ baseUrl: BASE_URL, onUnauthenticated });
+
+    await expect(api.get('/v1/organizations/x/audit-logs')).rejects.toBeInstanceOf(ApiError);
+
+    expect(onUnauthenticated).not.toHaveBeenCalled();
+  });
+
   it('mất mạng thành ApiError NETWORK_ERROR, không phải TypeError trần', async () => {
     server.use(http.get(`${BASE_URL}/v1/me/organizations`, () => HttpResponse.error()));
 
@@ -145,5 +178,38 @@ describe('ApiClient', () => {
     expect(error).toBeInstanceOf(ApiError);
     expect(error.code).toBe('NETWORK_ERROR');
     expect(error.status).toBe(0);
+  });
+});
+
+/**
+ * `fetch` của trình duyệt ném "Illegal invocation" nếu receiver không phải `window`.
+ *
+ * Node không kiểm receiver nên test bằng MSW ở trên KHÔNG bắt được lỗi này — phải kiểm thẳng cái
+ * bất biến: ApiClient luôn gọi fetch với receiver là `globalThis`. Đây từng là lỗi thật, làm mọi
+ * request từ trình duyệt của cả bốn app hỏng với `NETWORK_ERROR`.
+ */
+describe('receiver của fetch', () => {
+  it('luôn là globalThis, không phải chính ApiClient', async () => {
+    let called = false;
+    let receiverWasGlobal = false;
+
+    // Ghi lại kết quả SO SÁNH chứ không gán `this` ra biến: gán thẳng vi phạm `no-this-alias`,
+    // mà thứ cần kiểm ở đây vốn chỉ là "receiver có phải globalThis không".
+    function spyFetch(this: unknown): Promise<Response> {
+      called = true;
+      receiverWasGlobal = this === globalThis;
+      return Promise.resolve(
+        new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } }),
+      );
+    }
+
+    const api = createApiClient({
+      baseUrl: BASE_URL,
+      fetch: spyFetch as unknown as typeof globalThis.fetch,
+    });
+    await api.get('/v1/ping');
+
+    expect(called).toBe(true);
+    expect(receiverWasGlobal).toBe(true);
   });
 });

@@ -15,6 +15,25 @@ export interface ApiClientOptions {
   fetch?: typeof globalThis.fetch;
   /** ms. Cửa soát vé dùng mạng nhà thi đấu — treo vô hạn tệ hơn là báo lỗi. */
   timeoutMs?: number;
+  /**
+   * Gateway từ chối token (401).
+   *
+   * <h3>Vì sao cần, khi đã có `/api/auth/token` báo phiên hết hạn</h3>
+   *
+   * Hai đường đó trả lời hai câu khác nhau, và chỉ đường này thấy được câu quan trọng.
+   * `/api/auth/token` chỉ hỏi Keycloak; mà Keycloak **không biết** về `revoked_sessions` hay
+   * `users.status` của identity-service. Sau khi quản trị viên thu hồi phiên hoặc khoá tài khoản,
+   * Keycloak vẫn vui vẻ cấp access token mới — nên `/api/auth/token` trả 200 vĩnh viễn trong khi
+   * MỌI lời gọi gateway trả 401.
+   *
+   * Người dùng khi đó mắc kẹt: cookie nói đã đăng nhập, màn hình nào cũng lỗi, và không có đường
+   * nào tự thoát. Tính năng thu hồi phiên vì thế mới xong một nửa.
+   *
+   * Là callback chứ không phải hành vi cố định: app quản trị nên đẩy thẳng về trang đăng nhập,
+   * còn app khách thì chỉ nên xoá token và mở hộp thoại — đá một người đang xem danh sách sự kiện
+   * sang trang đăng nhập là phản ứng thái quá.
+   */
+  onUnauthenticated?: () => void;
 }
 
 export interface RequestOptions {
@@ -46,12 +65,14 @@ export class ApiClient {
   private readonly getAccessToken: ApiClientOptions['getAccessToken'];
   private readonly fetchImpl: typeof globalThis.fetch | undefined;
   private readonly timeoutMs: number;
+  private readonly onUnauthenticated: ApiClientOptions['onUnauthenticated'];
 
   constructor(options: ApiClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/$/, '');
     this.getAccessToken = options.getAccessToken;
     this.fetchImpl = options.fetch;
     this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.onUnauthenticated = options.onUnauthenticated;
   }
 
   /**
@@ -62,7 +83,16 @@ export class ApiClient {
    * Next.js gắn vào ở phía server.
    */
   private get doFetch(): typeof globalThis.fetch {
-    return this.fetchImpl ?? globalThis.fetch;
+    // `.bind(globalThis)` là BẮT BUỘC, không phải cho gọn.
+    //
+    // `fetch` của trình duyệt đòi receiver là `window`. Gọi qua `this.doFetch(...)` thì receiver
+    // lại là chính ApiClient, và Chrome ném
+    // `TypeError: Failed to execute 'fetch' on 'Window': Illegal invocation`.
+    //
+    // Lỗi này ẩn rất lâu: undici ở Node không kiểm receiver, nên test và server component chạy
+    // bình thường. Nó chỉ lộ ra ở trình duyệt — và trước khi gateway mở CORS thì mọi request từ
+    // trình duyệt đều hỏng sẵn vì lý do khác, nên không ai nhìn thấy.
+    return (this.fetchImpl ?? globalThis.fetch).bind(globalThis);
   }
 
   async request<T>(path: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
@@ -103,7 +133,11 @@ export class ApiClient {
     }
 
     if (!response.ok) {
-      throw await toApiError(response, correlationId);
+      const error = await toApiError(response, correlationId);
+      // Báo TRƯỚC khi ném: nơi bắt lỗi thường chỉ hiện một thông báo rồi thôi, nên nếu chờ nó xử
+      // lý thì mỗi màn hình lại phải nhớ tự gọi — và màn hình quên là màn hình mắc kẹt.
+      if (error.status === 401) this.onUnauthenticated?.();
+      throw error;
     }
 
     return {
@@ -121,6 +155,16 @@ export class ApiClient {
 
   async post<T>(path: string, body?: unknown, options: Omit<RequestOptions, 'method'> = {}) {
     return this.request<T>(path, { ...options, method: 'POST', body });
+  }
+
+  /** Sửa một phần: trường nào không gửi thì backend giữ nguyên, không phải xoá. */
+  async patch<T>(path: string, body?: unknown, options: Omit<RequestOptions, 'method'> = {}) {
+    return this.request<T>(path, { ...options, method: 'PATCH', body });
+  }
+
+  /** Thay toàn bộ. Backend dùng PUT ở đúng những chỗ "gửi lại cả bộ", ví dụ trần mua vé. */
+  async put<T>(path: string, body?: unknown, options: Omit<RequestOptions, 'method'> = {}) {
+    return this.request<T>(path, { ...options, method: 'PUT', body });
   }
 
   async delete<T>(path: string, options: Omit<RequestOptions, 'method' | 'body'> = {}) {
