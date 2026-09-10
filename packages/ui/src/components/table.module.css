@@ -55,7 +55,7 @@
 }
 
 .rowClickable:hover {
-  background: var(--nt-bg-subtle);
+  background: var(--nt-hover);
 }
 
 .stateCell {

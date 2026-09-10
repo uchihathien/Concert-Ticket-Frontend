@@ -8,20 +8,26 @@
 }
 
 .card:hover .title {
-  color: var(--nt-primary);
+  color: var(--nt-primary-text);
 }
 
 /* Nhấc nhẹ khi rê chuột — đủ để biết thẻ bấm được, không đủ để thành hiệu ứng. */
 .card:hover .media {
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgb(0 0 0 / 14%);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 55%);
+}
+
+/* Poster phóng nhẹ bên trong khung đã cắt. Khung giữ nguyên kích thước nên cả hàng thẻ không
+   xô nhau — phóng chính cái thẻ thì lưới sẽ nhảy. */
+.card:hover .media img {
+  transform: scale(1.06);
 }
 
 .media {
   position: relative;
   aspect-ratio: 16 / 9;
   border-radius: var(--nt-radius);
-  background: linear-gradient(120deg, var(--nt-bg-subtle), #ece7e2);
+  background: linear-gradient(120deg, var(--nt-bg-subtle), var(--nt-elevated));
   overflow: hidden;
   margin-bottom: var(--nt-space-2);
   transition:
@@ -49,22 +55,50 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+  transition: transform 220ms ease-out;
 }
 
-/* Trên lớp phủ, nếu không huy hiệu bị làm mờ đi. */
-.badge {
+@media (prefers-reduced-motion: reduce) {
+  .media img {
+    transition: none;
+  }
+}
+
+/* Nhãn danh mục, góc trên bên trái. Nền tối bán trong suốt thay vì màu đặc: poster nào cũng có
+   nhãn này, nên nó không được giành sự chú ý với huy hiệu ở góc đối diện. */
+.tag {
   z-index: 2;
   position: absolute;
   inset-block-start: var(--nt-space-2);
   inset-inline-start: var(--nt-space-2);
+  padding: 3px var(--nt-space-2);
+  border-radius: 999px;
+  background: rgb(0 0 0 / 62%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  backdrop-filter: blur(4px);
+}
+
+/* Huy hiệu sang góc phải để không đè nhãn danh mục. Trên lớp phủ, nếu không nó bị làm mờ đi. */
+.badge {
+  z-index: 2;
+  position: absolute;
+  inset-block-start: var(--nt-space-2);
+  inset-inline-end: var(--nt-space-2);
 }
 
 /* Thẻ đúng 4 dòng, cùng thứ tự ở mọi nơi thẻ xuất hiện (ui-direction.md §5).
    Không thêm mô tả, không thêm lượt xem, không thêm nút chia sẻ. */
+/* Chừa sẵn đúng hai dòng kể cả khi tên ngắn: các thẻ đứng cạnh nhau trong lưới, thiếu chỗ này
+   thì tên một dòng kéo giá lên cao hơn tên hai dòng và cả hàng răng cưa. */
 .title {
   font-size: 15px;
   font-weight: 600;
+  line-height: 1.35;
   margin: 0 0 4px;
+  min-height: calc(2 * 1.35em);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -81,7 +115,7 @@
 .price {
   margin: 4px 0 0;
   font-weight: 700;
-  color: var(--nt-primary);
+  color: var(--nt-primary-text);
 }
 
 /* CategoryChips ------------------------------------------------------------ */
@@ -115,14 +149,14 @@
 }
 
 .chip:hover {
-  background: var(--nt-bg-subtle);
+  background: var(--nt-hover);
 }
 
 .chipActive,
 .chipActive:hover {
   background: var(--nt-primary);
   color: var(--nt-primary-ink);
-  border-color: var(--nt-primary);
+  border-color: var(--nt-primary-text);
 }
 
 /* CarouselRow -------------------------------------------------------------- */
@@ -145,7 +179,7 @@
 }
 
 .rowLink {
-  color: var(--nt-primary);
+  color: var(--nt-primary-text);
   font-weight: 600;
   white-space: nowrap;
 }

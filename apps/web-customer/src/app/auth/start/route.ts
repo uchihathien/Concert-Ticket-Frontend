@@ -15,6 +15,19 @@ import { signIn } from '@/auth';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request): Promise<Response> {
+  // Đường này là GET và cố ý không có CSRF token — popup chỉ điều hướng được bằng GET. Cái giá
+  // là bất kỳ trang nào cũng đẩy được trình duyệt của khách vào luồng đăng nhập (login CSRF):
+  // kẻ tấn công dụ khách đăng nhập vào TÀI KHOẢN CỦA HẮN, rồi những gì khách thao tác sau đó —
+  // vé đã mua, thẻ đã lưu — nằm trong tài khoản hắn đọc được.
+  //
+  // `Sec-Fetch-Site` do trình duyệt đặt và JS không sửa được, nên nó đủ để chặn. Trình duyệt cũ
+  // không gửi header này; khi đó bỏ qua kiểm tra thay vì chặn, vì chặn nghĩa là không đăng nhập
+  // được.
+  const site = request.headers.get('sec-fetch-site');
+  if (site && site !== 'same-origin' && site !== 'none') {
+    return new Response(null, { status: 303, headers: { Location: '/login' } });
+  }
+
   const params = new URL(request.url).searchParams;
 
   // Không bao giờ chuyển thẳng tham số của người dùng vào `signIn`: chỉ nhận đúng ba giá trị

@@ -1,0 +1,82 @@
+.page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: var(--nt-space-12) var(--nt-space-6);
+  text-align: center;
+}
+
+/* Số 404 to nhưng mờ: nó là ngữ cảnh, không phải thông điệp. Thông điệp là dòng chữ bên dưới. */
+.code {
+  margin: 0;
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--nt-border);
+  font-variant-numeric: tabular-nums;
+}
+
+.title {
+  margin: var(--nt-space-3) 0 0;
+  font-size: 24px;
+  line-height: 1.25;
+}
+
+.note {
+  margin: var(--nt-space-2) auto 0;
+  max-width: 44ch;
+  color: var(--nt-text-muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nt-space-3) var(--nt-space-4);
+  margin-top: var(--nt-space-8);
+}
+
+.primary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 var(--nt-space-6);
+  border-radius: 999px;
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.primary:hover {
+  background: var(--nt-primary-hover);
+}
+
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  color: var(--nt-text-muted);
+  font-weight: 600;
+}
+
+.secondary:hover {
+  color: var(--nt-primary-text);
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: var(--nt-space-8) var(--nt-space-4);
+  }
+
+  /* Ba link xếp dọc, mỗi cái trọn chiều ngang: ở 360px ba mục một hàng thì mục nào cũng hẹp. */
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .primary,
+  .secondary {
+    justify-content: center;
+  }
+}

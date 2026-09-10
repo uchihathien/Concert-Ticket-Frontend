@@ -9,10 +9,12 @@ import {
   useSeatMap,
   type Seat,
   type StandingLine,
+  type StandingZone,
 } from '@nexaticket/ts-sdk';
-import { Button, ErrorState, MoneyText, Skeleton, formatVnd } from '@nexaticket/ui';
+import { Button, MoneyText, Skeleton, errorMessage, formatNumber, formatVnd } from '@nexaticket/ui';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { ApiErrorState } from './ApiErrorState';
 import styles from './booking.module.css';
 
 export interface SeatPickerProps {
@@ -55,7 +57,7 @@ export function SeatPicker({ eventSessionId, eventTitle }: SeatPickerProps) {
 
   const map = data?.data ?? null;
 
-  const seatsByZone = useMemo(() => groupByZone(map?.seats ?? []), [map]);
+  const seatedZones = useMemo(() => groupByZone(map?.seats ?? []), [map]);
 
   const standingLines: StandingLine[] = useMemo(
     () =>
@@ -98,6 +100,12 @@ export function SeatPicker({ eventSessionId, eventTitle }: SeatPickerProps) {
     setStanding((current) => ({ ...current, [zoneCode]: Math.max(0, quantity) }));
   }
 
+  function clearAll() {
+    setFailure(null);
+    setSelectedSeatIds([]);
+    setStanding({});
+  }
+
   async function submit() {
     if (unitCount === 0 || submitting) return;
     setSubmitting(true);
@@ -129,117 +137,142 @@ export function SeatPicker({ eventSessionId, eventTitle }: SeatPickerProps) {
   if (isPending) {
     return (
       <div className={styles.loading} aria-busy="true">
-        <Skeleton height={28} width="40%" />
-        <Skeleton height={180} />
-        <Skeleton height={180} />
+        <Skeleton height={44} />
+        <Skeleton height={320} />
+        <Skeleton height={220} />
       </div>
     );
   }
 
   if (isError || !map) {
-    const apiError = error instanceof ApiError ? error : null;
-    return (
-      // Truyền chính đối tượng lỗi: ErrorState tự tra câu tiếng Việt theo mã lỗi và hiện
-      // correlation id — thứ duy nhất nối màn hình này với log phía server.
-      <ErrorState
-        error={apiError}
-        correlationId={apiError?.correlationId ?? null}
-        onRetry={() => void refetch()}
-      />
-    );
+    return <ApiErrorState error={error} onRetry={() => void refetch()} />;
   }
 
+  const hasSeated = seatedZones.length > 0;
+  const hasTaken = map.seats.some((seat) => seat.status !== 'AVAILABLE');
   const soldOut =
     map.seats.every((s) => s.status !== 'AVAILABLE') &&
     map.standingZones.every((z) => z.available === 0);
 
   return (
     <div className={styles.layout}>
-      <div className={styles.zones}>
+      <div className={styles.map}>
         {soldOut ? <p className={styles.soldOut}>Suất này đã bán hết.</p> : null}
 
-        {map.standingZones.map((zone) => {
-          const picked = standing[zone.zoneCode] ?? 0;
-          return (
-            <section key={zone.zoneCode} className={styles.zone}>
-              <header className={styles.zoneHead}>
-                <h2 className={styles.zoneName}>{zone.ticketTypeName ?? zone.zoneCode}</h2>
-                <span className={styles.zonePrice}>{formatVnd(zone.priceVnd)}</span>
-              </header>
-              <p className={styles.zoneMeta}>
-                Vé đứng · còn {zone.available.toLocaleString('vi-VN')} chỗ
-              </p>
-              {/* Vé đứng không có ghế để bấm — chỉ chọn số lượng. Vẫn giới hạn theo số còn lại để
-                  khách không gửi lên một con số chắc chắn bị từ chối. */}
-              <div className={styles.quantity}>
-                <button
-                  type="button"
-                  className={styles.quantityButton}
-                  onClick={() => setStandingQuantity(zone.zoneCode, picked - 1)}
-                  disabled={picked === 0}
-                  aria-label={`Bớt một vé ${zone.zoneCode}`}
-                >
-                  −
-                </button>
-                <span className={styles.quantityValue} aria-live="polite">
-                  {picked}
-                </span>
-                <button
-                  type="button"
-                  className={styles.quantityButton}
-                  onClick={() => setStandingQuantity(zone.zoneCode, picked + 1)}
-                  disabled={picked >= zone.available}
-                  aria-label={`Thêm một vé ${zone.zoneCode}`}
-                >
-                  +
-                </button>
-              </div>
-            </section>
-          );
-        })}
-
-        {seatsByZone.map(([zoneCode, seats]) => (
-          <section key={zoneCode} className={styles.zone}>
-            <header className={styles.zoneHead}>
-              <h2 className={styles.zoneName}>{seats[0]?.sectionLabel ?? zoneCode}</h2>
-              <span className={styles.zonePrice}>{formatVnd(seats[0]?.priceVnd ?? 0)}</span>
-            </header>
-            <SeatGrid seats={seats} selected={selectedSeatIds} onToggle={toggleSeat} />
+        {/*
+          Khu vé đứng đặt TRƯỚC sơ đồ ghế. Nó chỉ chiếm một hai dòng, còn sơ đồ ghế cao hàng nghìn
+          pixel — để vé đứng ở dưới thì hạng vé thường đắt nhất và gần sân khấu nhất lại là thứ
+          khách phải cuộn qua 1.600 ô ghế mới thấy.
+        */}
+        {map.standingZones.length > 0 ? (
+          <section className={styles.standingBlock} aria-label="Vé đứng">
+            <h2 className={styles.blockTitle}>Vé đứng</h2>
+            <p className={styles.blockNote}>
+              Khu đứng không đánh số chỗ — chỉ cần chọn số lượng vé.
+            </p>
+            <div className={styles.zoneList}>
+              {map.standingZones.map((zone) => (
+                <StandingRow
+                  key={zone.zoneCode}
+                  zone={zone}
+                  quantity={standing[zone.zoneCode] ?? 0}
+                  onChange={(next) => setStandingQuantity(zone.zoneCode, next)}
+                />
+              ))}
+            </div>
           </section>
-        ))}
+        ) : null}
+
+        {hasSeated ? (
+          <section className={styles.seatedBlock} aria-label="Sơ đồ chỗ ngồi">
+            {/*
+              Thanh sân khấu là mốc định hướng, không phải đồ trang trí. Không có nó thì lưới ghế
+              chỉ là một đám ô vuông: khách không biết hàng 1 gần hay xa sân khấu, mà đó chính là
+              câu hỏi duy nhất họ đang cân nhắc khi chọn chỗ.
+            */}
+            <div className={styles.stage} aria-hidden="true">
+              <span>Sân khấu</span>
+            </div>
+
+            <Legend hasTaken={hasTaken} />
+
+            <div className={styles.zoneList}>
+              {seatedZones.map(([zoneCode, seats]) => (
+                <SeatedZone
+                  key={zoneCode}
+                  zoneCode={zoneCode}
+                  seats={seats}
+                  selected={selectedSeatIds}
+                  onToggle={toggleSeat}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
       </div>
 
-      <aside className={styles.summary}>
-        <h2 className={styles.summaryTitle}>{eventTitle}</h2>
+      <aside className={styles.summary} aria-label="Chỗ đã chọn">
+        <div className={styles.summaryHead}>
+          <h2 className={styles.summaryTitle}>{eventTitle}</h2>
+          {unitCount > 0 ? (
+            <button type="button" className={styles.clear} onClick={clearAll}>
+              Bỏ hết
+            </button>
+          ) : null}
+        </div>
+
+        {/* Dòng đếm gọn thay cho cả danh sách khi màn hẹp — xem `.pickedCount` trong CSS. */}
+        {unitCount > 0 ? <p className={styles.pickedCount}>{unitCount} vé đã chọn</p> : null}
 
         {unitCount === 0 ? (
-          <p className={styles.summaryEmpty}>Chọn chỗ để tiếp tục.</p>
+          <p className={styles.summaryEmpty}>
+            {hasSeated ? 'Bấm vào ghế trên sơ đồ để chọn.' : 'Chọn số lượng vé để tiếp tục.'}
+          </p>
         ) : (
           <ul className={styles.picked}>
             {selectedSeats.map((seat) => (
-              <li key={seat.id}>
-                <span>{seatName(seat)}</span>
+              <li key={seat.id} className={styles.pickedItem}>
+                <span className={styles.pickedName}>{seatName(seat)}</span>
                 <MoneyText amountVnd={seat.priceVnd} />
+                {/* Bỏ chọn ngay trong danh sách: bấm lại đúng ô ghế cũ trên một lưới 400 ô là
+                    việc khó, nhất là sau khi đã cuộn đi chỗ khác. */}
+                <button
+                  type="button"
+                  className={styles.remove}
+                  onClick={() => toggleSeat(seat)}
+                  aria-label={`Bỏ chọn ${seatName(seat)}`}
+                >
+                  ×
+                </button>
               </li>
             ))}
-            {standingLines.map((line) => (
-              <li key={line.zoneCode}>
-                <span>
-                  {line.zoneCode} · {line.quantity} vé đứng
-                </span>
-                <MoneyText
-                  amountVnd={
-                    (map.standingZones.find((z) => z.zoneCode === line.zoneCode)?.priceVnd ?? 0) *
-                    line.quantity
-                  }
-                />
-              </li>
-            ))}
+            {standingLines.map((line) => {
+              const zone = map.standingZones.find((z) => z.zoneCode === line.zoneCode);
+              return (
+                <li key={line.zoneCode} className={styles.pickedItem}>
+                  <span className={styles.pickedName}>
+                    {zone?.ticketTypeName ?? line.zoneCode} · {line.quantity} vé
+                  </span>
+                  <MoneyText amountVnd={(zone?.priceVnd ?? 0) * line.quantity} />
+                  <button
+                    type="button"
+                    className={styles.remove}
+                    onClick={() => setStandingQuantity(line.zoneCode, 0)}
+                    aria-label={`Bỏ vé đứng khu ${line.zoneCode}`}
+                  >
+                    ×
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         )}
 
         <div className={styles.total}>
-          <span>Tạm tính</span>
+          <span>
+            Tạm tính
+            {unitCount > 0 ? <span className={styles.totalCount}> · {unitCount} vé</span> : null}
+          </span>
           <MoneyText amountVnd={total} strong />
         </div>
 
@@ -262,15 +295,17 @@ export function SeatPicker({ eventSessionId, eventTitle }: SeatPickerProps) {
           </p>
         ) : null}
 
-        <Button
-          block
-          size="lg"
-          onClick={() => void submit()}
-          disabled={unitCount === 0 || overAllowance || submitting}
-          loading={submitting}
-        >
-          {submitting ? 'Đang giữ chỗ…' : 'Giữ chỗ và thanh toán'}
-        </Button>
+        <div className={styles.action}>
+          <Button
+            block
+            size="lg"
+            onClick={() => void submit()}
+            disabled={unitCount === 0 || overAllowance || submitting}
+            loading={submitting}
+          >
+            {submitting ? 'Đang giữ chỗ…' : 'Giữ chỗ và thanh toán'}
+          </Button>
+        </div>
 
         <p className={styles.note}>
           Chỗ được giữ trong ít phút để bạn hoàn tất thanh toán. Hết thời gian, chỗ sẽ mở lại cho
@@ -281,7 +316,130 @@ export function SeatPicker({ eventSessionId, eventTitle }: SeatPickerProps) {
   );
 }
 
-/** Lưới ghế theo hàng. Hàng lấy từ `rowLabel` của backend, không tự suy từ toạ độ. */
+/**
+ * Chú giải trạng thái ghế.
+ *
+ * Ba ô vuông có chữ, không phải chỉ ba màu: bốn trạng thái ghế phân biệt bằng màu là thứ người mù
+ * màu không đọc được, và ô gạch chéo cũng vô nghĩa nếu không ai nói nó nghĩa là gì.
+ */
+function Legend({ hasTaken }: { hasTaken: boolean }) {
+  return (
+    <ul className={styles.legend}>
+      <li>
+        <span className={styles.swatch} data-state="available" aria-hidden="true" />
+        Còn trống
+      </li>
+      <li>
+        <span className={styles.swatch} data-state="selected" aria-hidden="true" />
+        Bạn đang chọn
+      </li>
+      {hasTaken ? (
+        <li>
+          <span className={styles.swatch} data-state="taken" aria-hidden="true" />
+          Đã có người mua
+        </li>
+      ) : null}
+    </ul>
+  );
+}
+
+/** Một khu ghế: tên khu, giá, và lưới ghế. */
+function SeatedZone({
+  zoneCode,
+  seats,
+  selected,
+  onToggle,
+}: {
+  zoneCode: string;
+  seats: Seat[];
+  selected: string[];
+  onToggle: (seat: Seat) => void;
+}) {
+  const available = seats.filter((seat) => seat.status === 'AVAILABLE').length;
+  const pickedHere = seats.filter((seat) => selected.includes(seat.id)).length;
+
+  return (
+    <section className={styles.zone} data-picked={pickedHere > 0 ? 'true' : undefined}>
+      <header className={styles.zoneHead}>
+        <div>
+          <h3 className={styles.zoneName}>{seats[0]?.sectionLabel ?? zoneCode}</h3>
+          <p className={styles.zoneMeta}>
+            {available > 0 ? `Còn ${formatNumber(available)} ghế` : 'Hết ghế'}
+            {pickedHere > 0 ? ` · đang chọn ${pickedHere}` : ''}
+          </p>
+        </div>
+        <span className={styles.zonePrice}>{formatVnd(seats[0]?.priceVnd ?? 0)}</span>
+      </header>
+
+      <SeatGrid seats={seats} selected={selected} onToggle={onToggle} />
+    </section>
+  );
+}
+
+/** Một khu vé đứng: giá, số còn lại, và bộ đếm số lượng. */
+function StandingRow({
+  zone,
+  quantity,
+  onChange,
+}: {
+  zone: StandingZone;
+  quantity: number;
+  onChange: (next: number) => void;
+}) {
+  return (
+    <section className={styles.zone} data-picked={quantity > 0 ? 'true' : undefined}>
+      <header className={styles.zoneHead}>
+        <div>
+          <h3 className={styles.zoneName}>{zone.ticketTypeName ?? zone.zoneCode}</h3>
+          <p className={styles.zoneMeta}>
+            {zone.available > 0 ? `Còn ${formatNumber(zone.available)} chỗ` : 'Hết chỗ'}
+          </p>
+        </div>
+        <span className={styles.zonePrice}>{formatVnd(zone.priceVnd)}</span>
+      </header>
+
+      <div className={styles.quantity}>
+        <button
+          type="button"
+          className={styles.quantityButton}
+          onClick={() => onChange(quantity - 1)}
+          disabled={quantity === 0}
+          aria-label={`Bớt một vé ${zone.zoneCode}`}
+        >
+          −
+        </button>
+        <span className={styles.quantityValue} aria-live="polite">
+          {quantity}
+        </span>
+        <button
+          type="button"
+          className={styles.quantityButton}
+          onClick={() => onChange(quantity + 1)}
+          // Chặn theo số còn lại: gửi lên một con số chắc chắn bị từ chối chỉ để nhận lỗi.
+          disabled={quantity >= zone.available}
+          aria-label={`Thêm một vé ${zone.zoneCode}`}
+        >
+          +
+        </button>
+        {quantity > 0 ? (
+          <span className={styles.quantitySubtotal}>= {formatVnd(zone.priceVnd * quantity)}</span>
+        ) : null}
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Lưới ghế.
+ *
+ * Ghế được đặt vào **đúng cột theo số ghế**, không phải xếp lần lượt cạnh nhau. Bản trước dùng
+ * flex nên hàng nào thiếu ghế thì cả hàng dồn sang trái: nhìn vào thấy các số nhảy loạn và lưới
+ * trông như bị hỏng, trong khi dữ liệu hoàn toàn đúng. Ghế thiếu bây giờ để trống đúng chỗ, giống
+ * một sơ đồ chỗ thật — và cũng là thông tin có ích, vì lối đi giữa hàng chính là những ô trống đó.
+ *
+ * Số ghế không phải số (ví dụ `A12`) thì rơi về xếp lần lượt — thà thẳng hàng theo thứ tự còn hơn
+ * đoán sai vị trí.
+ */
 function SeatGrid({
   seats,
   selected,
@@ -291,53 +449,104 @@ function SeatGrid({
   selected: string[];
   onToggle: (seat: Seat) => void;
 }) {
-  const rows = useMemo(() => {
-    const grouped = new Map<string, Seat[]>();
-    for (const seat of seats) {
-      const key = seat.rowLabel ?? '';
-      const list = grouped.get(key) ?? [];
-      list.push(seat);
-      grouped.set(key, list);
-    }
-    for (const list of grouped.values()) {
-      list.sort((a, b) => (a.posX ?? 0) - (b.posX ?? 0));
-    }
-    return [...grouped.entries()].sort((a, b) => Number(a[0]) - Number(b[0]));
-  }, [seats]);
+  const { rows, columnCount } = useMemo(() => buildGrid(seats), [seats]);
 
   return (
-    <div className={styles.grid}>
-      {rows.map(([rowLabel, rowSeats]) => (
-        <div key={rowLabel} className={styles.row}>
-          <span className={styles.rowLabel} aria-hidden="true">
-            {rowLabel}
-          </span>
-          {rowSeats.map((seat) => {
-            const isSelected = selected.includes(seat.id);
-            const available = seat.status === 'AVAILABLE';
-            return (
-              <button
-                key={seat.id}
-                type="button"
-                className={styles.seat}
-                data-state={isSelected ? 'selected' : available ? 'available' : 'taken'}
-                onClick={() => onToggle(seat)}
-                disabled={!available}
-                // Ghế đã bán vẫn nằm trong DOM để giữ đúng hình dạng hàng ghế, nhưng trình đọc
-                // màn hình không cần nghe qua từng cái một.
-                aria-hidden={available ? undefined : true}
-                tabIndex={available ? undefined : -1}
-                aria-pressed={isSelected}
-                aria-label={`Ghế ${seatName(seat)}, ${formatVnd(seat.priceVnd)}`}
-              >
-                {seat.seatLabel ?? ''}
-              </button>
-            );
-          })}
-        </div>
-      ))}
+    <div className={styles.gridScroll}>
+      <div className={styles.grid} style={{ '--seat-columns': columnCount } as React.CSSProperties}>
+        {rows.map((row) => (
+          <div key={row.label} className={styles.row}>
+            <span className={styles.rowLabel} aria-hidden="true">
+              {row.label}
+            </span>
+            <div className={styles.rowSeats}>
+              {row.seats.map(({ seat, column }) => {
+                const isSelected = selected.includes(seat.id);
+                const available = seat.status === 'AVAILABLE';
+                return (
+                  <button
+                    key={seat.id}
+                    type="button"
+                    className={styles.seat}
+                    style={{ gridColumn: column }}
+                    data-state={isSelected ? 'selected' : available ? 'available' : 'taken'}
+                    onClick={() => onToggle(seat)}
+                    disabled={!available}
+                    // Ghế đã bán vẫn nằm trong DOM để giữ đúng hình dạng hàng ghế, nhưng trình
+                    // đọc màn hình không cần nghe qua từng cái một.
+                    aria-hidden={available ? undefined : true}
+                    tabIndex={available ? undefined : -1}
+                    aria-pressed={isSelected}
+                    aria-label={`Ghế ${seatName(seat)}, ${formatVnd(seat.priceVnd)}`}
+                  >
+                    {seat.seatLabel ?? ''}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
+}
+
+interface GridRow {
+  label: string;
+  seats: Array<{ seat: Seat; column: number }>;
+}
+
+function buildGrid(seats: Seat[]): { rows: GridRow[]; columnCount: number } {
+  const byRow = new Map<string, Seat[]>();
+  for (const seat of seats) {
+    const key = seat.rowLabel ?? '';
+    const list = byRow.get(key) ?? [];
+    list.push(seat);
+    byRow.set(key, list);
+  }
+
+  // Tập số ghế của CẢ khu, để mọi hàng dùng chung một hệ cột.
+  const numbers = new Set<number>();
+  let allNumeric = true;
+  for (const seat of seats) {
+    const parsed = Number(seat.seatLabel);
+    if (seat.seatLabel === null || Number.isNaN(parsed)) {
+      allNumeric = false;
+      break;
+    }
+    numbers.add(parsed);
+  }
+
+  const columnOf = new Map<number, number>();
+  if (allNumeric) {
+    [...numbers].sort((a, b) => a - b).forEach((value, index) => columnOf.set(value, index + 1));
+  }
+
+  const rows: GridRow[] = [...byRow.entries()]
+    .sort((a, b) => compareRowLabel(a[0], b[0]))
+    .map(([label, rowSeats]) => {
+      const ordered = [...rowSeats].sort((a, b) => (a.posX ?? 0) - (b.posX ?? 0));
+      return {
+        label,
+        seats: ordered.map((seat, index) => ({
+          seat,
+          column: allNumeric ? (columnOf.get(Number(seat.seatLabel)) ?? index + 1) : index + 1,
+        })),
+      };
+    });
+
+  const columnCount = allNumeric
+    ? Math.max(1, columnOf.size)
+    : Math.max(1, ...rows.map((r) => r.seats.length));
+  return { rows, columnCount };
+}
+
+/** Hàng ghế thường là số; nếu không thì so sánh chữ theo tiếng Việt. */
+function compareRowLabel(a: string, b: string): number {
+  const na = Number(a);
+  const nb = Number(b);
+  if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+  return a.localeCompare(b, 'vi');
 }
 
 function groupByZone(seats: Seat[]): Array<[string, Seat[]]> {
@@ -357,13 +566,18 @@ function seatName(seat: Seat): string {
 }
 
 /**
- * Lỗi từ backend đã có câu tiếng Việt sẵn ở `ApiError.detail`; chỉ khi không có mới rơi về câu
- * chung. Hiện "Error: Request failed" cho một người vừa mất ghế là vô ích.
+ * Câu cho người dùng lấy từ TỪ ĐIỂN LỖI, không lấy từ `ApiError.detail`.
+ *
+ * Bản trước đọc thẳng `detail` với giả định "backend đã trả tiếng Việt sẵn". Giả định đó ngược với
+ * quy ước của chính hệ thống — `ui/errors.ts` mở đầu bằng: *backend trả `detail` bằng tiếng Anh để
+ * ghi log; câu chữ cho người dùng nằm ở đây*. Hậu quả nhìn thấy trên màn hình thật: một khách Việt
+ * bấm giữ chỗ và nhận về **"Sales window is closed"**.
+ *
+ * `errorMessage` còn chèn được số liệu từ `meta` — "còn được mua 2 vé" thay vì một câu chung chung.
  */
 function messageOf(error: unknown): string {
-  if (error && typeof error === 'object' && 'detail' in error) {
-    const detail = (error as { detail?: unknown }).detail;
-    if (typeof detail === 'string' && detail.length > 0) return detail;
+  if (error instanceof ApiError) {
+    return errorMessage(error);
   }
   return 'Không giữ được chỗ vừa chọn. Sơ đồ đã được làm mới, mời bạn chọn lại.';
 }

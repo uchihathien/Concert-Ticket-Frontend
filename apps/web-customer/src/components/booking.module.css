@@ -2,23 +2,9 @@
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: var(--nt-space-8);
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: var(--nt-space-6);
   align-items: start;
-}
-
-/* Dưới 900px, phần tóm tắt xuống dưới sơ đồ — nhưng vẫn dính đáy màn hình, vì nút "Giữ chỗ" là
-   thứ duy nhất trên trang này thật sự cần bấm được mọi lúc. */
-@media (max-width: 900px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-
-  .summary {
-    position: sticky;
-    bottom: 0;
-    z-index: 2;
-  }
 }
 
 .loading {
@@ -27,10 +13,11 @@
   gap: var(--nt-space-4);
 }
 
-.zones {
+.map {
   display: flex;
   flex-direction: column;
   gap: var(--nt-space-6);
+  min-width: 0;
 }
 
 .soldOut {
@@ -39,94 +26,258 @@
   text-align: center;
   color: var(--nt-text-muted);
   background: var(--nt-bg-subtle);
-  border-radius: var(--nt-radius);
-}
-
-.zone {
-  padding: var(--nt-space-5);
-  background: var(--nt-surface);
   border: 1px solid var(--nt-border);
   border-radius: var(--nt-radius-lg);
 }
 
+/* Khối sơ đồ ghế ---------------------------------------------------------- */
+
+.seatedBlock {
+  padding: var(--nt-space-6);
+  background: var(--nt-bg-subtle);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+}
+
+/* Thanh sân khấu. Hình thang nhẹ bằng `clip-path` để nó đọc như một sân khấu nhìn từ trên xuống
+   chứ không phải một cái tiêu đề — mắt nhận ra hình dạng trước khi đọc chữ. */
+.stage {
+  display: grid;
+  place-items: center;
+  height: 44px;
+  margin: 0 auto var(--nt-space-5);
+  width: min(72%, 520px);
+  clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%);
+  background: linear-gradient(180deg, var(--nt-elevated), var(--nt-surface));
+  border-block-start: 2px solid var(--nt-primary);
+  color: var(--nt-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+/* Chú giải -----------------------------------------------------------------
+   Nằm ngay dưới sân khấu, trước lưới ghế: khách phải biết ô nào bấm được TRƯỚC khi nhìn vào lưới,
+   không phải sau khi đã thử bấm vào một ghế đã bán. */
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nt-space-4);
+  margin: 0 0 var(--nt-space-5);
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-2);
+}
+
+.swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  flex: none;
+}
+
+.zoneList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-4);
+}
+
+/* Khu vực ------------------------------------------------------------------ */
+
+.zone {
+  padding: var(--nt-space-4) var(--nt-space-5) var(--nt-space-5);
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+}
+
+/* Khu đang có ghế được chọn thì viền sáng lên: với ba bốn khu xếp dọc, khách cần biết mình đang
+   lấy vé ở khu nào mà không phải đọc lại cột tóm tắt. */
+.zone[data-picked='true'] {
+  border-color: var(--nt-primary);
+}
+
 .zoneHead {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: var(--nt-space-3);
+  gap: var(--nt-space-4);
+  margin-bottom: var(--nt-space-4);
 }
 
 .zoneName {
   margin: 0;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
-}
-
-.zonePrice {
-  font-weight: 700;
-  color: var(--nt-primary);
 }
 
 .zoneMeta {
-  margin: var(--nt-space-1) 0 var(--nt-space-4);
-  font-size: 14px;
+  margin: 2px 0 0;
+  font-size: 13px;
   color: var(--nt-text-muted);
 }
 
-/* Sơ đồ ghế ---------------------------------------------------------------
-   Cuộn ngang trong khung riêng: một khu 30 ghế mỗi hàng không vừa màn điện thoại, và để cả
-   trang cuộn ngang là làm hỏng mọi thứ khác trên trang. */
+.zonePrice {
+  flex: none;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--nt-primary-text);
+  white-space: nowrap;
+}
+
+.blockTitle {
+  margin: 0;
+  font-size: 18px;
+}
+
+.blockNote {
+  margin: var(--nt-space-1) 0 var(--nt-space-4);
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+.standingBlock {
+  padding: var(--nt-space-6);
+  background: var(--nt-bg-subtle);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+}
+
+/* Lưới ghế -----------------------------------------------------------------
+   Cuộn ngang trong khung riêng: một khu 30 ghế mỗi hàng không vừa màn điện thoại, và để cả trang
+   cuộn ngang là làm hỏng mọi thứ khác. Lưới tự canh giữa khi còn dư chỗ. */
+
+/*
+  Khung cuộn ĂN RA SÁT MÉP THẺ, bù lại phần padding của `.seatedBlock`.
+
+  Không có phần bù này thì lưới mất 48px bề ngang, và ở màn 1440px một khu 26 cột (804px) không
+  vừa khung 771px — cột cuối bị xén dọc, hiện ra như một hàng ghế vỡ đôi ở mép phải. Người dùng
+  vẫn cuộn được, nhưng thứ họ thấy đầu tiên là một sơ đồ trông như lỗi hiển thị.
+
+  Padding trong lại đúng bằng phần đã bù, nên lưới vẫn thẳng hàng với tiêu đề khu khi vừa khung.
+*/
+.gridScroll {
+  overflow-x: auto;
+  margin: 0 calc(-1 * var(--nt-space-6));
+  padding: 0 var(--nt-space-6) var(--nt-space-2);
+  scrollbar-width: thin;
+
+  /* Bóng mờ ở hai mép cho biết CÒN NỘI DUNG BÊN NGOÀI khung.
+     Không có nó, một sơ đồ bị cắt trông giống hệt một sơ đồ đã hết — và khách không biết còn ghế
+     bên phải để mà cuộn tới. Kỹ thuật `background-attachment: local` chỉ hiện bóng khi thật sự
+     còn cuộn được về phía đó. */
+  background:
+    linear-gradient(to right, var(--nt-bg-subtle) 30%, rgb(0 0 0 / 0%)) left center / 24px 100%
+      no-repeat local,
+    linear-gradient(to left, var(--nt-bg-subtle) 30%, rgb(0 0 0 / 0%)) right center / 24px 100%
+      no-repeat local,
+    linear-gradient(to right, rgb(0 0 0 / 45%), rgb(0 0 0 / 0%)) left center / 16px 100% no-repeat
+      scroll,
+    linear-gradient(to left, rgb(0 0 0 / 45%), rgb(0 0 0 / 0%)) right center / 16px 100% no-repeat
+      scroll;
+}
 
 .grid {
-  margin-top: var(--nt-space-4);
   display: flex;
   flex-direction: column;
-  gap: var(--nt-space-2);
-  overflow-x: auto;
-  padding-bottom: var(--nt-space-2);
+  gap: 4px;
+  width: max-content;
+  min-width: 100%;
 }
 
 .row {
   display: flex;
   align-items: center;
-  gap: var(--nt-space-1);
+  gap: var(--nt-space-2);
 }
 
 .rowLabel {
   flex: none;
-  width: 24px;
-  font-size: 12px;
+  width: 20px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
   color: var(--nt-text-muted);
   text-align: right;
 }
 
-/* 32px là ngưỡng dưới của vùng bấm được trên cảm ứng. Nhỏ hơn nữa thì vừa được nhiều ghế hơn
-   trên màn hình, đổi lại khách bấm nhầm sang ghế bên cạnh. */
-.seat {
-  flex: none;
-  width: 32px;
-  height: 32px;
-  font-size: 11px;
-  font-family: inherit;
-  border-radius: 6px;
-  border: 1px solid var(--nt-border);
-  background: var(--nt-surface);
-  color: var(--nt-text);
-  cursor: pointer;
+/* Grid, không phải flex: mỗi ghế được đặt vào đúng cột theo số ghế nên các hàng thẳng cột với
+   nhau, và ghế thiếu để lại ô trống đúng chỗ — chính là lối đi giữa hàng. */
+.rowSeats {
+  display: grid;
+  grid-template-columns: repeat(var(--seat-columns, 1), 26px);
+  gap: 4px;
 }
 
-.seat[data-state='selected'] {
+/* 26px nhỏ hơn ngưỡng chạm 44px, nhưng một sơ đồ 20×20 ghế không có cách nào vừa màn hình với ô
+   44px. Bù lại bằng khoảng cách giữa các ô và bằng danh sách "đã chọn" có nút bỏ riêng ở cột phải,
+   để người bấm nhầm không phải nhắm lại vào đúng ô cũ. */
+.seat {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  font-size: 10px;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    transform 100ms ease-out,
+    background-color 100ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seat {
+    transition: none;
+  }
+}
+
+/* Ghế trống phải NỔI HẲN so với nền khu.
+   Dùng lớp trắng mờ chứ không dùng token: bậc sáng nhất trong bộ token (`--nt-elevated`) chỉ hơn
+   nền thẻ khu một chút, nên cả lưới đọc thành một mảng tối duy nhất và không ai biết ô nào bấm
+   được. Lớp phủ theo tỉ lệ thì luôn sáng hơn nền dù nền có đổi. */
+.seat[data-state='available'],
+.swatch[data-state='available'] {
+  background: rgb(255 255 255 / 13%);
+  border-color: rgb(255 255 255 / 22%);
+  color: var(--nt-text);
+}
+
+.seat[data-state='available']:hover {
+  background: rgb(255 255 255 / 24%);
+  border-color: var(--nt-primary-text);
+  transform: scale(1.12);
+}
+
+.seat[data-state='selected'],
+.swatch[data-state='selected'] {
   background: var(--nt-primary);
   border-color: var(--nt-primary);
   color: var(--nt-primary-ink);
   font-weight: 700;
 }
 
+.seat[data-state='selected'] {
+  transform: scale(1.06);
+}
+
 /* Ghế đã bán KHÔNG chỉ đổi màu nhạt: người mù màu sẽ không phân biệt được với ghế trống. Gạch
    chéo bằng gradient cho một dấu hiệu thứ hai không phụ thuộc màu. */
-.seat[data-state='taken'] {
+.seat[data-state='taken'],
+.swatch[data-state='taken'] {
   cursor: not-allowed;
   color: transparent;
+  border-color: transparent;
   background:
     linear-gradient(
       to top right,
@@ -141,6 +292,9 @@
 .seat:focus-visible {
   outline: none;
   box-shadow: var(--nt-focus);
+  /* Focus ring phải nằm trên các ghế bên cạnh, nếu không nó bị ô kế tiếp cắt mất một nửa. */
+  position: relative;
+  z-index: 1;
 }
 
 /* Số lượng vé đứng -------------------------------------------------------- */
@@ -152,16 +306,21 @@
 }
 
 .quantityButton {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   font-size: 20px;
   font-family: inherit;
   line-height: 1;
   border-radius: var(--nt-radius);
   border: 1px solid var(--nt-border);
-  background: var(--nt-surface);
+  background: var(--nt-elevated);
   color: var(--nt-text);
   cursor: pointer;
+}
+
+.quantityButton:hover:not(:disabled) {
+  background: var(--nt-hover);
+  border-color: var(--nt-primary-text);
 }
 
 .quantityButton:disabled {
@@ -177,16 +336,23 @@
 .quantityValue {
   min-width: 2ch;
   text-align: center;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.quantitySubtotal {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--nt-primary-text);
 }
 
 /* Tóm tắt ------------------------------------------------------------------ */
 
 .summary {
   position: sticky;
-  top: var(--nt-space-6);
+  /* Chừa chỗ cho header hai tầng đang dính trên đỉnh. */
+  top: 120px;
   display: flex;
   flex-direction: column;
   gap: var(--nt-space-4);
@@ -196,11 +362,30 @@
   border-radius: var(--nt-radius-lg);
 }
 
+.summaryHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--nt-space-3);
+}
+
 .summaryTitle {
   margin: 0;
   font-size: 16px;
   font-weight: 700;
   line-height: 1.3;
+}
+
+.clear {
+  flex: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nt-primary-text);
+  cursor: pointer;
 }
 
 .summaryEmpty {
@@ -215,26 +400,73 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: var(--nt-space-2);
   font-size: 14px;
-  max-height: 220px;
+  max-height: 260px;
   overflow-y: auto;
 }
 
-.picked li {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--nt-space-3);
+.pickedItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 28px;
+  align-items: center;
+  gap: var(--nt-space-2);
+  padding: var(--nt-space-2) 0;
+}
+
+.pickedItem + .pickedItem {
+  border-top: 1px solid var(--nt-border);
+}
+
+/* Chỉ hiện trên màn hẹp, nơi cả danh sách bị ẩn đi. */
+.pickedCount {
+  display: none;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.pickedName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--nt-text-muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.remove:hover {
+  background: var(--nt-hover);
+  color: var(--nt-danger-text);
+}
+
+.remove:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
 }
 
 .total {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  gap: var(--nt-space-3);
   padding-top: var(--nt-space-3);
   border-top: 1px solid var(--nt-border);
   font-size: 15px;
+}
+
+.totalCount {
+  color: var(--nt-text-muted);
+  font-size: 13px;
 }
 
 .allowance,
@@ -249,5 +481,117 @@
   margin: 0;
   font-size: 13px;
   line-height: 1.5;
-  color: var(--nt-danger, #b3261e);
+  color: var(--nt-danger-text);
+}
+
+/* Màn hẹp ------------------------------------------------------------------ */
+
+@media (max-width: 1000px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  /*
+    Trên màn hẹp cột tóm tắt xuống dưới sơ đồ và dính ở ĐÁY — nút "Giữ chỗ" là thứ duy nhất trên
+    trang này thật sự cần bấm được mọi lúc.
+
+    Danh sách ghế đã chọn bị thu lại: dính cả khối cao 400px ở đáy thì nó che gần hết sơ đồ, đúng
+    cái mà khách đang cần nhìn để chọn tiếp.
+  */
+  /*
+    Thu thành THANH THAO TÁC, không phải cái bảng thu nhỏ.
+
+    Bản trước dính cả khối cao ~280px ở đáy màn 844px — nó che gần hết sơ đồ, đúng thứ khách đang
+    cần nhìn để chọn tiếp. Danh sách ghế bỏ đi được vì ghế đang chọn đã sáng đỏ trên chính sơ đồ,
+    và muốn bỏ một ghế thì bấm lại vào nó; bản chi tiết vẫn còn nguyên ở trang thanh toán.
+  */
+  /* Ba mục chú giải vừa đúng một dòng ở 390px khi khoảng cách hẹp lại. Để nguyên 16px thì mục
+     thứ ba rơi xuống dòng hai và lệch so với hai mục trên — trông như lỗi dựng hình. */
+  .legend {
+    gap: var(--nt-space-2) var(--nt-space-3);
+    font-size: 12px;
+  }
+
+  .summary {
+    top: auto;
+    bottom: 0;
+    z-index: 3;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--nt-space-2) var(--nt-space-4);
+    box-shadow: 0 -12px 32px rgb(0 0 0 / 45%);
+  }
+
+  .summaryHead {
+    grid-column: 1 / -1;
+  }
+
+  .summaryTitle {
+    /* Tên sự kiện đã có ở tiêu đề trang ngay phía trên — nhắc lại chỉ tốn một dòng. */
+    display: none;
+  }
+
+  .pickedCount {
+    display: block;
+  }
+
+  .picked,
+  .note {
+    display: none;
+  }
+
+  .total {
+    grid-column: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    padding-top: 0;
+    border-top: 0;
+    /* Nhãn không được xuống dòng: cột này bị nút CTA bóp lại, và "Tạm tính" vắt thành hai dòng
+       đọc như lỗi hiển thị. */
+    white-space: nowrap;
+  }
+
+  /* Số vé đã có ở dòng "N vé đã chọn" ngay trên — nhắc lại chỉ làm cột tiền hẹp thêm. */
+  .totalCount {
+    display: none;
+  }
+
+  .action {
+    grid-column: 2;
+  }
+
+  .allowance,
+  .failure,
+  .summaryEmpty {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .seatedBlock,
+  .standingBlock {
+    padding: var(--nt-space-4);
+  }
+
+  .zone {
+    padding: var(--nt-space-3) var(--nt-space-4) var(--nt-space-4);
+  }
+
+  .stage {
+    width: 100%;
+  }
+
+  .summary {
+    padding: var(--nt-space-4);
+    gap: var(--nt-space-3);
+    /* Nằm trên bottom nav của site, không đè lên nó. */
+    bottom: 56px;
+    border-radius: var(--nt-radius-lg) var(--nt-radius-lg) 0 0;
+  }
+
+  .allowance {
+    display: none;
+  }
 }

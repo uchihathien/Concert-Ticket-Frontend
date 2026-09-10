@@ -1,0 +1,118 @@
+.sidebar {
+  align-self: start;
+  /* Dính lại khi cuộn, chừa chỗ cho header hai tầng ở trên. */
+  position: sticky;
+  top: 120px;
+  padding: var(--nt-space-4);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  background: var(--nt-bg-subtle);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--nt-space-2);
+  margin-bottom: var(--nt-space-4);
+}
+
+.heading {
+  margin: 0;
+  font-size: 16px;
+}
+
+.clear {
+  color: var(--nt-primary-text);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.group + .group {
+  margin-top: var(--nt-space-4);
+  padding-top: var(--nt-space-4);
+  border-top: 1px solid var(--nt-border);
+}
+
+.groupTitle {
+  margin: 0 0 var(--nt-space-2);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--nt-text-muted);
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 var(--nt-space-2);
+  border-radius: var(--nt-radius);
+  color: var(--nt-text);
+  text-decoration: none;
+  font-size: 14px;
+}
+
+.option:hover {
+  background: var(--nt-hover);
+}
+
+.optionActive,
+.optionActive:hover {
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font-weight: 600;
+}
+
+/* Màn hẹp: cột dọc thành ba hàng chip cuộn ngang, đặt phía trên lưới. Cuộn qua cả cột lọc mới
+   thấy sự kiện đầu tiên là lý do người ta thoát trang. */
+@media (max-width: 900px) {
+  .sidebar {
+    position: static;
+    padding: var(--nt-space-3);
+  }
+
+  .options {
+    flex-direction: row;
+    gap: var(--nt-space-2);
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* Chip đứng sát mép dưới của vùng cuộn nếu không chừa chỗ cho viền. */
+    padding-bottom: 2px;
+  }
+
+  .options::-webkit-scrollbar {
+    display: none;
+  }
+
+  .option {
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 0 var(--nt-space-3);
+    border: 1px solid var(--nt-border);
+    border-radius: 999px;
+    background: var(--nt-bg);
+    white-space: nowrap;
+  }
+
+  /* Khai lại nền: `.option` ở trong media query này đứng sau `.optionActive` ở khối gốc, cùng
+     độ đặc hiệu nên nó ghi đè mất màu nền của mục đang chọn — chỉ còn viền, yếu hơn hẳn. */
+  .optionActive,
+  .optionActive:hover {
+    background: var(--nt-primary);
+    color: var(--nt-primary-ink);
+    border-color: var(--nt-primary-text);
+  }
+
+  .group + .group {
+    margin-top: var(--nt-space-3);
+    padding-top: var(--nt-space-3);
+  }
+}

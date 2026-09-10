@@ -1,0 +1,307 @@
+/* Dùng chung cho ví vé và danh sách đơn hàng: hai màn cùng một hình dạng — thẻ theo sự kiện,
+   bên trong là các dòng. Tách hai file CSS thì sau vài lần sửa chúng sẽ lệch nhau. */
+
+.list {
+  display: grid;
+  gap: var(--nt-space-4);
+}
+
+.group {
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  background: var(--nt-surface);
+  overflow: hidden;
+}
+
+.groupHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--nt-space-4);
+  padding: var(--nt-space-4);
+  border-bottom: 1px solid var(--nt-border);
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.3;
+}
+
+.groupTitle a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.groupTitle a:hover {
+  color: var(--nt-primary-text);
+}
+
+.groupMeta {
+  margin: var(--nt-space-1) 0 0;
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+.groupCount {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nt-text-muted);
+  white-space: nowrap;
+}
+
+.orderNumber {
+  display: block;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.emptyLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--nt-space-6);
+  border-radius: 999px;
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.emptyLink:hover {
+  background: var(--nt-primary-hover);
+}
+
+/* Vé ---------------------------------------------------------------------- */
+
+.tickets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ticket + .ticket {
+  border-top: 1px solid var(--nt-border);
+}
+
+.ticketMain {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nt-space-4);
+  padding: var(--nt-space-4);
+}
+
+.ticketType {
+  margin: 0;
+  font-weight: 600;
+}
+
+.ticketSeat {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+.ticketActions {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-3);
+  flex-shrink: 0;
+}
+
+.qrToggle {
+  min-height: 40px;
+  padding: 0 var(--nt-space-4);
+  border: 1px solid var(--nt-border);
+  border-radius: 999px;
+  background: var(--nt-bg-subtle);
+  color: var(--nt-text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.qrToggle:hover {
+  background: var(--nt-hover);
+}
+
+/* Mã QR trên nền trắng đặc, kể cả ở giao diện tối: máy quét cần tương phản đúng chiều. Khối
+   trắng cũng là thứ khách nhìn thấy ngay khi giơ điện thoại ra ở cửa. */
+.qrBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--nt-space-3);
+  padding: var(--nt-space-4) var(--nt-space-4) var(--nt-space-6);
+  background: var(--nt-bg-subtle);
+  border-top: 1px solid var(--nt-border);
+}
+
+.qrBox svg {
+  border-radius: var(--nt-radius);
+}
+
+.qrNote {
+  margin: 0;
+  max-width: 42ch;
+  text-align: center;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+/* Đơn hàng ---------------------------------------------------------------- */
+
+.orderItems {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.orderItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--nt-space-4);
+  padding: var(--nt-space-3) var(--nt-space-4);
+  font-size: 15px;
+}
+
+.orderItem + .orderItem {
+  border-top: 1px solid var(--nt-border);
+}
+
+.orderSeats {
+  color: var(--nt-text-muted);
+  font-size: 14px;
+}
+
+.orderQty {
+  color: var(--nt-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.orderTotals {
+  padding: var(--nt-space-3) var(--nt-space-4);
+  border-top: 1px solid var(--nt-border);
+  text-align: end;
+}
+
+.orderDiscount,
+.orderTotal {
+  margin: 0;
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+.orderTotal {
+  margin-top: 2px;
+  font-size: 16px;
+}
+
+/* Khối chuyển khoản ------------------------------------------------------- */
+
+.payment {
+  display: flex;
+  gap: var(--nt-space-6);
+  padding: var(--nt-space-4);
+  border-top: 1px solid var(--nt-border);
+  background: var(--nt-bg-subtle);
+}
+
+.payment svg {
+  flex-shrink: 0;
+  border-radius: var(--nt-radius);
+}
+
+.paymentBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-3);
+  min-width: 0;
+  flex: 1;
+}
+
+.paymentNote {
+  margin: 0;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+.paymentFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nt-space-4);
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.paymentDeadline {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nt-space-1);
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+@media (max-width: 720px) {
+  .groupHead,
+  .ticketMain {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .ticketActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  /* Mã QR lên trên, thông tin chuyển khoản xuống dưới: ở 360px hai cột cạnh nhau thì mã QR
+     nhỏ tới mức app ngân hàng quét không ra. */
+  .payment {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .paymentBody {
+    width: 100%;
+  }
+
+  /* Số lượng xuống dòng dưới tên vé để cột tiền không bị bóp. */
+  .orderItem {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 2px;
+  }
+
+  .orderQty {
+    grid-column: 1;
+    grid-row: 2;
+  }
+}
+
+/* Link sang trang thanh toán payOS.
+   Là thẻ `a` nên phải tự dựng dáng nút: không dùng <Button> vì đây là điều hướng ra site khác, và
+   một button giả link thì mất chuột giữa, mất xem trước đích, mất nút Back. */
+.payLink {
+  display: block;
+  padding: var(--nt-space-3) var(--nt-space-4);
+  text-align: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--nt-primary);
+  border-radius: var(--nt-radius);
+  text-decoration: none;
+}
+
+.payLink:hover {
+  filter: brightness(1.08);
+}
+
+.payLink:focus-visible {
+  outline: 2px solid var(--nt-primary);
+  outline-offset: 2px;
+}

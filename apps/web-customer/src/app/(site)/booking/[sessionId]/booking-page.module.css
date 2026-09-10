@@ -1,7 +1,9 @@
 .page {
-  max-width: 1120px;
+  /* Cùng 1280px với header và các trang còn lại: sơ đồ ghế cần bao nhiêu bề ngang cũng không đủ,
+     và mép trái lệch so với logo thì mỗi lần chuyển trang là cả trang xê dịch. */
+  max-width: 1280px;
   margin: 0 auto;
-  padding: var(--nt-space-6);
+  padding: var(--nt-space-6) var(--nt-space-6) var(--nt-space-12);
   display: flex;
   flex-direction: column;
   gap: var(--nt-space-5);
@@ -36,4 +38,11 @@
 .meta {
   margin: 0;
   color: var(--nt-text-muted);
+}
+
+@media (max-width: 720px) {
+  .page {
+    /* Chừa chỗ cho cột tóm tắt dính đáy VÀ bottom nav ở dưới nó. */
+    padding: var(--nt-space-4) var(--nt-space-4) 260px;
+  }
 }

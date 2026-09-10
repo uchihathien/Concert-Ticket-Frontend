@@ -1,0 +1,192 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-6);
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-4);
+}
+
+.count {
+  margin: 0;
+  color: var(--nt-text-muted);
+}
+
+/* Khối thông báo: đã trả tiền nhưng vé chưa về, hoặc đơn chưa trả tiền. */
+.notice {
+  padding: var(--nt-space-8) var(--nt-space-6);
+  text-align: center;
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+}
+
+.noticeTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.noticeNote {
+  margin: var(--nt-space-2) auto 0;
+  max-width: 46ch;
+  color: var(--nt-text-muted);
+}
+
+.noticeActions,
+.footActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--nt-space-3) var(--nt-space-4);
+  margin-top: var(--nt-space-6);
+}
+
+.primary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 var(--nt-space-6);
+  border-radius: 999px;
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.primary:hover {
+  background: var(--nt-primary-hover);
+}
+
+.secondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  color: var(--nt-text-muted);
+  font-weight: 600;
+}
+
+.secondary:hover {
+  color: var(--nt-primary-text);
+}
+
+/* Một suất diễn ---------------------------------------------------------- */
+
+.group {
+  padding: var(--nt-space-5);
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+}
+
+.groupHead {
+  margin-bottom: var(--nt-space-5);
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.groupTitle a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.groupTitle a:hover {
+  color: var(--nt-primary-text);
+}
+
+.groupMeta {
+  margin: var(--nt-space-1) 0 0;
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+/* Thẻ vé -----------------------------------------------------------------
+   Lưới tự giãn theo bề rộng: một đơn có thể một vé mà cũng có thể mười. Cột rộng 200px vừa đủ cho
+   mã QR 168px cộng lề. */
+
+.tickets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--nt-space-4);
+}
+
+.ticket {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--nt-space-1);
+  padding: var(--nt-space-4);
+  background: var(--nt-bg-subtle);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  text-align: center;
+}
+
+/* Nền trắng đặc quanh mã, kể cả ở giao diện tối: máy quét cần tương phản đúng chiều, và vùng
+   trắng cũng là thứ khách nhìn thấy trước khi giơ điện thoại ra. */
+.qrBox {
+  padding: var(--nt-space-2);
+  background: #fff;
+  border-radius: var(--nt-radius);
+  line-height: 0;
+  margin-bottom: var(--nt-space-3);
+}
+
+/* Vé không còn dùng được: giữ đúng chỗ của mã để lưới không xô nhau, nhưng không vẽ mã. */
+.qrVoid {
+  width: 168px;
+  height: 168px;
+  background: repeating-linear-gradient(45deg, #e5e5e5, #e5e5e5 6px, #f5f5f5 6px, #f5f5f5 12px);
+  border-radius: 4px;
+}
+
+.ticketType {
+  margin: 0;
+  font-weight: 700;
+}
+
+.ticketSeat {
+  margin: 0 0 var(--nt-space-2);
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+.hint {
+  margin: 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+.hint a {
+  color: var(--nt-primary-text);
+  font-weight: 600;
+}
+
+@media (max-width: 720px) {
+  .group {
+    padding: var(--nt-space-4);
+  }
+
+  .noticeActions,
+  .footActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .primary,
+  .secondary {
+    justify-content: center;
+  }
+}

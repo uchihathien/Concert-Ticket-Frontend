@@ -4,12 +4,14 @@
   "private": true,
   "exports": {
     "./logo.png": "./logo.png",
+    "./logo-dark.png": "./logo-dark.png",
     "./logo-full.png": "./logo-full.png",
     "./logo-mark.png": "./logo-mark.png",
     "./icon.png": "./icon.png"
   },
   "files": [
     "logo.png",
+    "logo-dark.png",
     "logo-full.png",
     "logo-mark.png",
     "icon.png"

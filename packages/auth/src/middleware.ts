@@ -10,9 +10,26 @@ import type { NexaAuth } from './config';
  * trả lời được là tự tạo một điểm tin cậy thứ hai lệch với điểm thật.
  */
 export interface AuthMiddlewareOptions {
-  /** Đường dẫn công khai, so bằng tiền tố. Mặc định: không có. */
+  /**
+   * Đường dẫn công khai. Khớp chính nó và mọi thứ nằm dưới nó — `'/events'` mở `/events/abc`
+   * nhưng không mở `/eventsxyz`. `'/'` chỉ là trang chủ, không phải cả app.
+   *
+   * Mặc định: không có.
+   */
   publicPaths?: string[];
   signInPath?: string;
+}
+
+/**
+ * Đúng đường dẫn đó, hoặc nằm dưới nó. `/login` không mở cho `/loginXYZ`.
+ *
+ * `'/'` là trường hợp riêng và bắt buộc phải xử lý: mọi đường dẫn đều bắt đầu bằng `'/'`, nên
+ * một phép so tiền tố ngây thơ sẽ biến trang chủ trong danh sách công khai thành "mở toàn bộ app".
+ */
+function isUnder(pathname: string, prefix: string): boolean {
+  if (pathname === prefix) return true;
+  const base = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
+  return base.length > 0 && pathname.startsWith(`${base}/`);
 }
 
 export function createAuthMiddleware(nexaAuth: NexaAuth, options: AuthMiddlewareOptions = {}) {
@@ -22,10 +39,14 @@ export function createAuthMiddleware(nexaAuth: NexaAuth, options: AuthMiddleware
   const guard = (request: NextAuthRequest) => {
     const { pathname, search } = request.nextUrl;
 
-    if (pathname.startsWith(signInPath)) return;
-    if (publicPaths.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))) {
-      return;
-    }
+    // So khớp bằng đúng một luật cho cả trang đăng nhập lẫn danh sách công khai.
+    //
+    // Bản trước dùng `pathname.startsWith(signInPath)` cho riêng trang đăng nhập, nên `/login`
+    // mở luôn cho `/loginXYZ` — một đường dẫn thêm vào sau này chỉ vì trùng tiền tố mà thành công
+    // khai, trong khi danh sách ngay bên dưới lại so khớp chặt. Hai luật khác nhau trong cùng một
+    // hàm là chỗ sớm muộn cũng lệch.
+    if (isUnder(pathname, signInPath)) return;
+    if (publicPaths.some((prefix) => isUnder(pathname, prefix))) return;
     if (request.auth) return;
 
     // Giữ đường đang muốn vào để sau khi đăng nhập quay lại đúng chỗ.

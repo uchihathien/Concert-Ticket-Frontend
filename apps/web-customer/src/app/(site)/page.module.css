@@ -1,6 +1,14 @@
 /* Chỉ còn phần bố cục của riêng trang chủ. Header/footer nằm ở `components/site.module.css`,
    còn thẻ sự kiện, chip và dải cuộn nằm ở `@nexaticket/ui` để trang danh sách dùng lại y hệt. */
 
+.hero,
+.chips,
+.section,
+.row {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
 .hero {
   padding: var(--nt-space-6);
 }
@@ -13,12 +21,61 @@
   padding: 0 var(--nt-space-6) var(--nt-space-8);
 }
 
+/* Khối lưới: dùng cho phần đầu trang, nơi người dùng nên thấy nhiều lựa chọn cùng lúc.
+   Các khối theo thể loại bên dưới thì cuộn ngang — cuộn ngang hợp với việc lướt qua, lưới hợp
+   với việc so sánh. */
+.section {
+  padding: 0 var(--nt-space-6) var(--nt-space-8);
+}
+
+.sectionHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--nt-space-4);
+  margin-bottom: var(--nt-space-4);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 20px;
+}
+
+.sectionLink {
+  color: var(--nt-primary-text);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--nt-space-6) var(--nt-space-4);
+}
+
+@media (max-width: 1080px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 720px) {
   /* Lề 16px thay vì 24px — màn hẹp cần chỗ cho nội dung hơn là cho lề. */
   .hero,
   .chips,
+  .section,
   .row {
     padding-left: var(--nt-space-4);
     padding-right: var(--nt-space-4);
+  }
+
+  .grid {
+    gap: var(--nt-space-4) var(--nt-space-3);
   }
 }

@@ -1,6 +1,6 @@
 .page {
   padding: var(--nt-space-6);
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
 }
 
@@ -22,10 +22,41 @@
   margin-bottom: var(--nt-space-6);
 }
 
+/* Cột lọc bên trái, kết quả bên phải. `minmax(0, 1fr)` chứ không `1fr`: không có nó, một tiêu đề
+   dài không xuống dòng sẽ kéo giãn cột kết quả và đẩy lưới tràn ra ngoài. */
+.layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: var(--nt-space-6);
+  align-items: start;
+}
+
+.results {
+  min-width: 0;
+}
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--nt-space-6) var(--nt-space-4);
+}
+
+@media (max-width: 1240px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Dưới 900px bỏ bố cục hai cột: cột lọc lên trên, thành hàng chip cuộn ngang
+   (xem `sidebar.module.css`). */
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {
@@ -34,7 +65,36 @@
   }
 
   .grid {
-    grid-template-columns: repeat(2, 1fr);
     gap: var(--nt-space-4) var(--nt-space-3);
   }
+}
+
+/* Phân trang: hai đầu là link, giữa là vị trí hiện tại. Dùng grid ba cột để nút "Trang sau"
+   đứng yên một chỗ kể cả khi không có "Trang trước" — nút nhảy chỗ giữa các trang là nguồn
+   bấm nhầm. */
+.pager {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: var(--nt-space-4);
+  margin-top: var(--nt-space-8);
+  padding-top: var(--nt-space-6);
+  border-top: 1px solid var(--nt-border);
+}
+
+.pager a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--nt-primary-text);
+  font-weight: 600;
+}
+
+.pager a:last-child {
+  justify-self: end;
+}
+
+.pagerStatus {
+  color: var(--nt-text-muted);
+  font-size: 14px;
 }

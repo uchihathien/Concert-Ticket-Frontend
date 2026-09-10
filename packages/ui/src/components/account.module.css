@@ -1,0 +1,185 @@
+/* Thẻ danh tính --------------------------------------------------------------
+   Dùng chung cho cả bốn app: khách xem ở /account, ba app nội bộ xem ở màn tài khoản của mình.
+   Cùng một khối thì người dùng chuyển giữa các app vẫn nhận ra ngay mình đang là ai. */
+
+.identity {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-4);
+  padding: var(--nt-space-6);
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+}
+
+.avatar {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--nt-bg-subtle);
+}
+
+/* Chưa có ảnh thì lấy chữ cái đầu. Một hình tròn rỗng trông như ảnh hỏng. */
+.initial {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+[data-app='scanner'] .initial {
+  background: var(--nt-accent);
+  color: var(--nt-accent-ink);
+}
+
+.identityBody {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.identityName {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  /* Tên dài không được đẩy vỡ thẻ trên điện thoại. */
+  overflow-wrap: anywhere;
+}
+
+.identityEmail {
+  margin: 0;
+  color: var(--nt-text-muted);
+  overflow-wrap: anywhere;
+}
+
+.identityMeta {
+  margin: var(--nt-space-2) 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nt-space-2);
+}
+
+/* Khối thông tin -------------------------------------------------------------- */
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--nt-space-3);
+  padding: var(--nt-space-4) var(--nt-space-6);
+  border-bottom: 1px solid var(--nt-border);
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+.rowLabel {
+  color: var(--nt-text-muted);
+  font-size: 14px;
+}
+
+.rowValue {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.rowValueMono {
+  font-family: var(--nt-font-mono);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+@media (max-width: 720px) {
+  .identity {
+    padding: var(--nt-space-4);
+  }
+
+  .row {
+    padding: var(--nt-space-3) var(--nt-space-4);
+  }
+}
+
+/* Khung màn tài khoản ---------------------------------------------------------
+   Trước đây app khách mượn stylesheet của trang điều khoản cho màn này. Có khung riêng để hai
+   thứ không liên quan thôi kéo nhau mỗi lần chỉnh sửa. */
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--nt-space-12) var(--nt-space-6);
+}
+
+.pageHead {
+  margin-bottom: var(--nt-space-8);
+}
+
+.pageTitle {
+  margin: 0 0 var(--nt-space-2);
+  font-size: clamp(24px, 2.4vw, 30px);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.pageDescription {
+  margin: 0;
+  color: var(--nt-text-muted);
+}
+
+.pageBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-8);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-3);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--nt-text-muted);
+  text-transform: uppercase;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: var(--nt-space-8) var(--nt-space-4);
+  }
+}
+
+/* Đoạn văn trong một nhóm. Style ở đây thay vì để mỗi app tự đặt class: ba app nội bộ không có
+   Tailwind, nên mọi tiện ích viết ở trang khách sẽ không có tác dụng bên đó. */
+.section p {
+  margin: 0;
+  color: var(--nt-text-muted);
+  line-height: 1.5;
+}
