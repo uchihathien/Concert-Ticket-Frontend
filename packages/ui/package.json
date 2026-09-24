@@ -19,6 +19,7 @@
   "dependencies": {
     "@nexaticket/brand": "workspace:*",
     "@nexaticket/tokens": "workspace:*",
+    "@nexaticket/ts-sdk": "workspace:*",
     "qrcode": "^1.5.4"
   },
   "peerDependencies": {

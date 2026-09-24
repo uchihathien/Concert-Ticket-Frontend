@@ -13,6 +13,14 @@
   cursor: pointer;
   text-decoration: none;
   white-space: nowrap;
+  /* Chỉ liệt kê thuộc tính không ảnh hưởng bố cục. `transition: all` kéo theo cả `width`,
+     `padding`, `transform` — mỗi lần một nút đổi nhãn là một lần trang nhích, và trên bảng dài
+     thì nhích một dòng là nhích cả trang. */
+  transition:
+    background-color var(--nt-motion-ui),
+    border-color var(--nt-motion-ui),
+    color var(--nt-motion-ui),
+    box-shadow var(--nt-motion-ui);
 }
 
 .button:disabled,
@@ -64,7 +72,21 @@
 
 .danger {
   background: var(--nt-danger);
-  color: #fff;
+  color: var(--nt-danger-ink);
+}
+
+/* Phá huỷ, nhưng đứng TRONG một dòng của bảng.
+   Một bảng hai mươi dòng với hai mươi nút đỏ đặc thì màu đỏ không còn nghĩa là "cẩn thận" nữa —
+   nó chỉ còn là màu nền của cột cuối. Nền nhạt giữ đúng tín hiệu mà không giành lấy cả trang;
+   màu đặc để dành cho nút xác nhận trong hộp thoại, nơi nó thật sự là điểm dừng cuối. */
+.dangerSoft {
+  background: color-mix(in srgb, var(--nt-danger) 10%, transparent);
+  color: var(--nt-danger-text);
+  border-color: color-mix(in srgb, var(--nt-danger) 30%, transparent);
+}
+
+.dangerSoft:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--nt-danger) 18%, transparent);
 }
 
 .block {
@@ -118,6 +140,10 @@
   color: var(--nt-text);
   border: 1px solid var(--nt-border);
   border-radius: var(--nt-radius);
+  transition:
+    background-color var(--nt-motion-ui),
+    border-color var(--nt-motion-ui),
+    box-shadow var(--nt-motion-ui);
 }
 
 .control[aria-invalid='true'] {

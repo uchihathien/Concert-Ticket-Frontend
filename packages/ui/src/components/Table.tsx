@@ -11,6 +11,16 @@ export interface TableColumn<Row> {
   /** Cột số: canh phải, chữ số đều nhau. Cột tiền luôn dùng cái này. */
   numeric?: boolean;
   width?: string;
+  /**
+   * Bấm tiêu đề cột để sắp xếp. Chỉ có tác dụng khi `Table` nhận `sort` và `onSortChange` —
+   * component không tự sắp xếp dữ liệu.
+   */
+  sortable?: boolean;
+}
+
+export interface TableSort {
+  key: string;
+  descending: boolean;
 }
 
 export interface TableProps<Row> {
@@ -21,7 +31,15 @@ export interface TableProps<Row> {
   loading?: boolean;
   emptyTitle?: string;
   emptyDescription?: ReactNode;
+  /**
+   * Bấm cả dòng. Là **tiện ích cho chuột**, không phải đường đi duy nhất: `<tr>` không nhận focus
+   * bàn phím, nên mỗi dòng vẫn phải có một liên kết thật trong ô thao tác. Gắn `tabIndex` cho
+   * `<tr>` thì mỗi dòng thành hai điểm dừng Tab chồng lên nhau — tệ hơn là không có.
+   */
   onRowClick?: (row: Row) => void;
+  /** Cột đang sắp và chiều. Việc sắp xếp do nơi dùng làm (thường trên URL). */
+  sort?: TableSort;
+  onSortChange?: (key: string) => void;
   className?: string;
 }
 
@@ -30,9 +48,9 @@ const SKELETON_ROWS = 5;
 /**
  * Bảng dữ liệu.
  *
- * Chỉ lo phần hiển thị: sắp xếp, lọc, phân trang do nơi dùng quyết định (web-platform dùng
- * TanStack Table và giữ trạng thái trên URL). Trộn hai việc vào một component là cách chắc chắn
- * nhất để không tái dùng được ở màn thứ hai.
+ * Chỉ lo phần hiển thị: lọc và phân trang do nơi dùng quyết định. Riêng **sắp xếp** thì component
+ * lo phần giao diện (nút trong tiêu đề, `aria-sort`, mũi tên) còn phép so sánh vẫn ở ngoài — trạng
+ * thái sắp xếp của hai app quản trị sống trên URL để dán được cho người khác.
  */
 export function Table<Row>({
   caption,
@@ -43,6 +61,8 @@ export function Table<Row>({
   emptyTitle = 'Chưa có dữ liệu',
   emptyDescription,
   onRowClick,
+  sort,
+  onSortChange,
   className,
 }: TableProps<Row>) {
   return (
@@ -51,16 +71,45 @@ export function Table<Row>({
         <caption className={styles.caption}>{caption}</caption>
         <thead>
           <tr>
-            {columns.map((column) => (
-              <th
-                key={column.key}
-                scope="col"
-                className={cx(styles.th, column.numeric && styles.numeric)}
-                style={column.width ? { width: column.width } : undefined}
-              >
-                {column.header}
-              </th>
-            ))}
+            {columns.map((column) => {
+              const sortable = column.sortable && onSortChange;
+              const active = sortable && sort?.key === column.key;
+
+              return (
+                <th
+                  key={column.key}
+                  scope="col"
+                  className={cx(styles.th, column.numeric && styles.numeric)}
+                  style={column.width ? { width: column.width } : undefined}
+                  // `aria-sort` phải nằm ở `<th>` — đó là nơi trình đọc màn hình tìm nó. Đặt trên
+                  // nút bên trong thì nó bị bỏ qua hoàn toàn.
+                  aria-sort={
+                    sortable
+                      ? active
+                        ? sort.descending
+                          ? 'descending'
+                          : 'ascending'
+                        : 'none'
+                      : undefined
+                  }
+                >
+                  {sortable ? (
+                    <button
+                      type="button"
+                      className={cx(styles.sortButton, active && styles.sortButtonActive)}
+                      onClick={() => onSortChange(column.key)}
+                    >
+                      {column.header}
+                      <span aria-hidden="true" className={styles.sortArrow}>
+                        {active && sort.descending ? '↓' : '↑'}
+                      </span>
+                    </button>
+                  ) : (
+                    column.header
+                  )}
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>

@@ -1,0 +1,124 @@
+/* Ba khối lặp lại ở mọi màn quản trị: dải ô thống kê, thanh bộ lọc, và thanh phân trang.
+   Trước đây mỗi trang tự dựng lại bằng `style={{ ... }}` — 103 chỗ trong hai app — nên không chỗ
+   nào có điểm ngắt responsive (thuộc tính `style` không viết được media query) và mỗi bản lệch
+   nhau vài pixel. */
+
+/* Ô thống kê --------------------------------------------------------------- */
+
+.statGrid {
+  display: grid;
+  gap: var(--nt-space-3);
+  /* `auto-fit` + `minmax` tự xuống hàng theo chiều rộng THẬT của vùng nội dung, không theo chiều
+     rộng màn hình — nên nó vẫn đúng khi cột điều hướng 248px còn đó. */
+  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+}
+
+.statLabel {
+  margin: 0;
+  color: var(--nt-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.statValue {
+  margin: var(--nt-space-1) 0 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  /* Chữ số đều bề rộng: dải ô này hay cập nhật, và số nhảy bề rộng làm cả hàng giật. */
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.statValueWarn {
+  color: var(--nt-warn-text);
+}
+
+.statHint {
+  margin: var(--nt-space-1) 0 0;
+  color: var(--nt-text-muted);
+  font-size: 12px;
+}
+
+/* Thanh bộ lọc ------------------------------------------------------------- */
+
+.filterBar {
+  display: grid;
+  gap: var(--nt-space-4);
+  align-items: end;
+  /* Mobile: mỗi ô một hàng. Ô lọc bị bóp còn 90px thì không đọc nổi nhãn bên trong. */
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 720px) {
+  .filterBar {
+    /* Ô tìm kiếm rộng gấp đôi ô chọn: người ta gõ cả tên tổ chức vào đó, còn ô chọn chỉ hiện một
+       nhãn ngắn. */
+    grid-template-columns: minmax(220px, 2fr) repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+.filterActions {
+  display: flex;
+  gap: var(--nt-space-2);
+}
+
+.filterCount {
+  margin: var(--nt-space-3) 0 0;
+  color: var(--nt-text-muted);
+  font-size: 13px;
+}
+
+/* Phân trang --------------------------------------------------------------- */
+
+.pagination {
+  display: flex;
+  gap: var(--nt-space-2);
+  align-items: center;
+  justify-content: flex-end;
+  margin-top: var(--nt-space-4);
+}
+
+.paginationLabel {
+  margin-inline-end: auto;
+  color: var(--nt-text-muted);
+  font-size: 13px;
+}
+
+/* Tiêu đề khối trong trang -------------------------------------------------- */
+
+.section {
+  margin-top: var(--nt-space-8);
+}
+
+.sectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--nt-space-3);
+  margin-bottom: var(--nt-space-4);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.sectionDescription {
+  margin: var(--nt-space-1) 0 0;
+  color: var(--nt-text-muted);
+  font-size: 14px;
+  max-width: 70ch;
+}
+
+/* Hàng nút trong ô của bảng ------------------------------------------------- */
+
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nt-space-2);
+  justify-content: flex-end;
+}

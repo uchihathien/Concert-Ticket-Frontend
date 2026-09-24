@@ -2,7 +2,7 @@ import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
 import { cx } from '../cx';
 import styles from './primitives.module.css';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-soft';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
@@ -19,6 +19,7 @@ const VARIANT_CLASS: Record<ButtonVariant, string | undefined> = {
   secondary: styles.secondary,
   ghost: styles.ghost,
   danger: styles.danger,
+  'danger-soft': styles.dangerSoft,
 };
 
 /**

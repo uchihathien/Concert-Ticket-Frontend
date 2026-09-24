@@ -4,7 +4,8 @@
   "private": true,
   "exports": {
     "./tokens.css": "./src/tokens.css",
-    "./reset.css": "./src/reset.css"
+    "./reset.css": "./src/reset.css",
+    "./admin.css": "./src/admin.css"
   },
   "files": ["src"]
 }

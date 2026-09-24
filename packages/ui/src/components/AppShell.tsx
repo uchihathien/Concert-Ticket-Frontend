@@ -9,6 +9,14 @@ import styles from './shell.module.css';
 export interface AppNavItem {
   href: string;
   label: string;
+  /**
+   * Biểu tượng đứng trước nhãn.
+   *
+   * Luôn đi KÈM chữ, không thay chữ: một cột toàn biểu tượng buộc người dùng phải đoán, và đoán
+   * sai ở khu quản trị nghĩa là mở nhầm màn. Biểu tượng ở đây làm đúng một việc — cho mắt nhận ra
+   * mục quen thuộc nhanh hơn là đọc.
+   */
+  icon?: ReactNode;
 }
 
 export interface AppShellProps {
@@ -53,6 +61,13 @@ export function AppShell({ brand, nav, foot, children }: AppShellProps) {
                 className={cx(styles.navItem, active && styles.navItemActive)}
                 aria-current={active ? 'page' : undefined}
               >
+                {/* `aria-hidden` vì nhãn ngay bên cạnh đã nói đủ; đọc thêm tên biểu tượng chỉ
+                    làm trình đọc màn hình lặp lại chính nó. */}
+                {item.icon ? (
+                  <span className={styles.navIcon} aria-hidden="true">
+                    {item.icon}
+                  </span>
+                ) : null}
                 {item.label}
               </Link>
             );

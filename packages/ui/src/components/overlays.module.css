@@ -8,6 +8,9 @@
   background: var(--nt-elevated);
   color: var(--nt-text);
   padding: 0;
+  /* Trên nền sáng, hộp thoại trắng đặt trên thẻ trắng chỉ tách ra được bằng bóng —
+     `--nt-elevated` không còn sáng hơn `--nt-surface` như ở bản nền tối. */
+  box-shadow: var(--nt-shadow-card);
 }
 
 .dialog::backdrop {
