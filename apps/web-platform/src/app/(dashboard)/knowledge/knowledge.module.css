@@ -39,7 +39,7 @@
 
 .panelTitle {
   margin: 0 0 var(--nt-space-4);
-  font-size: var(--nt-text-lg);
+  font-size: 18px;
   font-weight: 600;
 }
 
@@ -54,32 +54,33 @@
 }
 
 .label {
-  font-size: var(--nt-text-sm);
+  font-size: 13px;
   font-weight: 600;
-  color: var(--nt-fg);
+  color: var(--nt-text);
 }
 
 .textarea {
   width: 100%;
   padding: var(--nt-space-3);
   border: 1px solid var(--nt-border);
-  border-radius: var(--nt-radius-md);
+  border-radius: var(--nt-radius);
   background: var(--nt-surface);
-  color: var(--nt-fg);
+  color: var(--nt-text);
   font: inherit;
   line-height: 1.6;
   resize: vertical;
 }
 
 .textarea:focus-visible {
-  outline: 2px solid var(--nt-accent);
-  outline-offset: 1px;
+  /* `--nt-focus` là quy ước focus của cả hệ (hai vòng: nền rồi màu chính), không phải outline tự khai. */
+  outline: none;
+  box-shadow: var(--nt-focus);
 }
 
 .hint,
 .testerIntro {
-  font-size: var(--nt-text-sm);
-  color: var(--nt-fg-muted);
+  font-size: 13px;
+  color: var(--nt-text-muted);
   margin: 0;
 }
 
@@ -95,7 +96,7 @@
 .item,
 .result {
   border: 1px solid var(--nt-border);
-  border-radius: var(--nt-radius-md);
+  border-radius: var(--nt-radius);
   padding: var(--nt-space-3);
   display: grid;
   gap: var(--nt-space-2);
@@ -111,12 +112,12 @@
 
 .itemTitle {
   margin: 0;
-  font-size: var(--nt-text-base);
+  font-size: 14px;
   font-weight: 600;
 }
 
 .resultTitle {
-  font-size: var(--nt-text-sm);
+  font-size: 13px;
   font-weight: 600;
 }
 
@@ -127,8 +128,8 @@
 .itemBody,
 .resultBody {
   margin: 0;
-  color: var(--nt-fg-muted);
-  font-size: var(--nt-text-sm);
+  color: var(--nt-text-muted);
+  font-size: 13px;
   line-height: 1.6;
   display: -webkit-box;
   -webkit-line-clamp: 3;
@@ -138,17 +139,19 @@
 }
 
 .distance {
-  font-size: var(--nt-text-xs);
-  color: var(--nt-fg-subtle);
+  font-size: 12px;
+  color: var(--nt-text-muted);
   font-variant-numeric: tabular-nums;
 }
 
 .warning {
   margin: 0;
   padding: var(--nt-space-3);
-  border-radius: var(--nt-radius-md);
-  background: var(--nt-warning-soft, var(--nt-surface-muted));
-  color: var(--nt-fg);
-  font-size: var(--nt-text-sm);
+  border-radius: var(--nt-radius);
+  /* Quy ước của hệ: viền màu cảnh báo + chữ màu cảnh báo, không tô kín một khối màu. Xem
+     `.degraded` ở trang Tổng quan của web-admin. */
+  border: 1px solid var(--nt-warn);
+  color: var(--nt-warn-text);
+  font-size: 13px;
   line-height: 1.6;
 }

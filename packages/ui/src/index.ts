@@ -7,7 +7,14 @@
 export { EVENT_CATEGORIES, EVENT_CATEGORY_FILTERS, eventCategoryLabel } from './categories';
 export type { EventCategory } from './categories';
 
-export { PRICE_FILTERS, TIME_FILTERS, priceRange, quickFilterParams, timeRange } from './quick-filters';
+export {
+  PRICE_FILTERS,
+  TIME_FILTERS,
+  priceRange,
+  quickFilterParams,
+  timeRange,
+  vnDayRange,
+} from './quick-filters';
 export type { QuickFilterOption } from './quick-filters';
 
 export {
@@ -54,6 +61,9 @@ export type { AuditChangeProps } from './components/AuditChange';
 export { AuthOptions } from './components/AuthOptions';
 export type { AuthOptionsProps } from './components/AuthOptions';
 
+export { BarChart } from './components/BarChart';
+export type { BarChartProps, BarChartRow } from './components/BarChart';
+
 export { Badge } from './components/Badge';
 export type { BadgeProps, BadgeTone } from './components/Badge';
 
@@ -98,6 +108,8 @@ export type { EmptyStateProps } from './components/EmptyState';
 
 export { EventCard } from './components/EventCard';
 export type { EventCardProps } from './components/EventCard';
+export { EventCardSkeleton } from './components/EventCardSkeleton';
+export type { EventCardSkeletonProps } from './components/EventCardSkeleton';
 
 export { ErrorState } from './components/ErrorState';
 export type { ErrorStateProps } from './components/ErrorState';
@@ -114,7 +126,12 @@ export type { MoneyTextProps } from './components/MoneyText';
 export { PageSkeleton } from './components/PageSkeleton';
 export type { PageSkeletonProps } from './components/PageSkeleton';
 
+export { PosterImage } from './components/PosterImage';
+export type { PosterImageProps } from './components/PosterImage';
+
 export { QrCode } from './components/QrCode';
+export { QrPanel } from './components/QrPanel';
+export type { QrPanelProps } from './components/QrPanel';
 export type { QrCodeProps } from './components/QrCode';
 
 export { Select } from './components/Select';

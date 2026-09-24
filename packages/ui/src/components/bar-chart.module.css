@@ -1,0 +1,112 @@
+/* Thanh ngang, một chuỗi dữ liệu. Xem BarChart.tsx cho phần lý do. */
+
+.figure {
+  margin: 0;
+  display: grid;
+  gap: var(--nt-space-3);
+}
+
+.caption {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nt-text);
+}
+
+.rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  /*
+   * 6px giữa các dòng, không phải 0: khoảng trắng LÀ thứ tách hai thanh cạnh nhau. Vẽ viền quanh
+   * thanh để tách chúng là thêm mực không mang dữ liệu.
+   */
+  gap: 6px;
+}
+
+.row {
+  display: grid;
+  /* Nhãn | thanh | giá trị. Cột giá trị cố định nên mọi số thẳng hàng và so sánh được bằng mắt. */
+  grid-template-columns: minmax(0, 11rem) minmax(0, 1fr) minmax(4.5rem, auto);
+  align-items: center;
+  gap: var(--nt-space-3);
+}
+
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr) minmax(3.5rem, auto);
+  }
+
+  /* Trên màn hẹp, nhãn lên dòng riêng thay vì bóp thanh xuống còn vài chục pixel. */
+  .label {
+    grid-column: 1 / -1;
+  }
+}
+
+.label {
+  font-size: 13px;
+  color: var(--nt-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.track {
+  position: relative;
+  display: block;
+  /* Trần 24px và thanh mảnh hơn dải của nó: phần dư là khoảng thở, không phải chỗ để tô thêm. */
+  height: 14px;
+  border-radius: 4px;
+  background: var(--nt-bg-subtle);
+  cursor: default;
+}
+
+.track:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--nt-primary);
+  /*
+   * Đầu mút tròn 4px, chân vuông: thanh mọc từ một đường gốc chung, và làm tròn cả hai đầu sẽ
+   * làm những thanh ngắn trông dài hơn thực tế.
+   */
+  border-radius: 0 4px 4px 0;
+  transition: width 200ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fill {
+    transition: none;
+  }
+}
+
+.value {
+  font-size: 13px;
+  color: var(--nt-text);
+  text-align: right;
+  /* Chỉ ở đây mới dùng chữ số đều bề rộng: các số xếp thành cột và phải thẳng hàng. */
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Chú giải khi trỏ vào. Nó chỉ mang THÔNG TIN THÊM (ví dụ "120 / 400 chỗ"): giá trị chính đã nằm
+ * ở cột bên phải, nên không có con số nào bị khoá sau con trỏ chuột.
+ */
+.tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 1;
+  padding: 4px 8px;
+  border-radius: var(--nt-radius);
+  background: var(--nt-text);
+  color: var(--nt-surface);
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: var(--nt-shadow-panel);
+  pointer-events: none;
+}

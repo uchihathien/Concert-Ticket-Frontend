@@ -30,10 +30,30 @@ export interface DashboardTotals {
   grossVnd: number;
 }
 
+/**
+ * Số bán của MỘT sự kiện.
+ *
+ * Danh sách rời khỏi `events` chứ không nhét hai cột vào `AdminEventRow`: kiểu đó là view chung của
+ * cả khu quản trị, và thêm hai trường chỉ một màn hình cần sẽ buộc mọi đường đọc khác điền chúng —
+ * hoặc điền 0, tức là nói sai.
+ *
+ * @param grossVnd tổng khách trả, KHÔNG phải số tổ chức sẽ nhận (ADR-1010)
+ */
+export interface EventSales {
+  eventId: string;
+  ticketsSold: number;
+  grossVnd: number;
+}
+
 export interface OrganizationDashboard {
   organizationId: string;
   totals: DashboardTotals;
   events: AdminEventRow[];
+  /**
+   * Số bán theo từng sự kiện. **Rỗng khi analytics im lặng** — đọc cùng `degraded`, vì một danh
+   * sách rỗng không có nghĩa là chưa bán được gì.
+   */
+  eventSales: EventSales[];
   /** Tên service không hỏi được ở lần dựng này. Rỗng nghĩa là mọi con số đều đáng tin. */
   degraded: string[];
 }

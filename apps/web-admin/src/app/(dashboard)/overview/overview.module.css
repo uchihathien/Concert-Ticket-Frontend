@@ -25,3 +25,22 @@
   font-size: 14px;
   color: var(--nt-text-muted);
 }
+
+/* Dòng đang xem trong bảng chọn: đậm hơn, không tô nền — nền màu cho một dòng trong bảng dài sẽ
+   đọc thành "dòng này có vấn đề". */
+.activeRow {
+  font-weight: 600;
+  color: var(--nt-primary-text);
+}
+
+/* Giữ bản dựng cũ mờ đi trong lúc bản mới đang về, thay vì nháy về khung xương. */
+.stale {
+  opacity: 0.6;
+  transition: opacity 150ms ease-out;
+}
+
+.chartEmpty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
