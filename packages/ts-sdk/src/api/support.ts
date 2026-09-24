@@ -22,7 +22,9 @@ export async function askSupport(
   request: AskRequest,
   idempotencyKey?: string,
 ): Promise<AskResponse> {
-  const response = await client.post<AskResponse>('/v1/chat/agent/support', request, { idempotencyKey });
+  const response = await client.post<AskResponse>('/v1/chat/agent/support', request, {
+    idempotencyKey,
+  });
   return response.data;
 }
 
@@ -119,7 +121,10 @@ export async function deleteKnowledgeChunk(client: ApiClient, id: string): Promi
  * Đi qua đúng đường agent đi — cùng mô hình nhúng, cùng top-k, cùng ngưỡng. Đây là cách duy nhất
  * biết một đoạn vừa soạn có lấy ra được không mà không phải chờ khách thật hỏi trúng.
  */
-export async function previewKnowledge(client: ApiClient, question: string): Promise<RetrievedChunk[]> {
+export async function previewKnowledge(
+  client: ApiClient,
+  question: string,
+): Promise<RetrievedChunk[]> {
   const response = await client.get<RetrievedChunk[]>(
     `/v1/support/knowledge/preview?q=${encodeURIComponent(question)}`,
   );

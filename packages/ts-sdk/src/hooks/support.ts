@@ -146,7 +146,9 @@ export function useResolveHandoff() {
 
 // --- Kho tri thức của trợ lý ------------------------------------------------
 
-export function useKnowledgeChunks(params: { eventId?: string; page?: number; size?: number } = {}) {
+export function useKnowledgeChunks(
+  params: { eventId?: string; page?: number; size?: number } = {},
+) {
   const client = useApiClient();
 
   return useQuery({
