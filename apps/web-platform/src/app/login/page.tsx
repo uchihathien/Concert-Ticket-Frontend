@@ -27,7 +27,7 @@ export default async function LoginPage({
       forgotPasswordHref={resetPasswordUrlFromEnv('web-platform')}
       brand={
         <>
-          <BrandLogo height={34} priority />
+          <BrandLogo variant="lockup-on-light" height={34} priority />
           <span>· Nền tảng</span>
         </>
       }

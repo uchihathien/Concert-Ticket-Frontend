@@ -17,6 +17,7 @@ import {
   Table,
   formatNumber,
 } from '@nexaticket/ui';
+import { PlugZap } from 'lucide-react';
 import { OrganizationGate } from '@/components/OrganizationGate';
 
 /**
@@ -67,8 +68,10 @@ function SalesBody({ organization }: { organization: OrganizationSummary }) {
     <>
       <PageHeader title="Doanh thu" description={organization.name} />
 
-      <div style={{ display: 'grid', gap: 16 }}>
-        <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
+      <div className="grid gap-4">
+        {/* Hai ô số: dưới 640px xếp dọc. Một con số tiền bị bóp còn nửa màn hình điện thoại là
+            một con số phải đọc hai lần. */}
+        <div className="grid gap-4 sm:grid-cols-2">
           <Stat label="Vé đã bán" value={formatNumber(sales.data.totalTicketsSold)} />
           <Stat
             label="Doanh thu"
@@ -131,8 +134,10 @@ function SalesBody({ organization }: { organization: OrganizationSummary }) {
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <Panel>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--nt-text-muted)' }}>{label}</p>
-      <p style={{ margin: '4px 0 0', fontSize: 24, fontWeight: 700 }}>{value}</p>
+      <p className="m-0 text-[13px] font-medium text-muted">{label}</p>
+      {/* `tabular-nums`: hai ô này đứng cạnh nhau và cùng cập nhật, chữ số lệch bề rộng làm cả
+          hàng giật mỗi lần số đổi. */}
+      <p className="m-0 mt-1 text-2xl font-bold tabular-nums">{value}</p>
     </Panel>
   );
 }
@@ -163,13 +168,16 @@ function ServiceUnavailableNotice({ error, onRetry }: { error: unknown; onRetry:
 
   return (
     <Panel>
-      <h2 style={{ margin: '0 0 8px', fontSize: 18 }}>Chưa kết nối được dịch vụ thống kê</h2>
-      <p style={{ margin: '0 0 8px', color: 'var(--nt-text-muted)' }}>
+      <h2 className="m-0 mb-2 flex items-center gap-2 text-lg font-bold">
+        <PlugZap size={20} aria-hidden="true" className="text-warn" />
+        Chưa kết nối được dịch vụ thống kê
+      </h2>
+      <p className="m-0 mb-2 text-muted">
         Màn hình này đọc <code>GET /v1/admin/organizations/{'{id}'}/sales</code> của
         analytics-service. Hiện đường đi chưa thông, nên đây là vấn đề hạ tầng chứ không phải tổ
         chức của bạn chưa có doanh thu.
       </p>
-      <ul style={{ margin: '0 0 12px', paddingInlineStart: 20, color: 'var(--nt-text-muted)' }}>
+      <ul className="m-0 mb-3 list-disc ps-5 text-muted">
         <li>analytics-service (cổng 8099) cần được khởi động.</li>
         <li>
           api-gateway cần thêm route cho <code>/v1/admin/**</code> — hiện bảng route chưa có mẫu nào
@@ -177,9 +185,7 @@ function ServiceUnavailableNotice({ error, onRetry }: { error: unknown; onRetry:
         </li>
       </ul>
       {apiError?.correlationId ? (
-        <p style={{ margin: 0, fontSize: 13, color: 'var(--nt-text-muted)' }}>
-          Mã tra cứu: {apiError.correlationId}
-        </p>
+        <p className="m-0 text-[13px] text-muted">Mã tra cứu: {apiError.correlationId}</p>
       ) : null}
     </Panel>
   );

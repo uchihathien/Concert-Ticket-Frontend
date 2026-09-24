@@ -1,9 +1,17 @@
 'use client';
 
 import { useOrder, useOrderTickets, type Ticket } from '@nexaticket/ts-sdk';
-import { Badge, QrCode, Skeleton, formatDateLong, formatTime } from '@nexaticket/ui';
+import {
+  Badge,
+  Modal,
+  QrCode,
+  Skeleton,
+  TicketPoster,
+  formatDateLong,
+  formatTime,
+} from '@nexaticket/ui';
 import Link from 'next/link';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { SessionIndex, SessionInfo } from '@/lib/session-index';
 import { ApiErrorState } from './ApiErrorState';
 import styles from './order-tickets.module.css';
@@ -40,6 +48,9 @@ const POLL_MS = 2_000;
  * để trang thanh toán chờ hộ rồi mới chuyển. Nhờ vậy khách thấy "đã thanh toán" ngay lập tức.
  */
 export function OrderTickets({ orderId, sessionIndex }: OrderTicketsProps) {
+  /** Vé đang mở ảnh. `null` là đóng — một state cho cả hai câu hỏi "mở hay chưa" và "mở vé nào". */
+  const [posterFor, setPosterFor] = useState<Ticket | null>(null);
+
   const order = useOrder(orderId);
   const paid = order.data?.status === 'PAID';
 
@@ -108,6 +119,7 @@ export function OrderTickets({ orderId, sessionIndex }: OrderTicketsProps) {
   // lấy ra một biến riêng để phần dưới không phải rắc `?.` khắp nơi.
   const issuedTickets = tickets.data ?? [];
   const groups = groupBySession(issuedTickets, sessionIndex);
+  const posterInfo = posterFor ? sessionIndex[posterFor.eventSessionId] : undefined;
 
   return (
     <div className={styles.wrap}>
@@ -156,6 +168,21 @@ export function OrderTickets({ orderId, sessionIndex }: OrderTicketsProps) {
                   {ticket.seatLabel ? `Ghế ${ticket.seatLabel}` : `Khu ${ticket.zoneCode}`}
                 </p>
                 <TicketBadge ticket={ticket} />
+
+                {/*
+                  Poster dựng theo yêu cầu, không dựng sẵn cho cả danh sách: mỗi cái là một mã QR
+                  vài nghìn ô cộng một khổ ảnh 800×1200. Ba mươi vé dựng sẵn là ba mươi lần việc
+                  đó, cho một thứ phần lớn khách không mở tới.
+                */}
+                {ticket.status === 'VALID' ? (
+                  <button
+                    type="button"
+                    className={styles.posterButton}
+                    onClick={() => setPosterFor(ticket)}
+                  >
+                    Tạo ảnh vé
+                  </button>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -170,6 +197,34 @@ export function OrderTickets({ orderId, sessionIndex }: OrderTicketsProps) {
           Tiếp tục xem sự kiện
         </Link>
       </div>
+
+      <Modal
+        open={posterFor !== null}
+        onClose={() => setPosterFor(null)}
+        title="Ảnh vé"
+      >
+        {posterFor ? (
+          <TicketPoster
+            eventTitle={posterInfo?.eventTitle ?? 'Sự kiện'}
+            // Định dạng ở đây, không ở backend: chỗ này biết ngôn ngữ và múi giờ của người đang xem.
+            sessionAt={
+              posterInfo
+                ? `${formatDateLong(posterInfo.startsAt)} · ${formatTime(posterInfo.startsAt)}`
+                : ''
+            }
+            venueLine={
+              posterInfo?.venueName
+                ? `${posterInfo.venueName}${posterInfo.city ? `, ${posterInfo.city}` : ''}`
+                : null
+            }
+            zoneCode={posterFor.zoneCode}
+            seatLabel={posterFor.seatLabel}
+            ticketTypeName={posterFor.ticketTypeName}
+            ticketCode={posterFor.id.slice(0, 8).toUpperCase()}
+            qrToken={posterFor.qrToken}
+          />
+        ) : null}
+      </Modal>
 
       <p className={styles.hint}>
         Vé luôn nằm trong <Link href="/me/tickets">Vé của tôi</Link> — không cần chụp lại màn hình,

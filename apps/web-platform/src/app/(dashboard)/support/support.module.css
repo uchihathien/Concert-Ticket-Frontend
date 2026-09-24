@@ -1,0 +1,200 @@
+/* Bàn hỗ trợ: hàng đợi bên trái, hội thoại bên phải. */
+
+/*
+ * Một cột trên màn hẹp. Người trực làm việc trên màn rộng, nhưng trang vẫn phải đọc được khi ai đó
+ * mở nó trên điện thoại để xem nhanh hàng đợi.
+ */
+.layout {
+  display: grid;
+  gap: var(--nt-space-6);
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.queueList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--nt-space-2);
+}
+
+.queueItem {
+  width: 100%;
+  display: grid;
+  gap: var(--nt-space-1);
+  text-align: start;
+  font: inherit;
+  color: var(--nt-text);
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-3);
+  cursor: pointer;
+}
+
+.queueItem:hover {
+  background: var(--nt-hover);
+}
+
+.queueItem:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+.queueItemOpen {
+  border-color: var(--nt-accent);
+}
+
+.queueTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nt-space-2);
+}
+
+.waiting {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--nt-text-muted);
+}
+
+.queueReason {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+/* Câu hỏi của khách cắt ở hai dòng: hàng đợi để QUÉT, không để đọc. */
+.queueQuestion {
+  font-size: 13px;
+  color: var(--nt-text-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.conversation {
+  display: grid;
+  gap: var(--nt-space-4);
+}
+
+.threadHead {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-3);
+  flex-wrap: wrap;
+}
+
+.threadReason {
+  font-weight: 600;
+}
+
+/*
+ * Cuộn TRONG khung hội thoại, không cuộn cả trang: ô soạn trả lời phải luôn nhìn thấy được, kể cả
+ * khi hội thoại dài hai trăm lượt.
+ */
+.messages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--nt-space-3);
+  max-height: 52vh;
+  overflow-y: auto;
+}
+
+.message {
+  display: grid;
+  gap: var(--nt-space-1);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-3);
+  max-width: 78%;
+}
+
+.fromUser {
+  background: var(--nt-elevated);
+  justify-self: start;
+}
+
+.fromBot {
+  background: var(--nt-bg-subtle);
+  border: 1px solid var(--nt-border);
+  justify-self: end;
+}
+
+/* Lời của người trực khác hẳn lời của trợ lý — cùng phía, khác màu. Xem ChatRole ở backend. */
+.fromAgent {
+  background: color-mix(in srgb, var(--nt-success) 22%, var(--nt-surface));
+  border: 1px solid var(--nt-success);
+  justify-self: end;
+}
+
+.messageWho {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-2);
+  font-size: 12px;
+  color: var(--nt-text-muted);
+}
+
+.messageBody {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 15px;
+}
+
+.composer {
+  display: grid;
+  gap: var(--nt-space-2);
+  border-top: 1px solid var(--nt-border);
+  padding-top: var(--nt-space-4);
+}
+
+.composerLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nt-text-muted);
+}
+
+.composerInput {
+  font: inherit;
+  font-size: 15px;
+  color: var(--nt-text);
+  background: var(--nt-bg-subtle);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-3);
+  resize: vertical;
+}
+
+.composerInput:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+.composerActions {
+  display: flex;
+  gap: var(--nt-space-3);
+  flex-wrap: wrap;
+}
+
+.claimBar {
+  display: grid;
+  gap: var(--nt-space-3);
+  justify-items: start;
+  border-top: 1px solid var(--nt-border);
+  padding-top: var(--nt-space-4);
+}
+
+.claimHint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}

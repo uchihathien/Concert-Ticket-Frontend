@@ -1,9 +1,19 @@
 'use client';
 
 import { useMyTickets, type Ticket } from '@nexaticket/ts-sdk';
-import { Badge, EmptyState, QrCode, Skeleton, formatDateLong, formatTime } from '@nexaticket/ui';
+import {
+  Badge,
+  EmptyState,
+  QrCode,
+  Skeleton,
+  cx,
+  foldText,
+  formatDateLong,
+  formatTime,
+  matchesText,
+} from '@nexaticket/ui';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { SessionIndex, SessionInfo } from '@/lib/session-index';
 import { ApiErrorState } from './ApiErrorState';
 import styles from './wallet.module.css';
@@ -22,9 +32,25 @@ export interface TicketWalletProps {
  *
  * Nhóm theo suất diễn chứ không liệt kê phẳng: khách mua bốn vé cho một buổi thì đó là *một*
  * việc trong đầu họ, không phải bốn.
+ *
+ * <h3>Lọc ở client, và ở đây điều đó đúng</h3>
+ *
+ * Ngược với bảng tra cứu của ban tổ chức (hàng chục nghìn vé, lọc ở database): ví của một người là
+ * vài chục vé, đã nằm sẵn trong bộ nhớ. Gọi lại mạng cho mỗi lần gõ phím là thêm độ trễ cho một
+ * phép lọc chạy mất chưa tới một mili giây.
+ *
+ * Mặc định là **Sắp diễn ra**. Ví mở ra mà trên cùng là concert năm ngoái thì việc đầu tiên khách
+ * phải làm là cuộn qua chỗ mình không cần.
  */
 export function TicketWallet({ sessionIndex }: TicketWalletProps) {
   const { data, isPending, error, refetch } = useMyTickets();
+  const [when, setWhen] = useState<WhenFilter>('upcoming');
+  const [query, setQuery] = useState('');
+
+  const groups = useMemo(
+    () => (data ? filterGroups(groupBySession(data, sessionIndex), when, query) : []),
+    [data, sessionIndex, when, query],
+  );
 
   if (isPending) {
     return (
@@ -53,10 +79,49 @@ export function TicketWallet({ sessionIndex }: TicketWalletProps) {
     );
   }
 
-  const groups = groupBySession(data, sessionIndex);
-
   return (
     <div className={styles.list}>
+      <div className={styles.filters}>
+        <div className={styles.segmented} role="group" aria-label="Lọc theo thời gian">
+          {WHEN_FILTERS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={cx(styles.segment, when === option.value && styles.segmentOn)}
+              aria-pressed={when === option.value}
+              onClick={() => setWhen(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+
+        <label className={styles.searchLabel} htmlFor="wallet-search">
+          Tìm vé
+        </label>
+        <input
+          id="wallet-search"
+          type="search"
+          className={styles.search}
+          value={query}
+          placeholder="Tên sự kiện, hạng vé hoặc ghế"
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </div>
+
+      {groups.length === 0 ? (
+        // Khác hẳn "chưa có vé nào" ở trên: ở đây khách CÓ vé, chỉ là bộ lọc đang giấu chúng đi.
+        // Gộp hai câu làm một sẽ nói với người vừa mua vé rằng họ chưa mua gì.
+        <EmptyState
+          title="Không có vé nào khớp"
+          description={
+            when === 'upcoming'
+              ? 'Không có vé cho sự kiện sắp diễn ra. Thử xem mục “Đã qua”.'
+              : 'Thử bỏ bớt từ khoá tìm kiếm.'
+          }
+        />
+      ) : null}
+
       {groups.map((group) => (
         <section key={group.eventSessionId} className={styles.group}>
           <header className={styles.groupHead}>
@@ -153,6 +218,52 @@ function TicketStatusBadge({ ticket }: { ticket: Ticket }) {
   }
   if (ticket.status === 'REVOKED') return <Badge tone="danger">Đã huỷ</Badge>;
   return <Badge tone="neutral">Còn hiệu lực</Badge>;
+}
+
+type WhenFilter = 'upcoming' | 'past' | 'all';
+
+const WHEN_FILTERS: Array<{ value: WhenFilter; label: string }> = [
+  { value: 'upcoming', label: 'Sắp diễn ra' },
+  { value: 'past', label: 'Đã qua' },
+  { value: 'all', label: 'Tất cả' },
+];
+
+/**
+ * Lọc theo thời gian và từ khoá.
+ *
+ * <p>Suất không tra được (sự kiện đã gỡ đăng bán) **luôn được giữ lại** ở bộ lọc thời gian: không
+ * biết ngày thì không có cơ sở gọi nó là đã qua, và giấu đi một cái vé khách đã trả tiền là hỏng
+ * nặng hơn nhiều so với hiện thừa một dòng.
+ *
+ * <p>So khớp trên cả nhóm chứ không trên từng vé: khách gõ tên sự kiện thì họ muốn cả buổi ấy,
+ * không phải một vé trong buổi.
+ */
+function filterGroups(groups: Group[], when: WhenFilter, query: string): Group[] {
+  const now = Date.now();
+
+  return groups.filter((group) => {
+    if (when !== 'all' && group.info) {
+      const startsAt = Date.parse(group.info.startsAt);
+      if (!Number.isNaN(startsAt)) {
+        const upcoming = startsAt >= now;
+        if (when === 'upcoming' && !upcoming) return false;
+        if (when === 'past' && upcoming) return false;
+      }
+    }
+
+    // `matchesText` so khớp trên chuỗi ĐÃ fold, nên needle phải fold trước — nếu không, gõ có
+    // dấu sẽ không khớp gì cả.
+    const needle = foldText(query.trim());
+    if (!needle) return true;
+
+    return matchesText(needle, [
+      group.info?.eventTitle ?? null,
+      group.info?.venueName ?? null,
+      ...group.tickets.map((ticket) => ticket.ticketTypeName),
+      ...group.tickets.map((ticket) => ticket.seatLabel),
+      ...group.tickets.map((ticket) => ticket.zoneCode),
+    ]);
+  });
 }
 
 interface Group {

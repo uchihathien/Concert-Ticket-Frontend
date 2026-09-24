@@ -1,4 +1,5 @@
 import { AppShell, BrandLogo, BrandSuffix, SignOutForm } from '@nexaticket/ui';
+import { Building2, Headset, Scale, UserCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { signOut } from '@/auth';
@@ -23,17 +24,23 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <AppShell
       brand={
         <>
-          <BrandLogo height={26} priority />
+          <BrandLogo variant="lockup-on-light" height={26} priority />
           <BrandSuffix>Nền tảng</BrandSuffix>
         </>
       }
       nav={[
-        { href: '/', label: 'Tổ chức' },
-        { href: '/ledger', label: 'Sổ cái' },
+        // Biểu tượng đi KÈM chữ, không thay chữ: cột điều hướng toàn hình thì người dùng phải
+        // đoán, và đoán sai ở khu quản trị nghĩa là mở nhầm màn.
+        { href: '/organizations', label: 'Tổ chức', icon: <Building2 size={18} /> },
+        { href: '/ledger', label: 'Sổ cái', icon: <Scale size={18} /> },
+        { href: '/support', label: 'Bàn hỗ trợ', icon: <Headset size={18} /> },
       ]}
       foot={
         <>
-          <Link href="/account">Tài khoản</Link>
+          <Link href="/account" className="inline-flex items-center gap-2 no-underline">
+            <UserCircle2 size={18} aria-hidden="true" />
+            Tài khoản
+          </Link>
           <SignOutForm action={doSignOut} />
         </>
       }

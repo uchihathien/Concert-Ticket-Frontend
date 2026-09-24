@@ -56,7 +56,11 @@ export default async function BookingPage({ params }: { params: Promise<{ sessio
         </p>
       </header>
 
-      <SeatPicker eventSessionId={sessionId} eventTitle={session.eventTitle} />
+      <SeatPicker
+        eventSessionId={sessionId}
+        eventSlug={session.slug}
+        eventTitle={session.eventTitle}
+      />
     </main>
   );
 }

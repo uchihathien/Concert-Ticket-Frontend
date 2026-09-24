@@ -2,6 +2,7 @@
 
 import { ApiError, useTrialBalance } from '@nexaticket/ts-sdk';
 import { Badge, ErrorState, MoneyText, PageHeader, Panel, Skeleton } from '@nexaticket/ui';
+import { ScaleIcon } from 'lucide-react';
 
 /**
  * P-LEDGER — bảng cân đối thử.
@@ -37,27 +38,35 @@ export default function LedgerPage() {
         />
       ) : (
         <Panel>
-          <div style={{ display: 'grid', gap: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {/* Cân bằng là điều kiện sống còn, nên nó đứng đầu chứ không nằm cuối bảng. */}
+          <div className="grid gap-5">
+            {/* Cân bằng là điều kiện sống còn, nên nó đứng đầu chứ không nằm cuối bảng. */}
+            <div className="flex items-center gap-3">
+              <ScaleIcon
+                size={20}
+                aria-hidden="true"
+                className={trialBalance.data.balanced ? 'text-success' : 'text-danger'}
+              />
               <Badge tone={trialBalance.data.balanced ? 'success' : 'danger'}>
                 {trialBalance.data.balanced ? 'Cân bằng' : 'LỆCH — cần xử lý ngay'}
               </Badge>
             </div>
-            <div style={{ display: 'flex', gap: 48, flexWrap: 'wrap' }}>
+
+            {/* Hai vế nợ/có nằm cạnh nhau trên desktop để mắt so được ngay; dưới 640px thì xuống
+                hàng — hai con số tiền bị bóp trên một dòng hẹp là hai con số không đọc nổi. */}
+            <dl className="m-0 grid gap-6 sm:grid-cols-2">
               <div>
-                <p style={{ margin: 0, color: 'var(--nt-text-muted)', fontSize: 14 }}>Tổng nợ</p>
-                <p style={{ margin: 0, fontSize: 22 }}>
+                <dt className="text-sm text-muted">Tổng nợ</dt>
+                <dd className="m-0 mt-1 text-[22px]">
                   <MoneyText amountVnd={trialBalance.data.totalDebitVnd} strong />
-                </p>
+                </dd>
               </div>
               <div>
-                <p style={{ margin: 0, color: 'var(--nt-text-muted)', fontSize: 14 }}>Tổng có</p>
-                <p style={{ margin: 0, fontSize: 22 }}>
+                <dt className="text-sm text-muted">Tổng có</dt>
+                <dd className="m-0 mt-1 text-[22px]">
                   <MoneyText amountVnd={trialBalance.data.totalCreditVnd} strong />
-                </p>
+                </dd>
               </div>
-            </div>
+            </dl>
           </div>
         </Panel>
       )}

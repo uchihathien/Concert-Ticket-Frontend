@@ -305,3 +305,95 @@
   outline: 2px solid var(--nt-primary);
   outline-offset: 2px;
 }
+
+/* --- Thanh lọc ví vé --- */
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-3);
+  flex-wrap: wrap;
+}
+
+/*
+ * Nhóm nút chia đoạn. Là `<button>` thật chứ không phải `<Link>` như bộ lọc trang danh sách: ví vé
+ * là dữ liệu riêng, không dán link cho người khác được, nên đưa trạng thái lọc lên URL chỉ thêm
+ * một thứ phải đồng bộ mà không đổi lại được gì.
+ */
+.segmented {
+  display: inline-flex;
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  overflow: hidden;
+}
+
+.segment {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--nt-text-muted);
+  background: var(--nt-surface);
+  border: none;
+  padding: var(--nt-space-2) var(--nt-space-4);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.segment + .segment {
+  border-left: 1px solid var(--nt-border);
+}
+
+.segment:hover {
+  background: var(--nt-hover);
+}
+
+.segment:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+.segmentOn {
+  color: var(--nt-primary-ink);
+  background: var(--nt-primary);
+}
+
+.segmentOn:hover {
+  background: var(--nt-primary-hover);
+}
+
+/* Nhãn thật, ẩn khỏi mắt: placeholder không thay được nhãn với trình đọc màn hình. */
+.searchLabel {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.search {
+  flex: 1 1 220px;
+  min-width: 0;
+  font: inherit;
+  font-size: 15px;
+  color: var(--nt-text);
+  background: var(--nt-bg-subtle);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-2) var(--nt-space-3);
+}
+
+.search:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+/* Số đếm trong nút lọc: cho biết tab nào rỗng trước khi bấm vào. */
+.segmentCount {
+  margin-left: var(--nt-space-2);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}

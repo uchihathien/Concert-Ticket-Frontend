@@ -13,16 +13,20 @@ import {
   Button,
   EmptyState,
   ErrorState,
+  FilterBar,
   Input,
   Modal,
   PageHeader,
   Panel,
   Select,
   Skeleton,
+  foldText,
   formatNumber,
+  matchesText,
   useToast,
 } from '@nexaticket/ui';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { MapPin, Plus } from 'lucide-react';
 import { OrganizationGate } from '@/components/OrganizationGate';
 
 /**
@@ -47,8 +51,24 @@ function VenuesContent({ organization }: { organization: OrganizationSummary }) 
   const venues = useVenues(organizationId);
   const createVenue = useCreateVenue(organizationId);
 
+  const [venueQuery, setVenueQuery] = useState('');
   const [venueFormOpen, setVenueFormOpen] = useState(false);
   const [zoneFor, setZoneFor] = useState<AdminVenue | null>(null);
+
+  // Tìm cả trong MÃ KHU, không chỉ tên địa điểm: ban tổ chức thường nhớ "khu VIP nằm ở đâu" chứ
+  // không nhớ tên đầy đủ của nhà thi đấu.
+  const visibleVenues = useMemo(() => {
+    const needle = foldText(venueQuery.trim());
+    return (venues.data ?? []).filter((venue) =>
+      matchesText(needle, [
+        venue.name,
+        venue.city,
+        venue.address,
+        ...venue.zones.map((zone) => zone.zoneCode),
+        ...venue.zones.map((zone) => zone.name),
+      ]),
+    );
+  }, [venues.data, venueQuery]);
 
   const submitVenue = (formData: FormData) => {
     createVenue.mutate(
@@ -69,7 +89,12 @@ function VenuesContent({ organization }: { organization: OrganizationSummary }) 
       <PageHeader
         title="Địa điểm"
         description="Địa điểm riêng của tổ chức. Mỗi sự kiện gắn với một địa điểm, và khu vực ở đây quyết định hạng vé bán được."
-        actions={<Button onClick={() => setVenueFormOpen(true)}>Thêm địa điểm</Button>}
+        actions={
+          <Button onClick={() => setVenueFormOpen(true)}>
+            <Plus size={18} aria-hidden="true" />
+            Thêm địa điểm
+          </Button>
+        }
       />
 
       {venues.isPending ? (
@@ -89,42 +114,58 @@ function VenuesContent({ organization }: { organization: OrganizationSummary }) 
           action={<Button onClick={() => setVenueFormOpen(true)}>Thêm địa điểm</Button>}
         />
       ) : (
-        <div style={{ display: 'grid', gap: 16 }}>
-          {(venues.data ?? []).map((venue) => (
+        <div className="grid gap-4">
+          <FilterBar
+            count={`${formatNumber(visibleVenues.length)} / ${formatNumber(
+              (venues.data ?? []).length,
+            )} địa điểm`}
+            actions={
+              venueQuery ? (
+                <Button variant="secondary" onClick={() => setVenueQuery('')}>
+                  Xoá bộ lọc
+                </Button>
+              ) : undefined
+            }
+          >
+            <Input
+              label="Tìm địa điểm"
+              placeholder="Tên, thành phố hoặc mã khu"
+              value={venueQuery}
+              onChange={(event) => setVenueQuery(event.target.value)}
+            />
+          </FilterBar>
+
+          {visibleVenues.length === 0 ? (
+            // Khác "chưa có địa điểm nào" ở nhánh trên: ở đây tổ chức CÓ địa điểm, bộ lọc đang
+            // giấu chúng đi.
+            <EmptyState
+              title="Không có địa điểm nào khớp"
+              description="Thử bỏ bớt từ khoá tìm kiếm."
+            />
+          ) : null}
+
+          {visibleVenues.map((venue) => (
             <Panel key={venue.id}>
-              <div
-                style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 12,
-                  justifyContent: 'space-between',
-                  alignItems: 'flex-start',
-                }}
-              >
+              <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <h2 style={{ margin: '0 0 4px', fontSize: 18 }}>{venue.name}</h2>
-                  <p style={{ margin: 0, color: 'var(--nt-text-muted)' }}>
+                  <h2 className="m-0 mb-1 flex items-center gap-2 text-lg font-bold">
+                    <MapPin size={18} aria-hidden="true" className="text-muted" />
+                    {venue.name}
+                  </h2>
+                  <p className="m-0 text-muted">
                     {venue.city}
                     {venue.address ? ` · ${venue.address}` : ''} · sức chứa{' '}
                     {formatNumber(venue.capacity)}
                   </p>
                 </div>
                 <Button variant="secondary" onClick={() => setZoneFor(venue)}>
+                  <Plus size={16} aria-hidden="true" />
                   Thêm khu vực
                 </Button>
               </div>
 
               {venue.zones.length > 0 ? (
-                <ul
-                  style={{
-                    listStyle: 'none',
-                    margin: '16px 0 0',
-                    padding: 0,
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: 8,
-                  }}
-                >
+                <ul className="m-0 mt-4 flex list-none flex-wrap gap-2 p-0">
                   {venue.zones.map((zone) => (
                     <li key={zone.id}>
                       <Badge tone={zone.kind === 'SEATED' ? 'neutral' : 'accent'}>
@@ -137,7 +178,7 @@ function VenuesContent({ organization }: { organization: OrganizationSummary }) 
                   ))}
                 </ul>
               ) : (
-                <p style={{ margin: '16px 0 0', color: 'var(--nt-text-muted)' }}>
+                <p className="m-0 mt-4 text-muted">
                   Chưa có khu vực nào. Chưa có khu thì chưa bán được hạng vé nào.
                 </p>
               )}
@@ -161,7 +202,7 @@ function VenuesContent({ organization }: { organization: OrganizationSummary }) 
           </>
         }
       >
-        <form id="create-venue" action={submitVenue} style={{ display: 'grid', gap: 16 }}>
+        <form id="create-venue" action={submitVenue} className="grid gap-4">
           <Input name="name" label="Tên địa điểm" required maxLength={200} />
           <Input name="city" label="Tỉnh/Thành phố" required maxLength={100} />
           <Input name="address" label="Địa chỉ" />
@@ -237,7 +278,7 @@ function ZoneDialog({
         </>
       }
     >
-      <form id="create-zone" action={submit} style={{ display: 'grid', gap: 16 }}>
+      <form id="create-zone" action={submit} className="grid gap-4">
         <Input name="zoneCode" label="Mã khu" required maxLength={16} hint="Ví dụ: A, B, FLOOR." />
         <Input name="name" label="Tên khu" required maxLength={100} />
         <Select

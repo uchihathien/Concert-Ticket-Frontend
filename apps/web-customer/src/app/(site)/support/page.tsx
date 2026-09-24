@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { SupportChat } from '@/components/SupportChat';
 import styles from '../legal.module.css';
 
 export const metadata: Metadata = {
@@ -12,8 +13,9 @@ export const metadata: Metadata = {
  * Dùng `<details>` thay vì accordion tự viết: mở/đóng, bàn phím và tìm-trong-trang của trình
  * duyệt đều hoạt động sẵn, và nó không cần một dòng JavaScript nào.
  *
- * Kênh liên hệ cố ý để trống — bịa ra một số hotline hay email không tồn tại thì tệ hơn hẳn việc
- * nói thẳng là chưa có.
+ * Khung chat ở đầu trang là kênh liên hệ thật: trợ lý trả lời trước, và chuyển sang người thật khi
+ * khách yêu cầu hoặc khi nó không xử lý được. Phần FAQ ở dưới vẫn giữ — nó trả lời được ngay,
+ * không cần đăng nhập, và đọc được cả khi JavaScript chưa tải xong.
  */
 const FAQ = [
   {
@@ -47,8 +49,18 @@ export default function SupportPage() {
   return (
     <main className={styles.page}>
       <h1 className={styles.title}>Hỗ trợ</h1>
-      <p className={styles.updated}>Câu hỏi thường gặp về đặt vé, thanh toán và soát vé</p>
+      <p className={styles.updated}>Hỏi trợ lý, hoặc gặp nhân viên hỗ trợ</p>
 
+      {/*
+        Khung chat đặt TRÊN phần FAQ. Người mở trang này thường đã đọc lướt qua câu hỏi thường gặp
+        và không tìm thấy thứ mình cần — bắt họ cuộn qua chín mục nữa rồi mới tới chỗ hỏi được là
+        đặt thứ tự ngược với việc họ đang làm.
+      */}
+      <SupportChat />
+
+      <h2 className={styles.sectionTitle} style={{ marginTop: 'var(--nt-space-8)' }}>
+        Câu hỏi thường gặp
+      </h2>
       <div className={styles.faq}>
         {FAQ.map((item) => (
           <details key={item.question} className={styles.faqItem}>
@@ -59,11 +71,11 @@ export default function SupportPage() {
       </div>
 
       <section className={styles.section} style={{ marginTop: 'var(--nt-space-8)' }}>
-        <h2 className={styles.sectionTitle}>Chưa có câu trả lời bạn cần?</h2>
+        <h2 className={styles.sectionTitle}>Khi báo sự cố</h2>
         <p>
-          Kênh liên hệ trực tiếp đang được thiết lập. Khi báo sự cố, kèm theo{' '}
-          <strong>mã tra cứu</strong> hiện trên màn hình lỗi hoặc màn hình đơn hàng — đó là thứ giúp
-          tìm lại đúng yêu cầu của bạn trong nhật ký hệ thống.
+          Kèm theo <strong>mã tra cứu</strong> hiện trên màn hình lỗi hoặc màn hình đơn hàng — đó là
+          thứ giúp tìm lại đúng yêu cầu của bạn trong nhật ký hệ thống. Dán nó thẳng vào khung chat
+          phía trên cũng được.
         </p>
       </section>
     </main>

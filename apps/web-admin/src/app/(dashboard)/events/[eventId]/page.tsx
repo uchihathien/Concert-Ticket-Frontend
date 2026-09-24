@@ -8,6 +8,7 @@ import {
   useDeleteSession,
   useDeleteTicketType,
   usePublishEvent,
+  useUpdateEvent,
   useUpdateSession,
   useUpdateTicketType,
   type AdminEventDetail,
@@ -24,6 +25,8 @@ import {
   Modal,
   PageHeader,
   Panel,
+  RowActions,
+  Section,
   Select,
   Skeleton,
   Table,
@@ -35,10 +38,12 @@ import {
   useToast,
   vnLocalToIso,
 } from '@nexaticket/ui';
+import { ArrowLeft, CalendarPlus, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { OrganizationGate } from '@/components/OrganizationGate';
+import { PosterUploader } from '@/components/PosterUploader';
 
 /**
  * A-EVENT — suất diễn và giá vé của một sự kiện.
@@ -76,6 +81,7 @@ function EventDetailContent({
 
   const query = useAdminEvent(organizationId, eventId);
   const publish = usePublishEvent(organizationId);
+  const updateEvent = useUpdateEvent(organizationId, eventId);
   const deleteSession = useDeleteSession(organizationId, eventId);
   const deleteTicketType = useDeleteTicketType(organizationId, eventId);
 
@@ -124,11 +130,15 @@ function EventDetailContent({
         title={event.title}
         description={`${event.venue.name} · ${event.venue.city} · ${formatNumber(event.sessions.length)} suất diễn`}
         actions={
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <div className="flex flex-wrap gap-2">
             <Link href={`/?org=${organizationId}`}>
-              <Button variant="secondary">Danh sách sự kiện</Button>
+              <Button variant="secondary">
+                <ArrowLeft size={16} aria-hidden="true" />
+                Danh sách sự kiện
+              </Button>
             </Link>
             <Button variant="secondary" disabled={published} onClick={() => setSessionForm('new')}>
+              <CalendarPlus size={16} aria-hidden="true" />
               Thêm suất diễn
             </Button>
             <Button
@@ -137,6 +147,11 @@ function EventDetailContent({
                 publish.mutate({ eventId: event.id, publish: !published }, { onError })
               }
             >
+              {published ? (
+                <EyeOff size={16} aria-hidden="true" />
+              ) : (
+                <Eye size={16} aria-hidden="true" />
+              )}
               {published ? 'Gỡ bán' : 'Xuất bản'}
             </Button>
           </div>
@@ -144,9 +159,9 @@ function EventDetailContent({
       />
 
       <Panel>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+        <div className="flex flex-wrap items-center gap-3">
           <Badge tone={published ? 'success' : 'neutral'}>{statusLabel(event.status)}</Badge>
-          <span style={{ color: 'var(--nt-text-muted)' }}>
+          <span className="text-muted">
             {published
               ? 'Đang bán. Gỡ bán trước khi sửa suất diễn hoặc giá vé — đổi giá lúc đang bán thì khách thấy một giá, kết toán ra giá khác.'
               : event.blockers.length === 0
@@ -156,7 +171,7 @@ function EventDetailContent({
         </div>
 
         {!published && event.blockers.length > 0 ? (
-          <ul style={{ margin: '12px 0 0', paddingLeft: 20, color: 'var(--nt-text-muted)' }}>
+          <ul className="m-0 mt-3 list-disc ps-5 text-muted">
             {event.blockers.map((blocker) => (
               <li key={blocker}>{publishBlockerLabel(blocker)}</li>
             ))}
@@ -164,7 +179,29 @@ function EventDetailContent({
         ) : null}
       </Panel>
 
-      <div style={{ display: 'grid', gap: 16, marginTop: 16 }}>
+      {/*
+        Ảnh bìa sửa được cả khi đang bán, khác hẳn suất diễn và giá vé.
+
+        Lý do: đổi ảnh không đụng gì tới tồn kho hay số tiền khách đã trả. Khoá nó lại theo cùng
+        luật với giá vé là bắt ban tổ chức gỡ cả sự kiện xuống chỉ để thay một tấm ảnh mờ.
+      */}
+      <Section
+        title="Ảnh bìa"
+        description="Hiện trên thẻ sự kiện ở trang khách. Chưa có thì hệ thống dùng một dải màu riêng cho sự kiện này."
+      >
+        <PosterUploader
+          organizationId={organizationId}
+          posterUrl={event.posterUrl}
+          coverSeed={event.slug}
+          onSave={async (posterUrl) => {
+            // Chuỗi rỗng = xoá ảnh. Backend phân biệt nó với `null` ("không đổi gì"), nên đừng
+            // chuẩn hoá về undefined ở đây.
+            await updateEvent.mutateAsync({ posterUrl });
+          }}
+        />
+      </Section>
+
+      <div className="mt-4 grid gap-4">
         {event.sessions.map((session) => (
           <SessionPanel
             key={session.id}
@@ -197,8 +234,8 @@ function EventDetailContent({
 
         {event.sessions.length === 0 ? (
           <Panel>
-            <h2 style={{ margin: '0 0 4px', fontSize: 18 }}>Chưa có suất diễn nào</h2>
-            <p style={{ margin: 0, color: 'var(--nt-text-muted)' }}>
+            <h2 className="m-0 mb-1 text-lg font-bold">Chưa có suất diễn nào</h2>
+            <p className="m-0 text-muted">
               Giá vé khai theo từng suất diễn, nên phải có suất trước rồi mới đặt giá cho từng khu.
             </p>
           </Panel>
@@ -247,7 +284,7 @@ function EventDetailContent({
             </>
           }
         >
-          <p style={{ margin: 0 }}>{confirm.body}</p>
+          <p className="m-0">{confirm.body}</p>
         </Modal>
       ) : null}
     </>
@@ -278,26 +315,18 @@ function SessionPanel({
 
   return (
     <Panel>
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 12,
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-        }}
-      >
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 style={{ margin: '0 0 4px', fontSize: 18 }}>
+          <h2 className="m-0 mb-1 text-lg font-bold">
             {formatDateTime(session.startsAt)}
             {session.endsAt ? ` → ${formatDateTime(session.endsAt)}` : ''}
           </h2>
-          <p style={{ margin: 0, color: 'var(--nt-text-muted)' }}>
+          <p className="m-0 text-muted">
             Mở bán {session.salesOpenAt ? formatDateTime(session.salesOpenAt) : '—'} · đóng bán{' '}
             {session.salesCloseAt ? formatDateTime(session.salesCloseAt) : '—'}
           </p>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        <div className="flex flex-wrap gap-2">
           <Button
             variant="secondary"
             disabled={!editable || missing.length === 0}
@@ -343,14 +372,20 @@ function SessionPanel({
             key: 'action',
             header: '',
             cell: (row) => (
-              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <RowActions>
                 <Button variant="secondary" disabled={!editable} onClick={() => onEditPrice(row)}>
+                  <Pencil size={16} aria-hidden="true" />
                   Sửa giá
                 </Button>
-                <Button variant="secondary" disabled={!editable} onClick={() => onDeletePrice(row)}>
+                <Button
+                  variant="danger-soft"
+                  disabled={!editable}
+                  onClick={() => onDeletePrice(row)}
+                >
+                  <Trash2 size={16} aria-hidden="true" />
                   Xoá
                 </Button>
-              </div>
+              </RowActions>
             ),
           },
         ]}
@@ -360,7 +395,7 @@ function SessionPanel({
         // Khu chưa có giá là khu không bán được vé nào, và bảng trên không cho thấy điều đó — nó
         // chỉ liệt kê những khu ĐÃ khai giá. Khi không còn khu nào thì vẫn phải nói ra, nếu không
         // nút "Thêm hạng vé" mờ đi mà không ai biết vì sao.
-        <p style={{ margin: '12px 0 0', color: 'var(--nt-text-muted)' }}>
+        <p className="m-0 mt-3 text-muted">
           {missing.length > 0
             ? `Chưa có giá: ${missing.map((zone) => `${zone.zoneCode} · ${zone.name}`).join(', ')}.`
             : 'Mọi khu của địa điểm đều đã có giá ở suất này.'}
@@ -439,7 +474,7 @@ function SessionDialog({
         </>
       }
     >
-      <form id="session-form" action={submit} style={{ display: 'grid', gap: 16 }}>
+      <form id="session-form" action={submit} className="grid gap-4">
         <Input
           name="startsAt"
           type="datetime-local"
@@ -567,13 +602,11 @@ function TicketTypeDialog({
         </>
       }
     >
-      <form id="ticket-type-form" action={submit} style={{ display: 'grid', gap: 16 }}>
-        <p style={{ margin: 0, color: 'var(--nt-text-muted)' }}>
-          Suất {formatDateTime(session.startsAt)}
-        </p>
+      <form id="ticket-type-form" action={submit} className="grid gap-4">
+        <p className="m-0 text-muted">Suất {formatDateTime(session.startsAt)}</p>
 
         {ticketType ? (
-          <p style={{ margin: 0 }}>
+          <p className="m-0">
             Khu <strong>{ticketType.zoneCode}</strong> · {ticketType.zoneName} ·{' '}
             {formatNumber(ticketType.capacity)} chỗ
           </p>

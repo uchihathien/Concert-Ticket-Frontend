@@ -1,0 +1,27 @@
+/* Bảng điều khiển của ban tổ chức. */
+
+.master {
+  display: grid;
+  gap: var(--nt-space-6);
+}
+
+/* Dải cảnh báo khi một service phía sau im lặng — xem DegradedNotice. */
+.degraded {
+  display: flex;
+  gap: var(--nt-space-3);
+  align-items: flex-start;
+  border-color: var(--nt-warn);
+  color: var(--nt-warn-text);
+}
+
+.degradedTitle {
+  margin: 0;
+  font-weight: 600;
+  color: var(--nt-text);
+}
+
+.degradedBody {
+  margin: var(--nt-space-1) 0 0;
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
