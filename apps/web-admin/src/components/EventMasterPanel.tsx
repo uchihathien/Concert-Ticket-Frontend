@@ -5,12 +5,16 @@ import type {
   AdminTicketType,
   AdminZone,
   EventMasterData,
+  OrganizationSummary,
   SessionReport,
 } from '@nexaticket/ts-sdk';
 import {
   Badge,
   BarChart,
+  Button,
+  csvFilename,
   DetailRows,
+  downloadCsv,
   MoneyText,
   Panel,
   StatCard,
@@ -19,9 +23,11 @@ import {
   eventCategoryLabel,
   formatDateTime,
   formatNumber,
+  toCsv,
 } from '@nexaticket/ui';
-import { TriangleAlert } from 'lucide-react';
+import { Download, TriangleAlert } from 'lucide-react';
 import { useMemo } from 'react';
+import { buildEventReport } from './event-report';
 import styles from './event-master-panel.module.css';
 
 /**
@@ -44,12 +50,25 @@ import styles from './event-master-panel.module.css';
  * tên trong danh sách ấy phải hiện là "—". Hiện "0đ" cho "chưa hỏi được doanh thu" là báo sai cho
  * ban tổ chức về chính tiền của họ.
  */
-export function EventMasterPanel({ data }: { data: EventMasterData }) {
+export function EventMasterPanel({
+  data,
+  organization,
+}: {
+  data: EventMasterData;
+  organization: OrganizationSummary;
+}) {
   const seatingDown = data.degraded.some((service) => service.includes('inventory'));
   const salesDown = data.degraded.some((service) => service.includes('analytics'));
 
   return (
     <div className={styles.master}>
+      <div className={styles.toolbar}>
+        <Button variant="secondary" onClick={() => exportReport(data, organization)}>
+          <Download size={16} aria-hidden="true" />
+          Xuất báo cáo (CSV)
+        </Button>
+      </div>
+
       <StatGrid>
         <StatCard
           label="Sức chứa đã khai"
@@ -677,4 +696,18 @@ function Insights({
 
 function share(zone: ZoneRollup): number {
   return zone.total === 0 ? 0 : zone.sold / zone.total;
+}
+
+/**
+ * Xuất báo cáo đầy đủ của sự kiện đang xem.
+ *
+ * Dựng từ CHÍNH dữ liệu màn hình đang vẽ, không gọi thêm endpoint nào — nhờ vậy file tải về và màn
+ * hình không thể nói hai chuyện khác nhau, kể cả khi một service phía sau vừa im lặng. Chi tiết
+ * định dạng (BOM, dấu tách cột, chặn công thức Excel) nằm ở `@nexaticket/ui/csv`.
+ */
+function exportReport(data: EventMasterData, organization: OrganizationSummary): void {
+  downloadCsv(
+    csvFilename([organization.name, data.event.title]),
+    toCsv(buildEventReport(data, organization)),
+  );
 }

@@ -316,7 +316,11 @@ function OverviewBody({ organization }: { organization: OrganizationSummary }) {
               title="Master data của sự kiện"
               description="Toàn bộ số liệu và cấu hình của sự kiện đang chọn."
             >
-              <EventMaster query={masterData} onRetry={() => void masterData.refetch()} />
+              <EventMaster
+                query={masterData}
+                organization={organization}
+                onRetry={() => void masterData.refetch()}
+              />
             </Section>
           )}
         </>
@@ -362,9 +366,11 @@ function DegradedNotice({ services }: { services: string[] }) {
  */
 function EventMaster({
   query,
+  organization,
   onRetry,
 }: {
   query: ReturnType<typeof useEventMasterData>;
+  organization: OrganizationSummary;
   onRetry: () => void;
 }) {
   if (query.isPending) {
@@ -376,7 +382,7 @@ function EventMaster({
 
   return (
     <div className={query.isFetching ? styles.stale : undefined}>
-      <EventMasterPanel data={query.data} />
+      <EventMasterPanel data={query.data} organization={organization} />
     </div>
   );
 }
