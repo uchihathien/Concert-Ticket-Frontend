@@ -1,0 +1,170 @@
+/* Sơ đồ chỗ ngồi — xem SeatMapCanvas.tsx để biết vì sao ghế không phải là <button>. */
+
+.wrap {
+  position: relative;
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  background: var(--nt-bg-subtle);
+  overflow: hidden;
+}
+
+/*
+ * `touch-action: none` là bắt buộc, không phải tinh chỉnh: thiếu nó thì trình duyệt di động nuốt
+ * pointermove để cuộn trang, và kéo sơ đồ trên điện thoại không hoạt động.
+ */
+.canvas {
+  display: block;
+  width: 100%;
+  height: clamp(320px, 60vh, 640px);
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.canvas:active {
+  cursor: grabbing;
+}
+
+/* --- sân khấu --- */
+
+.stage > :first-child {
+  fill: var(--nt-elevated);
+  stroke: var(--nt-border);
+  stroke-width: 0.15;
+}
+
+.stageLabel {
+  fill: var(--nt-text-muted);
+  font-size: 1.6px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+/* --- khu --- */
+
+.zone {
+  transition: opacity var(--nt-motion-ui);
+}
+
+.zoneDimmed {
+  opacity: 0.35;
+}
+
+.zoneShape {
+  fill: var(--nt-surface);
+  stroke: var(--nt-border);
+  stroke-width: 0.12;
+  cursor: pointer;
+}
+
+.zoneShape:hover {
+  fill: var(--nt-hover);
+}
+
+.zoneStanding {
+  fill: var(--nt-zone-standing-bg);
+  stroke: var(--nt-zone-standing-border);
+}
+
+/* Khu đang mở không còn là đích bấm — bấm vào nó nữa là bấm trượt một cái ghế. */
+.zoneFocused {
+  fill: transparent;
+  stroke: var(--nt-accent);
+  stroke-width: 0.18;
+  cursor: default;
+  pointer-events: none;
+}
+
+.zoneLabel {
+  fill: var(--nt-text);
+  font-size: 2px;
+  font-weight: 600;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.zoneCount {
+  fill: var(--nt-text-muted);
+  font-weight: 400;
+}
+
+/* --- ghế --- */
+
+.seat {
+  cursor: pointer;
+  transition: fill var(--nt-motion-seat);
+}
+
+.seatAvailable {
+  fill: var(--nt-seat-available);
+}
+
+.seatMine {
+  fill: var(--nt-seat-mine);
+  stroke: var(--nt-text);
+  stroke-width: 0.08;
+}
+
+.seatHeld {
+  fill: var(--nt-seat-held-other);
+  cursor: not-allowed;
+}
+
+.seatReserved {
+  fill: var(--nt-seat-reserved);
+  cursor: not-allowed;
+}
+
+.seatSold {
+  fill: var(--nt-seat-sold);
+  cursor: not-allowed;
+}
+
+.seatBlocked {
+  fill: var(--nt-seat-blocked);
+  cursor: not-allowed;
+}
+
+/* Chỗ có trong mặt bằng nhưng chưa có trong tồn kho: suất chưa publish. */
+.seatUnknown {
+  fill: var(--nt-seat-blocked);
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* --- điều khiển --- */
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--nt-space-3);
+  padding: var(--nt-space-2) var(--nt-space-3);
+  border-top: 1px solid var(--nt-border);
+  background: var(--nt-surface);
+}
+
+.control {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nt-text);
+  background: var(--nt-elevated);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-2) var(--nt-space-3);
+  cursor: pointer;
+}
+
+.control:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}

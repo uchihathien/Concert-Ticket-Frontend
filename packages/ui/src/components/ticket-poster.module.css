@@ -1,0 +1,53 @@
+/* Vé dạng ảnh. Kiểu chữ BÊN TRONG svg đặt bằng thuộc tính, không bằng class — xem TicketPoster.tsx. */
+
+.wrap {
+  margin: 0;
+  display: grid;
+  gap: var(--nt-space-3);
+  justify-items: center;
+}
+
+/*
+ * Giới hạn bề ngang chứ không đặt kích thước cố định: poster là hình vector, và trên màn hẹp nó
+ * phải co lại theo cột chứ không đẩy trang cuộn ngang.
+ */
+.poster {
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  border-radius: var(--nt-radius-lg);
+  box-shadow: var(--nt-shadow-card);
+}
+
+.caption {
+  display: grid;
+  gap: var(--nt-space-2);
+  justify-items: center;
+  text-align: center;
+}
+
+.download {
+  font: inherit;
+  font-weight: 600;
+  color: var(--nt-primary-ink);
+  background: var(--nt-primary);
+  border: none;
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-2) var(--nt-space-4);
+  cursor: pointer;
+}
+
+.download:hover {
+  background: var(--nt-primary-hover);
+}
+
+.download:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+.note {
+  font-size: 13px;
+  color: var(--nt-text-muted);
+  max-width: 34ch;
+}

@@ -55,6 +55,22 @@
   text-decoration: none;
   font-size: 15px;
   font-weight: 500;
+  transition:
+    background-color var(--nt-motion-ui),
+    color var(--nt-motion-ui);
+}
+
+.navIcon {
+  display: inline-flex;
+  margin-inline-end: var(--nt-space-2);
+  /* Biểu tượng lucide vẽ theo `currentColor` và cỡ 1em, nên nó tự đổi màu theo trạng thái của mục
+     mà không cần một luật riêng cho mục đang mở. */
+  color: currentColor;
+  opacity: 0.75;
+}
+
+.navItemActive .navIcon {
+  opacity: 1;
 }
 
 .navItem:hover {
@@ -111,6 +127,7 @@
   border: 1px solid var(--nt-border);
   border-radius: var(--nt-radius-lg);
   padding: var(--nt-space-6);
+  box-shadow: var(--nt-shadow-panel);
 }
 
 @media (max-width: 900px) {

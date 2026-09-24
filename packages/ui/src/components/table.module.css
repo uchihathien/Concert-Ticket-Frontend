@@ -4,6 +4,7 @@
   border: 1px solid var(--nt-border);
   border-radius: var(--nt-radius);
   background: var(--nt-surface);
+  box-shadow: var(--nt-shadow-panel);
 }
 
 .table {
@@ -54,10 +55,51 @@
   cursor: pointer;
 }
 
+.rowClickable {
+  transition: background-color var(--nt-motion-ui);
+}
+
 .rowClickable:hover {
   background: var(--nt-hover);
 }
 
 .stateCell {
   padding: 0;
+}
+
+/* Tiêu đề cột sắp xếp được ------------------------------------------------- */
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nt-space-1);
+  /* Kế thừa toàn bộ kiểu chữ của `<th>`: nút này phải trông y hệt tiêu đề không bấm được, chỉ
+     khác ở mũi tên. Một cột "trông như nút" giữa các cột khác gợi ý sai rằng chỉ nó mới đọc được. */
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: color var(--nt-motion-ui);
+}
+
+.sortButton:hover {
+  color: var(--nt-text);
+}
+
+.sortButtonActive {
+  color: var(--nt-text);
+}
+
+/* Mũi tên của cột chưa sắp: mờ nhưng CÓ mặt. Hiện nó chỉ khi rê chuột thì người dùng bàn phím và
+   người dùng cảm ứng không bao giờ biết cột này sắp xếp được. */
+.sortArrow {
+  opacity: 0.4;
+}
+
+.sortButtonActive .sortArrow {
+  opacity: 1;
 }

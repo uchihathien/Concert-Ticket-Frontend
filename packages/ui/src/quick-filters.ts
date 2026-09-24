@@ -1,14 +1,18 @@
 /**
  * Bộ lọc nhanh theo thời gian và theo giá.
  *
- * Cả hai đều chạy ở **phía server, trên kết quả đã lấy về**, không phải tham số gửi cho backend:
- * `GET /v1/events` chỉ nhận `query`, `city`, `category`, `page`, `size`. Hệ quả phải nói rõ —
- * khi một trong hai bộ lọc này bật, trang danh sách lấy một lượt tối đa 60 sự kiện (trần của
- * backend) rồi lọc và phân trang tại chỗ. Vượt quá 60 sự kiện đang bán thì kết quả chỉ đúng
- * trong phạm vi đó.
+ * Hai hàm ở đây dịch một **lựa chọn trên giao diện** ("cuối tuần này", "dưới 500.000đ") thành một
+ * **khoảng số** để gửi cho `GET /v1/events`. Backend nhận `from`/`to` và `minPrice`/`maxPrice`,
+ * nên việc lọc và phân trang đều do database làm.
  *
- * Cách sửa tử tế nằm ở backend: thêm `from`/`to` và `minPrice`/`maxPrice` cho `/v1/events`.
- * Đây là thay đổi contract nên phải do người quyết định, không tự thêm.
+ * Trước đây hai bộ lọc này chạy tại chỗ trên tối đa 60 sự kiện lấy về — nghĩa là chúng chỉ đúng
+ * trong phạm vi 60 cái ấy. `applyQuickFilters` và `needsLocalFiltering` đã bị bỏ cùng với giới
+ * hạn đó.
+ *
+ * Phép tính vẫn ở phía client, có lý do: "cuối tuần này" phụ thuộc hôm nay là thứ mấy **ở Việt
+ * Nam**, mà tiến trình backend chạy giờ UTC — 07:00 giờ Việt Nam là 00:00 UTC, nên để backend tự
+ * giải nghĩa thì "hôm nay" nhảy sang hôm khác đúng vào buổi sáng. Danh sách lựa chọn cũng là
+ * quyết định giao diện: thêm mốc "3 tháng tới" chỉ nên sửa một hằng số ở đây.
  */
 
 const TIME_ZONE = 'Asia/Ho_Chi_Minh';
@@ -126,39 +130,28 @@ export function priceRange(value: string): { min: number; max: number } | null {
   }
 }
 
-/** Có bộ lọc nào phải xử lý ở client không — quyết định trang danh sách lấy một trang hay lấy hết. */
-export function needsLocalFiltering(when: string, price: string): boolean {
-  return timeRange(when) !== null || priceRange(price) !== null;
-}
-
 /**
- * Áp bộ lọc thời gian và giá lên danh sách.
+ * Lựa chọn trên giao diện → tham số của `GET /v1/events`.
  *
- * Sự kiện chưa có suất (`nextSessionAt === null`) hoặc chưa mở bán (`fromPriceVnd === null`) bị
- * loại khi bộ lọc tương ứng đang bật: không biết ngày thì không thể nói nó diễn ra hôm nay.
+ * Trả về đúng những khoá cần gửi; khoá vắng mặt nghĩa là không lọc theo chiều đó. `maxPrice` vắng
+ * mặt với "trên 1.000.000đ" là cách biểu diễn "không có trần" — gửi `Infinity` thì query string
+ * mang chữ "Infinity" và backend từ chối.
  */
-export function applyQuickFilters<T extends FilterableEvent>(
-  items: T[],
+export function quickFilterParams(
   when: string,
   price: string,
   now = new Date(),
-): T[] {
+): { from?: string; to?: string; minPrice?: number; maxPrice?: number } {
   const time = timeRange(when, now);
   const money = priceRange(price);
-  if (!time && !money) return items;
 
-  return items.filter((event) => {
-    if (time) {
-      if (!event.nextSessionAt) return false;
-      const at = Date.parse(event.nextSessionAt);
-      if (Number.isNaN(at) || at < time.from || at >= time.to) return false;
-    }
-
-    if (money) {
-      if (event.fromPriceVnd === null) return false;
-      if (event.fromPriceVnd < money.min || event.fromPriceVnd >= money.max) return false;
-    }
-
-    return true;
-  });
+  return {
+    ...(time ? { from: new Date(time.from).toISOString(), to: new Date(time.to).toISOString() } : {}),
+    ...(money
+      ? {
+          minPrice: money.min,
+          ...(Number.isFinite(money.max) ? { maxPrice: money.max } : {}),
+        }
+      : {}),
+  };
 }

@@ -1,0 +1,50 @@
+/* Bộ khung chờ của một trang quản trị. Hình dạng phải khớp trang thật, nếu không nó tự tạo ra
+   đúng cái CLS mà nó đang cố ngăn: khối chờ cao 200px nhường chỗ cho nội dung cao 400px thì mọi
+   thứ dưới nó nhảy một lần nữa ngay lúc dữ liệu về. */
+
+.wrap {
+  display: grid;
+  gap: var(--nt-space-6);
+}
+
+.head {
+  display: grid;
+  gap: var(--nt-space-2);
+  /* Bằng chiều cao thật của PageHeader: h1 clamp(22px,2vw,28px) line-height 1.2 + mô tả 1 dòng. */
+  max-width: 70ch;
+}
+
+.stats {
+  display: grid;
+  gap: var(--nt-space-3);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.filters {
+  display: grid;
+  gap: var(--nt-space-4);
+  grid-template-columns: minmax(220px, 2fr) minmax(160px, 1fr) minmax(160px, 1fr);
+}
+
+.table {
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  background: var(--nt-surface);
+  box-shadow: var(--nt-shadow-panel);
+  overflow: hidden;
+}
+
+.tableHead {
+  padding: var(--nt-space-3) var(--nt-space-4);
+  background: var(--nt-bg-subtle);
+  border-bottom: 1px solid var(--nt-border);
+}
+
+.tableRow {
+  padding: var(--nt-space-3) var(--nt-space-4);
+  border-bottom: 1px solid var(--nt-border);
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}

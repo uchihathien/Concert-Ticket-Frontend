@@ -1,0 +1,106 @@
+/*
+ * NexaTicket — bộ token cho HAI app quản trị: nền trung tính sáng + primary indigo.
+ *
+ * VÌ SAO CÓ FILE NÀY THAY VÌ SỬA `tokens.css`
+ * -------------------------------------------
+ * `tokens.css` là bộ token của cả bốn app. Đổi `--nt-primary` ở đó thì web-customer và
+ * web-scanner đổi theo — hai app không nằm trong phạm vi lần refactor này, và scanner thì
+ * **phải** giữ nền tối vì lý do vận hành (dùng ngoài trời buổi tối, đỡ chói, đỡ tốn pin).
+ *
+ * Nên rebrand đi qua đúng một chỗ: bộ biến này ghi đè `tokens.css` cho hai app quản trị.
+ * `packages/ui` không bị fork một dòng nào — 26 component ở đó vốn đã đọc token chứ không gõ màu
+ * thẳng vào CSS, nên chúng tự đổi diện mạo theo bộ này.
+ *
+ * Chọn theo `[data-app]` chứ không phải `:root` trần: `:root` trần thì thắng/thua phụ thuộc thứ
+ * tự `import` trong layout — một hoán vị vô tình là mất sạch theme mà không có lỗi nào báo.
+ * Selector này có specificity cao hơn nên đúng bất kể thứ tự.
+ *
+ * TƯƠNG PHẢN — ĐO, KHÔNG ƯỚM
+ * --------------------------
+ * Mọi tỉ số dưới đây tính bằng công thức WCAG 2.1 (relative luminance). Nền sáng đổi luật so với
+ * nền tối: ở bản tối, màu thương hiệu dùng làm nền và làm chữ phải là hai giá trị khác nhau. Ở
+ * đây indigo-600 đạt 6.29:1 trên trắng nên nó **vừa** làm nền nút (chữ trắng 6.29:1) **vừa** làm
+ * chữ link được — nhưng chữ trên thẻ vẫn dùng indigo-700 (7.90:1) để chừa biên an toàn khi thẻ
+ * nằm trên canvas xám.
+ *
+ * Không khai lại token sơ đồ chỗ ngồi (`--nt-seat-*`, `--nt-zone-*`): hai app quản trị không vẽ
+ * sơ đồ chỗ (đã kiểm — không file nào tham chiếu chúng). Khai một bảng màu chết ở đây chỉ tạo ảo
+ * giác là nó đã được kiểm cho nền sáng. Khi A-SEATING-PLAN có mặt thì đo lại rồi thêm.
+ */
+
+:root[data-app='admin'],
+:root[data-app='platform'] {
+  /* Nền & chữ ---------------------------------------------------------------
+     Nền sáng dựng chiều sâu bằng BÓNG và viền, ngược với bản tối (bề mặt sáng dần). Thứ tự:
+     bg-subtle (canvas của khung) < bg < surface = elevated (thẻ và hộp thoại, đều trắng).
+
+     Canvas là slate-100 chứ không phải slate-50: thẻ trắng phải nổi lên khỏi nền, và chênh lệch
+     giữa #ffffff với #f8fafc mảnh tới mức trên màn hình văn phòng chỉnh sai gamma thì không thấy
+     — lúc đó cả trang đọc thành một mảng trắng phẳng không có cấu trúc. */
+  --nt-bg: #f8fafc; /* slate-50 */
+  --nt-bg-subtle: #f1f5f9; /* slate-100 — canvas khung, đầu bảng, ô vô hiệu, skeleton */
+  --nt-surface: #ffffff; /* thẻ, sidebar, ô nhập */
+  --nt-elevated: #ffffff; /* hộp thoại — tách khỏi trang bằng bóng, không bằng độ sáng */
+  --nt-border: #e2e8f0; /* slate-200 */
+  --nt-text: #0f172a; /* slate-900 — 17.85:1 trên trắng */
+  --nt-text-muted: #475569; /* slate-600 — 7.58:1 trên trắng, 6.92:1 trên đầu bảng */
+
+  /* Nền khi rê chuột: TỐI đi một bậc, ngược với bản nền tối (ở đó phải sáng lên). */
+  --nt-hover: #f1f5f9; /* slate-100 */
+
+  /* Thương hiệu — indigo
+     `--nt-primary-text` dùng cho chữ/link/số tiền nhấn; `--nt-primary` dùng cho nền nút. */
+  --nt-primary: #4f46e5; /* indigo-600 — chữ trắng trên nền này: 6.29:1 */
+  --nt-primary-hover: #4338ca; /* indigo-700 — 7.90:1 */
+  --nt-primary-ink: #ffffff;
+  --nt-primary-text: #4338ca; /* 7.90:1 trên thẻ trắng, 7.55:1 trên canvas */
+
+  /* Nhấn phụ: chip mềm cho huy hiệu "vai trò đặc biệt". Trên nền sáng, một mảng đặc màu đậm ở
+     kích thước huy hiệu đọc như một lời cảnh báo — nên đây là nền nhạt + chữ đậm. */
+  --nt-accent: #e0e7ff; /* indigo-100 */
+  --nt-accent-ink: #3730a3; /* indigo-800 — 8.06:1 trên nền trên */
+  --nt-accent-text: #4338ca;
+
+  /* Trạng thái. Huy hiệu trộn 12–14% màu này trên thẻ trắng rồi viết chữ bằng biến `-text`, nên
+     tỉ số ghi kèm là tỉ số THẬT sau khi trộn — không phải tỉ số của màu gốc trên trắng. */
+  --nt-success: #059669; /* emerald-600 → huy hiệu 4.73:1 */
+  --nt-success-text: #047857; /* emerald-700 — 5.48:1 trên trắng */
+  --nt-warn: #f59e0b; /* amber-500 → huy hiệu 4.51:1 */
+  --nt-warn-text: #b45309; /* amber-700 — 5.02:1 trên trắng */
+  --nt-danger: #e11d48; /* rose-600 — chữ trắng trên nút phá huỷ: 4.70:1 */
+  --nt-danger-ink: #ffffff;
+  --nt-danger-text: #be123c; /* rose-700 — 6.29:1 trên trắng */
+
+  /* Lớp phủ & bóng ----------------------------------------------------------
+     Trên nền sáng bóng mới có tác dụng thật, nên đây là nơi `--nt-shadow-panel` khác `none`.
+     Màu bóng lấy từ slate-900 pha loãng chứ không phải đen thuần: đen thuần trên nền xanh-xám
+     ngả sang nâu bẩn. */
+  --nt-scrim: rgba(15, 23, 42, 0.45);
+  --nt-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 12px 32px rgba(15, 23, 42, 0.16);
+  --nt-shadow-panel: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+
+  /* Hình khối — bo mềm hơn bản tối (10/16 → 12/16). */
+  --nt-radius: 12px;
+  --nt-radius-lg: 16px;
+
+  /* Vòng focus: vòng trong lấy màu THẺ (trắng) để tách phần tử khỏi vòng ngoài, vòng ngoài lấy
+     primary. Bản tối phải dùng vàng kim vì đỏ trên nền tối không đủ nổi; trên nền sáng thì chính
+     indigo đã là màu tương phản nhất của bảng màu này. */
+  --nt-focus: 0 0 0 2px var(--nt-surface), 0 0 0 4px var(--nt-primary);
+
+  /* Chữ ---------------------------------------------------------------------
+     `--font-be-vietnam-pro` do `next/font` gắn vào `<html>` ở root layout của hai app. Giữ nguyên
+     dãy dự phòng: nếu font chưa về (hoặc build offline), chữ vẫn đúng dấu tiếng Việt.
+
+     Biến của `next/font` có giá trị dự phòng ngay trong `var()`, và đó không phải cho đẹp: một
+     custom property **chưa được định nghĩa** đặt giữa danh sách `font-family` làm cả khai báo
+     thành không hợp lệ, và chữ rơi về mặc định của trình duyệt (thường là serif). Chuyện đó xảy ra
+     thật ở `global-error.tsx` — file đó thay cả root layout nên không có class font của
+     `next/font`. */
+  --nt-font:
+    var(--font-be-vietnam-pro, 'Be Vietnam Pro'), system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  /* Trình duyệt vẽ thanh cuộn, `<select>` và các control mặc định theo giá trị này. Thiếu nó thì
+     ô chọn và thanh cuộn vẫn tối giữa một giao diện sáng. */
+  color-scheme: light;
+}

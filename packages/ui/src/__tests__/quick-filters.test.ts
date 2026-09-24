@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { applyQuickFilters, needsLocalFiltering, priceRange, timeRange } from '../quick-filters';
+import { priceRange, quickFilterParams, timeRange } from '../quick-filters';
 
 /**
  * Múi giờ là chỗ hỏng âm thầm của bộ lọc này: tiến trình Next chạy UTC, còn "hôm nay" mà người
@@ -69,38 +69,48 @@ describe('priceRange', () => {
   });
 });
 
-describe('applyQuickFilters', () => {
-  const events = [
-    { slug: 'hom-nay', nextSessionAt: '2026-09-09T12:00:00Z', fromPriceVnd: 300_000 },
-    { slug: 'cuoi-tuan', nextSessionAt: '2026-09-12T12:00:00Z', fromPriceVnd: 1_500_000 },
-    { slug: 'chua-co-suat', nextSessionAt: null, fromPriceVnd: 200_000 },
-    { slug: 'chua-mo-ban', nextSessionAt: '2026-09-09T13:00:00Z', fromPriceVnd: null },
-  ];
-
-  it('trả nguyên danh sách khi không có bộ lọc nào', () => {
-    expect(applyQuickFilters(events, 'all', 'all', WED_MORNING_VN)).toHaveLength(4);
+describe('quickFilterParams', () => {
+  it('không gửi tham số nào khi không lọc gì', () => {
+    // Khoá vắng mặt, không phải khoá mang `undefined`: `URLSearchParams` sẽ biến `undefined`
+    // thành chuỗi "undefined" và backend nhận một bộ lọc rác.
+    expect(quickFilterParams('all', 'all', WED_MORNING_VN)).toEqual({});
   });
 
-  it('loại sự kiện chưa có suất khi lọc theo thời gian', () => {
-    const result = applyQuickFilters(events, 'today', 'all', WED_MORNING_VN);
-    expect(result.map((event) => event.slug)).toEqual(['hom-nay', 'chua-mo-ban']);
+  it('bộ lọc thời gian thành khoảng ISO nửa mở', () => {
+    const params = quickFilterParams('today', 'all', WED_MORNING_VN);
+
+    // 00:00 ngày 09/09 giờ Việt Nam = 17:00Z ngày 08/09. Đây chính là chỗ mà để backend tự giải
+    // nghĩa "hôm nay" sẽ lệch mất một ngày.
+    expect(params.from).toBe('2026-09-08T17:00:00.000Z');
+    expect(params.to).toBe('2026-09-09T17:00:00.000Z');
+    expect(params.minPrice).toBeUndefined();
   });
 
-  it('loại sự kiện chưa mở bán khi lọc theo giá', () => {
-    const result = applyQuickFilters(events, 'all', 'under-500', WED_MORNING_VN);
-    expect(result.map((event) => event.slug)).toEqual(['hom-nay', 'chua-co-suat']);
+  it('bộ lọc giá gửi cả hai cận, cận trên không lấy mốc', () => {
+    expect(quickFilterParams('all', 'under-500', WED_MORNING_VN)).toEqual({
+      minPrice: 0,
+      maxPrice: 500_000,
+    });
   });
 
-  it('hai bộ lọc cùng bật thì phải thoả cả hai', () => {
-    const result = applyQuickFilters(events, 'today', 'under-500', WED_MORNING_VN);
-    expect(result.map((event) => event.slug)).toEqual(['hom-nay']);
-  });
-});
+  it('"trên 1 triệu" KHÔNG gửi cận trên', () => {
+    const params = quickFilterParams('all', 'over-1000', WED_MORNING_VN);
 
-describe('needsLocalFiltering', () => {
-  it('chỉ bật khi thật sự có bộ lọc backend không làm được', () => {
-    expect(needsLocalFiltering('all', 'all')).toBe(false);
-    expect(needsLocalFiltering('today', 'all')).toBe(true);
-    expect(needsLocalFiltering('all', 'free')).toBe(true);
+    // Cận trên là Infinity. Gửi nó đi thì query string mang chữ "Infinity" và backend từ chối —
+    // vắng mặt mới là cách biểu diễn "không có trần".
+    expect(params.minPrice).toBe(1_000_001);
+    expect(params).not.toHaveProperty('maxPrice');
+  });
+
+  it('"miễn phí" vẫn gửi minPrice = 0', () => {
+    // Chốt chặn cho một lỗi rất dễ mắc: `if (money.min)` bỏ qua số 0, và bộ lọc miễn phí sẽ lặng
+    // lẽ biến thành "mọi mức giá dưới 1đ" — tức là đúng, nhưng vì lý do sai.
+    expect(quickFilterParams('all', 'free', WED_MORNING_VN)).toEqual({ minPrice: 0, maxPrice: 1 });
+  });
+
+  it('hai bộ lọc cùng bật thì gửi cả bốn tham số', () => {
+    const params = quickFilterParams('today', '500-1000', WED_MORNING_VN);
+
+    expect(Object.keys(params).sort()).toEqual(['from', 'maxPrice', 'minPrice', 'to']);
   });
 });

@@ -7,15 +7,19 @@
 export { EVENT_CATEGORIES, EVENT_CATEGORY_FILTERS, eventCategoryLabel } from './categories';
 export type { EventCategory } from './categories';
 
+export { PRICE_FILTERS, TIME_FILTERS, priceRange, quickFilterParams, timeRange } from './quick-filters';
+export type { QuickFilterOption } from './quick-filters';
+
 export {
-  PRICE_FILTERS,
-  TIME_FILTERS,
-  applyQuickFilters,
-  needsLocalFiltering,
-  priceRange,
-  timeRange,
-} from './quick-filters';
-export type { FilterableEvent, QuickFilterOption } from './quick-filters';
+  AUDIT_ACTION_LABELS,
+  auditActionFilters,
+  auditActionLabel,
+  auditActionTone,
+} from './audit';
+
+export { ROLE_LABELS, roleLabel, roleTone } from './roles';
+
+export { foldText, matchesText } from './search';
 
 export { coverGradient } from './cover';
 export { cx } from './cx';
@@ -35,11 +39,17 @@ export {
   vnLocalToIso,
 } from './format';
 
+export { SeatMapCanvas } from './components/SeatMapCanvas';
+export type { SeatMapCanvasProps, SeatMark } from './components/SeatMapCanvas';
+
 export { AccountScreen, AccountSection } from './components/AccountScreen';
 export type { AccountScreenProps, AccountSectionProps } from './components/AccountScreen';
 
 export { AppShell, BrandSuffix, PageHeader, Panel } from './components/AppShell';
 export type { AppNavItem, AppShellProps, PageHeaderProps } from './components/AppShell';
+
+export { AuditChange } from './components/AuditChange';
+export type { AuditChangeProps } from './components/AuditChange';
 
 export { AuthOptions } from './components/AuthOptions';
 export type { AuthOptionsProps } from './components/AuthOptions';
@@ -58,6 +68,21 @@ export type { CarouselRowProps } from './components/CarouselRow';
 
 export { CategoryChips } from './components/CategoryChips';
 export type { CategoryChipItem, CategoryChipsProps } from './components/CategoryChips';
+
+export {
+  FilterBar,
+  Pagination,
+  RowActions,
+  Section,
+  StatCard,
+  StatGrid,
+} from './components/Dashboard';
+export type {
+  FilterBarProps,
+  PaginationProps,
+  SectionProps,
+  StatCardProps,
+} from './components/Dashboard';
 
 export { Countdown } from './components/Countdown';
 export type { CountdownProps } from './components/Countdown';
@@ -86,6 +111,9 @@ export type { InputProps } from './components/Input';
 export { MoneyText } from './components/MoneyText';
 export type { MoneyTextProps } from './components/MoneyText';
 
+export { PageSkeleton } from './components/PageSkeleton';
+export type { PageSkeletonProps } from './components/PageSkeleton';
+
 export { QrCode } from './components/QrCode';
 export type { QrCodeProps } from './components/QrCode';
 
@@ -103,11 +131,15 @@ export type { SignOutFormProps } from './components/SignOutForm';
 export { Skeleton } from './components/Skeleton';
 export type { SkeletonProps } from './components/Skeleton';
 
+export { TicketPoster, downloadPoster } from './components/TicketPoster';
+export type { TicketPosterProps } from './components/TicketPoster';
+
 export { Table } from './components/Table';
-export type { TableColumn, TableProps } from './components/Table';
+export type { TableColumn, TableProps, TableSort } from './components/Table';
 
 export { ToastProvider, useToast } from './components/Toast';
 export type { ToastInput, ToastTone } from './components/Toast';
 
+export { useDebouncedValue } from './hooks/useDebouncedValue';
 export { useCountdown } from './hooks/useCountdown';
 export type { CountdownOptions, CountdownState } from './hooks/useCountdown';
