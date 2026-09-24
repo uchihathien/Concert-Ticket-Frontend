@@ -30,6 +30,14 @@ export const queryKeys = {
       ['catalog', 'organizations', organizationId, 'events'] as const,
     event: (organizationId: string, eventId: string) =>
       ['catalog', 'organizations', organizationId, 'events', eventId] as const,
+    dashboard: (organizationId: string) =>
+      ['catalog', 'organizations', organizationId, 'dashboard'] as const,
+    masterData: (organizationId: string, eventId: string) =>
+      ['catalog', 'organizations', organizationId, 'events', eventId, 'master-data'] as const,
+    venueFloorPlan: (organizationId: string, venueId: string) =>
+      ['catalog', 'organizations', organizationId, 'venues', venueId, 'floor-plan'] as const,
+    // Không mang organizationId: mặt bằng công khai tra theo slug và ai cũng thấy cùng một bản.
+    publicFloorPlan: (slug: string) => ['catalog', 'public', 'events', slug, 'floor-plan'] as const,
   },
   inventory: {
     seatMap: (eventSessionId: string) =>
@@ -44,6 +52,19 @@ export const queryKeys = {
     myTickets: (params: { limit: number; offset: number }) =>
       ['ticketing', 'me', 'tickets', params] as const,
     orderTickets: (orderId: string) => ['ticketing', 'orders', orderId, 'tickets'] as const,
+    // Cả bộ lọc nằm trong khoá: đổi một tiêu chí là một truy vấn khác, và react-query phải coi nó
+    // là một mục cache khác chứ không phải cùng một mục vừa cũ đi.
+    organizationTickets: (organizationId: string, params: object) =>
+      ['ticketing', 'organizations', organizationId, 'tickets', params] as const,
+  },
+  support: {
+    thread: (sessionId: string) => ['support', 'sessions', sessionId, 'messages'] as const,
+    queue: (params: object) => ['support', 'handoffs', params] as const,
+    handoff: (handoffId: string) => ['support', 'handoffs', handoffId] as const,
+    knowledge: (params: object) => ['support', 'knowledge', params] as const,
+    // Câu hỏi nằm trong khoá: mỗi câu là một phép thử khác, không phải cùng một kết quả vừa cũ đi.
+    knowledgePreview: (question: string) => ['support', 'knowledge', 'preview', question] as const,
+    eventRules: (eventId: string) => ['support', 'knowledge', 'rules', eventId] as const,
   },
   analytics: {
     organizationSales: (organizationId: string) =>
@@ -65,6 +86,21 @@ export const queryKeys = {
 export const staleTime = {
   PUBLIC_CATALOG: 60_000,
   SEAT_MAP: 0,
+  /**
+   * Hình dạng khán phòng.
+   *
+   * Dài hơn hẳn `SEAT_MAP` dù hai thứ nằm cạnh nhau trên cùng màn hình chọn chỗ: trạng thái ghế
+   * đổi từng giây lúc mở bán, còn mặt bằng chỉ đổi khi ban tổ chức rút sự kiện xuống rồi publish
+   * lại. Dùng chung một nhịp là kéo lại hình học không đổi ở mỗi lần một ghế được giữ.
+   */
+  FLOOR_PLAN: 600_000,
+  /**
+   * Hội thoại hỗ trợ.
+   *
+   * Ngắn vì dữ liệu này đổi do NGƯỜI KHÁC — người trực trả lời, hoặc khách nhắn thêm. Khác mọi
+   * mục còn lại ở đây, vốn chỉ đổi do chính người đang xem.
+   */
+  SUPPORT_THREAD: 2_000,
   ADMIN_TABLE: 30_000,
   /**
    * Ví vé và đơn hàng của chính mình.

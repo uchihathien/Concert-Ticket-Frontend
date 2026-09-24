@@ -107,6 +107,24 @@ export async function getMyPermissions(client: ApiClient): Promise<MyPermissions
   return response.data;
 }
 
+/**
+ * Đổi tên hiển thị của tổ chức. Slug **không** đổi theo.
+ *
+ * Cố ý: slug đã nằm trong đường dẫn công khai của sự kiện và trong liên kết khách đã lưu. Đổi tên
+ * là việc thường (sai chính tả, đổi thương hiệu); đổi slug thì làm chết liên kết cũ, nên nó phải
+ * là một quyết định riêng chứ không phải hệ quả âm thầm của một lần sửa lỗi gõ.
+ */
+export async function renameOrganization(
+  client: ApiClient,
+  organizationId: string,
+  name: string,
+): Promise<OrganizationSummary> {
+  const response = await client.patch<OrganizationSummary>(`/v1/organizations/${organizationId}`, {
+    name,
+  });
+  return response.data;
+}
+
 export async function changeMemberRole(
   client: ApiClient,
   organizationId: string,
