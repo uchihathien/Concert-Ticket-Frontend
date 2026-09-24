@@ -33,7 +33,8 @@ export function useAskSupport() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (request: AskRequest) => askSupport(client, request),
+    mutationFn: ({ idempotencyKey, ...request }: AskRequest & { idempotencyKey?: string }) =>
+      askSupport(client, request, idempotencyKey),
     onSuccess: (reply) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.support.thread(reply.sessionId) });
     },
