@@ -1,0 +1,84 @@
+/* Master data của một sự kiện. Xem EventMasterPanel.tsx cho thứ tự các khối và lý do. */
+
+.master {
+  display: grid;
+  gap: var(--nt-space-4);
+}
+
+/*
+ * Hai biểu đồ cạnh nhau ở màn rộng: chúng trả lời hai nửa của cùng một câu ("bán được bao nhiêu" và
+ * "chậm ở khu nào"), nên đặt cạnh nhau để đọc một lượt. Xuống một cột ở màn hẹp — hai biểu đồ thanh
+ * chen nhau dưới 900px thì nhãn khu bị bóp còn vài ký tự.
+ */
+.charts {
+  display: grid;
+  gap: var(--nt-space-4);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .charts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.blockTitle {
+  margin: 0 0 var(--nt-space-3);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--nt-text);
+}
+
+/* Quy ước cảnh báo của hệ: viền và chữ đổi màu, không tô kín một khối. Xem `.degraded` ở Tổng quan. */
+.blockers {
+  display: flex;
+  gap: var(--nt-space-3);
+  align-items: flex-start;
+  border-color: var(--nt-warn);
+  color: var(--nt-warn-text);
+}
+
+.blockersTitle {
+  margin: 0;
+  font-weight: 600;
+  color: var(--nt-text);
+}
+
+.blockersList {
+  margin: var(--nt-space-1) 0 0;
+  padding-left: 18px;
+  font-size: 14px;
+  color: var(--nt-text-muted);
+  display: grid;
+  gap: 2px;
+}
+
+/* Khi biểu đồ không vẽ được, nói RA lý do thay vì để một khoảng trắng. */
+.chartEmpty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+/*
+ * "Không đặt" và "Chưa đặt" là giá trị thật, không phải chỗ trống — nhưng chúng không phải dữ liệu
+ * nên nhạt hơn một bậc so với các con số bên cạnh.
+ */
+.subtle {
+  color: var(--nt-text-muted);
+  font-style: italic;
+}
+
+.notes {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: var(--nt-space-2);
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+.notes b {
+  color: var(--nt-text);
+}
