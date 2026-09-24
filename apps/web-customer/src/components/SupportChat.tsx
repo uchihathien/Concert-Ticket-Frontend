@@ -3,6 +3,7 @@
 import { useSessionState } from '@nexaticket/auth/client';
 import {
   ApiError,
+  newIdempotencyKey,
   useAskSupport,
   useChatThread,
   useRequestHumanAgent,
@@ -45,6 +46,16 @@ export function SupportChat() {
   const requestHuman = useRequestHumanAgent();
   const listRef = useRef<HTMLOListElement>(null);
 
+  /**
+   * Khoá chống trùng của câu đang gửi, giữ qua các lần thử lại.
+   *
+   * Kịch bản nó chặn: mạng rớt SAU khi server đã trả lời xong. Khách thấy lỗi, bấm gửi lại, và
+   * cùng một câu hỏi được trả lời hai lần — hai lần tính tiền, hai cặp tin nhắn trùng trong hội
+   * thoại. Giữ khoá theo NỘI DUNG câu hỏi chứ không theo lần bấm, nên chỉ lần gửi lại của đúng
+   * câu ấy mới dùng lại khoá; sửa chữ rồi gửi là một ý định mới và nhận khoá mới.
+   */
+  const pendingKey = useRef<{ message: string; key: string } | null>(null);
+
   // Khôi phục phiên sau khi chuyển trang. Đọc trong effect chứ không lúc khởi tạo state:
   // sessionStorage không tồn tại lúc render ở server, và chạm vào nó ở đó làm hỏng hydrate.
   useEffect(() => {
@@ -80,9 +91,18 @@ export function SupportChat() {
     const message = draft.trim();
     if (!message || ask.isPending) return;
 
+    const key =
+      pendingKey.current?.message === message ? pendingKey.current.key : newIdempotencyKey();
+    pendingKey.current = { message, key };
+
     setDraft('');
     try {
-      const reply = await ask.mutateAsync({ sessionId: sessionId ?? undefined, message });
+      const reply = await ask.mutateAsync({
+        sessionId: sessionId ?? undefined,
+        message,
+        idempotencyKey: key,
+      });
+      pendingKey.current = null;
       // Lượt đầu tiên là lượt backend sinh ra id phiên. Ghi lại ngay, nếu không lượt thứ hai mở
       // một hội thoại mới và trợ lý mất hết ngữ cảnh vừa trao đổi.
       if (reply.sessionId !== sessionId) {
@@ -91,7 +111,7 @@ export function SupportChat() {
       }
     } catch (error) {
       // Trả lại chữ đã gõ: bắt khách gõ lại một câu dài vì mạng chập là cách chắc chắn làm họ bỏ
-      // cuộc giữa chừng.
+      // cuộc giữa chừng. `pendingKey` cố ý KHÔNG xoá — lần gửi lại phải mang đúng khoá ấy.
       setDraft(message);
       toast.showError(error instanceof ApiError ? error : null);
     }

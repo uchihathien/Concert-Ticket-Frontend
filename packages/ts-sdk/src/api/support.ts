@@ -12,8 +12,17 @@ import type {
 
 /** Chat hỗ trợ — phía khách. */
 
-export async function askSupport(client: ApiClient, request: AskRequest): Promise<AskResponse> {
-  const response = await client.post<AskResponse>('/v1/chat/agent/support', request);
+/**
+ * @param idempotencyKey khoá của một *ý định hỏi*, không phải của một request. Mạng rớt sau khi
+ *   server đã trả lời xong là chuyện thường; lần gửi lại mang đúng khoá cũ thì backend trả lại câu
+ *   trả lời đã lưu thay vì gọi mô hình lần nữa. Bỏ trống vẫn chạy, chỉ mất phần bảo vệ ấy.
+ */
+export async function askSupport(
+  client: ApiClient,
+  request: AskRequest,
+  idempotencyKey?: string,
+): Promise<AskResponse> {
+  const response = await client.post<AskResponse>('/v1/chat/agent/support', request, { idempotencyKey });
   return response.data;
 }
 
