@@ -1,0 +1,154 @@
+/* Kho tri thức: soạn bên trái, thử câu hỏi bên phải. */
+
+/*
+ * Hộp thử hẹp và nằm bên phải vì nó là việc PHỤ nhưng làm liên tục: soạn một đoạn rồi thử ngay,
+ * không phải chuyển trang. Trên màn hẹp thì nó xuống dưới — đọc trước rồi thử sau vẫn hợp lý, còn
+ * hai cột chen nhau ở 400px thì không cột nào đọc được.
+ */
+.layout {
+  display: grid;
+  gap: var(--nt-space-6);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.main {
+  display: grid;
+  gap: var(--nt-space-6);
+}
+
+/* Dính khi cuộn: danh sách đoạn dài hơn hộp thử rất nhiều, và người soạn cần hộp thử luôn trong tầm. */
+.tester {
+  position: sticky;
+  top: var(--nt-space-6);
+  display: grid;
+  gap: var(--nt-space-4);
+}
+
+@media (max-width: 1000px) {
+  .tester {
+    position: static;
+  }
+}
+
+.panelTitle {
+  margin: 0 0 var(--nt-space-4);
+  font-size: var(--nt-text-lg);
+  font-weight: 600;
+}
+
+.form {
+  display: grid;
+  gap: var(--nt-space-4);
+}
+
+.field {
+  display: grid;
+  gap: var(--nt-space-2);
+}
+
+.label {
+  font-size: var(--nt-text-sm);
+  font-weight: 600;
+  color: var(--nt-fg);
+}
+
+.textarea {
+  width: 100%;
+  padding: var(--nt-space-3);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-md);
+  background: var(--nt-surface);
+  color: var(--nt-fg);
+  font: inherit;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+.textarea:focus-visible {
+  outline: 2px solid var(--nt-accent);
+  outline-offset: 1px;
+}
+
+.hint,
+.testerIntro {
+  font-size: var(--nt-text-sm);
+  color: var(--nt-fg-muted);
+  margin: 0;
+}
+
+.list,
+.results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--nt-space-3);
+}
+
+.item,
+.result {
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-md);
+  padding: var(--nt-space-3);
+  display: grid;
+  gap: var(--nt-space-2);
+}
+
+.itemHead,
+.resultHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nt-space-2);
+}
+
+.itemTitle {
+  margin: 0;
+  font-size: var(--nt-text-base);
+  font-weight: 600;
+}
+
+.resultTitle {
+  font-size: var(--nt-text-sm);
+  font-weight: 600;
+}
+
+/*
+ * Cắt còn ba dòng. Danh sách này để RÀ SOÁT — nhận ra đoạn nào là đoạn nào — chứ không để đọc trọn;
+ * hiện đủ 8.000 ký tự thì mười đoạn đã dài hơn một màn hình và không còn quét được.
+ */
+.itemBody,
+.resultBody {
+  margin: 0;
+  color: var(--nt-fg-muted);
+  font-size: var(--nt-text-sm);
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.distance {
+  font-size: var(--nt-text-xs);
+  color: var(--nt-fg-subtle);
+  font-variant-numeric: tabular-nums;
+}
+
+.warning {
+  margin: 0;
+  padding: var(--nt-space-3);
+  border-radius: var(--nt-radius-md);
+  background: var(--nt-warning-soft, var(--nt-surface-muted));
+  color: var(--nt-fg);
+  font-size: var(--nt-text-sm);
+  line-height: 1.6;
+}
