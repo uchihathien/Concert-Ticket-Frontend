@@ -1,4 +1,14 @@
 import { AppShell, BrandLogo, BrandSuffix, SignOutForm } from '@nexaticket/ui';
+import {
+  BarChart3,
+  CalendarDays,
+  LayoutDashboard,
+  MapPin,
+  ScrollText,
+  TicketCheck,
+  UserCircle2,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { Suspense, type ReactNode } from 'react';
 import { signOut } from '@/auth';
@@ -19,16 +29,20 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <AppShell
       brand={
         <>
-          <BrandLogo height={26} priority />
+          <BrandLogo variant="lockup-on-light" height={26} priority />
           <BrandSuffix>Tổ chức</BrandSuffix>
         </>
       }
       nav={[
-        { href: '/', label: 'Sự kiện' },
-        { href: '/sales', label: 'Doanh thu' },
-        { href: '/venues', label: 'Địa điểm' },
-        { href: '/members', label: 'Thành viên' },
-        { href: '/audit', label: 'Nhật ký' },
+        // Biểu tượng đi KÈM chữ, không thay chữ: cột toàn hình buộc người dùng phải đoán, và
+        // đoán sai ở khu quản trị nghĩa là mở nhầm màn.
+        { href: '/', label: 'Sự kiện', icon: <CalendarDays size={18} /> },
+        { href: '/overview', label: 'Tổng quan', icon: <LayoutDashboard size={18} /> },
+        { href: '/tickets', label: 'Vé đã bán', icon: <TicketCheck size={18} /> },
+        { href: '/sales', label: 'Doanh thu', icon: <BarChart3 size={18} /> },
+        { href: '/venues', label: 'Địa điểm', icon: <MapPin size={18} /> },
+        { href: '/members', label: 'Thành viên', icon: <Users size={18} /> },
+        { href: '/audit', label: 'Nhật ký', icon: <ScrollText size={18} /> },
       ]}
       foot={
         <>
@@ -37,7 +51,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           <Suspense fallback={null}>
             <OrgSwitcher />
           </Suspense>
-          <Link href="/account">Tài khoản</Link>
+          <Link href="/account" className="inline-flex items-center gap-2 no-underline">
+            <UserCircle2 size={18} aria-hidden="true" />
+            Tài khoản
+          </Link>
           <SignOutForm action={doSignOut} />
         </>
       }

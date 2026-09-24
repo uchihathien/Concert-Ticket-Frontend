@@ -190,3 +190,29 @@
     justify-content: center;
   }
 }
+
+/*
+ * Nút tạo ảnh vé. Kiểu "ghost" chứ không phải nút chính: hành động chính ở màn này vẫn là đưa mã
+ * QR cho nhân viên soát vé, và một nút đặc màu cạnh mã sẽ tranh mất sự chú ý của nó.
+ */
+.posterButton {
+  margin-top: var(--nt-space-2);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nt-primary-text);
+  background: none;
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-1) var(--nt-space-3);
+  cursor: pointer;
+}
+
+.posterButton:hover {
+  background: var(--nt-hover);
+}
+
+.posterButton:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}

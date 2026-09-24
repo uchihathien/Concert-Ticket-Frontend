@@ -3,11 +3,10 @@ import {
   CategoryChips,
   EVENT_CATEGORY_FILTERS,
   EmptyState,
-  applyQuickFilters,
   EventCard,
   eventCategoryLabel,
   formatDate,
-  needsLocalFiltering,
+  quickFilterParams,
 } from '@nexaticket/ui';
 import type { Metadata } from 'next';
 import Link from 'next/link';
@@ -24,18 +23,17 @@ export const metadata: Metadata = {
 export const revalidate = 120;
 
 const PAGE_SIZE = 24;
-/** Trần `size` của backend. */
-const MAX_PAGE_SIZE = 60;
 
 /**
  * C-LIST — search params là nguồn chân lý duy nhất.
  *
- * Tìm kiếm, thể loại, thành phố và phân trang do **backend** làm (`GET /v1/events`).
+ * **Cả sáu bộ lọc đều do backend làm**: tìm kiếm, thể loại, thành phố, thời gian, mức giá và phân
+ * trang. Trang này chỉ dịch lựa chọn trên URL thành tham số API.
  *
- * Thời gian và mức giá thì không: endpoint không nhận hai tham số đó. Khi một trong hai bật, trang
- * này lấy một lượt tối đa 60 sự kiện (trần backend), lọc rồi tự cắt trang. Giới hạn đã biết: quá
- * 60 sự kiện đang bán thì hai bộ lọc ấy chỉ đúng trong phạm vi 60 cái lấy được. Sửa tử tế cần
- * `from`/`to` và `minPrice`/`maxPrice` ở backend — đó là thay đổi contract, phải do người quyết.
+ * Trước đây thời gian và giá được lọc tại chỗ trên tối đa 60 sự kiện lấy về, vì endpoint chưa nhận
+ * hai tham số ấy — nghĩa là chúng chỉ đúng trong phạm vi 60 cái đó, và `total` hiện trên màn hình
+ * cũng chỉ đếm trong phạm vi ấy. `GET /v1/events` giờ nhận `from`/`to` và `minPrice`/`maxPrice`,
+ * nên giới hạn đó không còn.
  *
  * Là server component: trang này khách vào từ Google, nên nó phải trả HTML đầy đủ.
  */
@@ -55,23 +53,19 @@ export default async function EventsPage({
   const price = read('price', 'all');
   const page = Math.max(0, Number.parseInt(read('page', '0'), 10) || 0);
 
-  const local = needsLocalFiltering(when, price);
-
   const result = await listPublicEvents(serverApi, {
     ...(query ? { query } : {}),
     ...(category !== 'all' ? { category } : {}),
     ...(city !== 'all' ? { city } : {}),
-    // Lọc tại chỗ thì phải cầm cả tập trong tay: xin trang thứ hai của backend rồi mới lọc sẽ ra
-    // một trang gần như trống mà không có cách nào biết còn gì ở trang sau.
-    page: local ? 0 : page,
-    size: local ? MAX_PAGE_SIZE : PAGE_SIZE,
+    // Dịch lựa chọn giao diện ("cuối tuần này") thành khoảng số cho backend. Phép tính ở phía
+    // client vì "cuối tuần" phụ thuộc hôm nay là thứ mấy ở Việt Nam — xem `quickFilterParams`.
+    ...quickFilterParams(when, price),
+    page,
+    size: PAGE_SIZE,
   });
 
-  const filteredItems = local ? applyQuickFilters(result.items, when, price) : result.items;
-  const total = local ? filteredItems.length : result.total;
-  const items = local
-    ? filteredItems.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
-    : result.items;
+  const items = result.items;
+  const total = result.total;
   const lastPage = Math.max(0, Math.ceil(total / PAGE_SIZE) - 1);
 
   const linkWith = (patch: Record<string, string | number>) => {

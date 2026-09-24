@@ -22,25 +22,29 @@ import {
   Button,
   CopyField,
   ErrorState,
+  FilterBar,
   Input,
   Modal,
   PageHeader,
+  RowActions,
+  Section,
   Select,
   Table,
+  foldText,
   formatDate,
+  formatNumber,
+  matchesText,
+  roleLabel,
+  roleTone,
   useToast,
 } from '@nexaticket/ui';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { OrganizationGate } from '@/components/OrganizationGate';
 
-const ROLE_LABELS: Record<OrganizationRole, string> = {
-  ORG_OWNER: 'Chủ sở hữu',
-  ORG_ADMIN: 'Quản trị',
-  EVENT_MANAGER: 'Quản lý sự kiện',
-  CHECKIN_STAFF: 'Nhân viên soát vé',
-};
+const ROLE_OPTIONS = ORGANIZATION_ROLES.map((role) => ({ value: role, label: roleLabel(role) }));
 
-const ROLE_OPTIONS = ORGANIZATION_ROLES.map((role) => ({ value: role, label: ROLE_LABELS[role] }));
+/** Cùng danh sách vai trò với form mời, dùng lại thay vì gõ lại — hai bản sao sẽ lệch. */
+const MEMBER_ROLE_FILTERS = ROLE_OPTIONS;
 
 /**
  * A-MEMBERS — thành viên của tổ chức, lời mời, và các thao tác lên tài khoản của họ.
@@ -84,10 +88,24 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
   const sendPasswordReset = useSendMemberPasswordReset(organizationId);
   const revokeInvitation = useRevokeInvitation(organizationId);
 
+  const [memberQuery, setMemberQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
   const [formOpen, setFormOpen] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [editing, setEditing] = useState<Member | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+
+  /**
+   * Lọc tại chỗ: một tổ chức có vài chục thành viên và `GET /members` trả hết trong một lượt.
+   * Đẩy sang backend ở quy mô này chỉ thêm một vòng khứ hồi cho mỗi phím gõ.
+   */
+  const visibleMembers = useMemo(() => {
+    const needle = foldText(memberQuery.trim());
+    return (members.data ?? []).filter((row) => {
+      if (roleFilter && row.role !== roleFilter) return false;
+      return matchesText(needle, [row.email, row.fullName, row.userId]);
+    });
+  }, [members.data, memberQuery, roleFilter]);
 
   const fail = (error: unknown) => toast.showError(error instanceof ApiError ? error : null);
 
@@ -138,10 +156,44 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
           onRetry={() => void members.refetch()}
         />
       ) : (
-        <Table<Member>
-          caption="Danh sách thành viên"
-          loading={members.isPending}
-          rows={members.data ?? []}
+        <>
+          <FilterBar
+            count={`${formatNumber(visibleMembers.length)} / ${formatNumber(
+              (members.data ?? []).length,
+            )} thành viên`}
+            actions={
+              memberQuery || roleFilter ? (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setMemberQuery('');
+                    setRoleFilter('');
+                  }}
+                >
+                  Xoá bộ lọc
+                </Button>
+              ) : undefined
+            }
+          >
+            <Input
+              label="Tìm thành viên"
+              placeholder="Tên hoặc email"
+              value={memberQuery}
+              onChange={(event) => setMemberQuery(event.target.value)}
+            />
+            <Select
+              label="Vai trò"
+              placeholder="Mọi vai trò"
+              value={roleFilter}
+              options={MEMBER_ROLE_FILTERS}
+              onChange={(event) => setRoleFilter(event.target.value)}
+            />
+          </FilterBar>
+
+          <Table<Member>
+            caption="Danh sách thành viên"
+            loading={members.isPending}
+            rows={visibleMembers}
           rowKey={(row) => row.userId}
           emptyTitle="Chưa có thành viên nào"
           columns={[
@@ -151,10 +203,10 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
               // Email là thứ nhận ra được người; id chỉ có nghĩa khi đi báo lỗi. Bảng cũ hiện mỗi
               // UUID, nên không ai dám bấm nút gỡ.
               cell: (row) => (
-                <div style={{ display: 'grid', gap: 2 }}>
+                <div className="grid gap-0.5">
                   <span>{row.fullName ?? row.email ?? row.userId}</span>
                   {row.fullName && row.email ? (
-                    <span style={{ color: 'var(--nt-text-muted)', fontSize: 13 }}>{row.email}</span>
+                    <span className="text-[13px] text-muted">{row.email}</span>
                   ) : null}
                 </div>
               ),
@@ -162,18 +214,14 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
             {
               key: 'role',
               header: 'Vai trò',
-              cell: (row) => (
-                <Badge tone={row.role === 'ORG_OWNER' ? 'accent' : 'neutral'}>
-                  {ROLE_LABELS[row.role as OrganizationRole] ?? row.role}
-                </Badge>
-              ),
+              cell: (row) => <Badge tone={roleTone(row.role)}>{roleLabel(row.role)}</Badge>,
             },
             { key: 'joined', header: 'Tham gia', cell: (row) => formatDate(row.joinedAt) },
             {
               key: 'actions',
               header: '',
               cell: (row) => (
-                <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <RowActions>
                   {canManage ? (
                     <>
                       <Button variant="ghost" onClick={() => setEditing(row)}>
@@ -192,7 +240,10 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
                               sendPasswordReset.mutate(row.userId, {
                                 onSuccess: () => {
                                   setConfirm(null);
-                                  toast.show({ tone: 'success', message: 'Đã gửi thư đặt lại mật khẩu' });
+                                  toast.show({
+                                    tone: 'success',
+                                    message: 'Đã gửi thư đặt lại mật khẩu',
+                                  });
                                 },
                                 onError: fail,
                               }),
@@ -218,7 +269,10 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
                               {
                                 onSuccess: () => {
                                   setConfirm(null);
-                                  toast.show({ tone: 'success', message: 'Đã thu hồi phiên đăng nhập' });
+                                  toast.show({
+                                    tone: 'success',
+                                    message: 'Đã thu hồi phiên đăng nhập',
+                                  });
                                 },
                                 onError: fail,
                               },
@@ -232,7 +286,7 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
 
                   {canManage ? (
                     <Button
-                      variant="danger"
+                      variant="danger-soft"
                       onClick={() =>
                         setConfirm({
                           title: 'Gỡ khỏi tổ chức?',
@@ -252,19 +306,19 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
                       Gỡ
                     </Button>
                   ) : null}
-                </div>
+                </RowActions>
               ),
             },
           ]}
-        />
+          />
+        </>
       )}
 
       {canManage && (invitations.data?.length ?? 0) > 0 ? (
-        <section style={{ marginTop: 32 }}>
-          <PageHeader
-            title="Lời mời đang chờ"
-            description="Người đã được mời nhưng chưa nhận. Thu hồi thì mã cũ hết hiệu lực ngay."
-          />
+        <Section
+          title="Lời mời đang chờ"
+          description="Người đã được mời nhưng chưa nhận. Thu hồi thì mã cũ hết hiệu lực ngay."
+        >
           <Table<PendingInvitation>
             caption="Lời mời đang chờ"
             loading={invitations.isPending}
@@ -276,25 +330,21 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
               {
                 key: 'role',
                 header: 'Vai trò',
-                cell: (row) => ROLE_LABELS[row.role as OrganizationRole] ?? row.role,
+                cell: (row) => roleLabel(row.role),
               },
               {
                 key: 'expires',
                 header: 'Hết hạn',
                 cell: (row) =>
-                  row.expired ? (
-                    <Badge tone="danger">Đã hết hạn</Badge>
-                  ) : (
-                    formatDate(row.expiresAt)
-                  ),
+                  row.expired ? <Badge tone="danger">Đã hết hạn</Badge> : formatDate(row.expiresAt),
               },
               {
                 key: 'actions',
                 header: '',
                 cell: (row) => (
-                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                  <RowActions>
                     <Button
-                      variant="danger"
+                      variant="danger-soft"
                       onClick={() =>
                         revokeInvitation.mutate(row.id, {
                           onSuccess: () =>
@@ -305,12 +355,12 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
                     >
                       Thu hồi
                     </Button>
-                  </div>
+                  </RowActions>
                 ),
               },
             ]}
           />
-        </section>
+        </Section>
       ) : null}
 
       <Modal
@@ -328,7 +378,7 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
           </>
         }
       >
-        <form id="invite-member" action={submitInvite} style={{ display: 'grid', gap: 16 }}>
+        <form id="invite-member" action={submitInvite} className="grid gap-4">
           <Input name="email" type="email" label="Email" required />
           <Select name="role" label="Vai trò" required options={ROLE_OPTIONS} />
         </form>
@@ -349,10 +399,8 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
           </>
         }
       >
-        <form id="change-role" action={submitRole} style={{ display: 'grid', gap: 16 }}>
-          <p style={{ margin: 0, color: 'var(--nt-text-muted)' }}>
-            {editing?.email ?? editing?.userId}
-          </p>
+        <form id="change-role" action={submitRole} className="grid gap-4">
+          <p className="m-0 text-muted">{editing?.email ?? editing?.userId}</p>
           <Select
             name="role"
             label="Vai trò"
@@ -360,7 +408,7 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
             defaultValue={editing?.role}
             options={ROLE_OPTIONS}
           />
-          <p style={{ margin: 0, color: 'var(--nt-text-muted)', fontSize: 13 }}>
+          <p className="m-0 text-[13px] text-muted">
             Chỉ chủ sở hữu mới phong được chủ sở hữu khác, và tổ chức luôn phải còn ít nhất một
             người ở vai trò đó.
           </p>
@@ -373,14 +421,12 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
         title="Đã tạo lời mời"
         footer={<Button onClick={() => setToken(null)}>Xong</Button>}
       >
-        <p style={{ marginTop: 0 }}>
+        <p className="mt-0">
           Gửi mã dưới đây cho người được mời. Họ mở <code>/invitations/&lt;mã&gt;/accept</code> để
           nhận quyền.
         </p>
         {token ? <CopyField label="Mã lời mời" value={token} /> : null}
-        <p style={{ marginBottom: 0, color: 'var(--nt-text-muted)', fontSize: 13 }}>
-          Mã chỉ hiện đúng một lần.
-        </p>
+        <p className="mb-0 text-[13px] text-muted">Mã chỉ hiện đúng một lần.</p>
       </Modal>
 
       <Modal
@@ -403,7 +449,7 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
           </>
         }
       >
-        <p style={{ margin: 0 }}>{confirm?.body}</p>
+        <p className="m-0">{confirm?.body}</p>
       </Modal>
     </>
   );

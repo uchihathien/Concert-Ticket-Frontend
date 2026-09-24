@@ -1,0 +1,65 @@
+# Đóng gói bốn app Next thành ảnh container và đẩy lên registry.
+#
+# Deploy KHÔNG nằm ở đây. `deploy/compose/prod.yml` và khoá SSH tới máy chủ thuộc repo backend, nên
+# workflow này dừng ở chỗ đẩy ảnh; việc đưa ảnh vào chạy do `Release` bên đó làm. Đây là cái giá
+# của việc tách hai repo, và chỗ này là nơi nó lộ ra rõ nhất.
+#
+# Sau khi ảnh lên xong, chạy `Release` ở repo backend (workflow_dispatch) với `frontend_tag` là SHA
+# của commit này để deploy đúng bản vừa build. Bỏ trống thì nó lấy tag `main`.
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  images:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [web-customer, web-admin, web-scanner, web-platform]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          # Bối cảnh là gốc repo: pnpm workspace cần cả cây để phân giải package nội bộ.
+          context: .
+          file: Dockerfile
+          build-args: |
+            APP=${{ matrix.app }}
+            NEXT_PUBLIC_API_BASE_URL=${{ vars.PUBLIC_API_BASE_URL }}
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.app }}:${{ github.sha }}
+            ghcr.io/${{ github.repository_owner }}/${{ matrix.app }}:main
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+      # `NEXT_PUBLIC_*` được NHÚNG vào bundle lúc build, không đọc lúc chạy (Dockerfile đã ghi).
+      # Nên một biến quên khai không hỏng bản build — nó ra một ảnh gọi vào `undefined`, và chỗ đó
+      # chỉ lộ ra khi người dùng thật bấm nút. Chặn tại đây, lúc còn rẻ.
+      - name: Địa chỉ API đã nhúng đúng
+        run: |
+          test -n "${{ vars.PUBLIC_API_BASE_URL }}" || {
+            echo "Thiếu biến repo PUBLIC_API_BASE_URL — ảnh sẽ gọi vào undefined"; exit 1; }
+          docker run --rm --entrypoint sh \
+            "ghcr.io/${{ github.repository_owner }}/${{ matrix.app }}:${{ github.sha }}" \
+            -c 'grep -rqF "${{ vars.PUBLIC_API_BASE_URL }}" /app/apps/${{ matrix.app }}/.next' || {
+            echo "Không tìm thấy địa chỉ API trong bundle đã build"; exit 1; }

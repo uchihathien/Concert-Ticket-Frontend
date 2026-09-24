@@ -18,12 +18,14 @@ import {
   MoneyText,
   QrCode,
   Skeleton,
+  cx,
   formatDateLong,
   formatDateTime,
   formatTime,
   useToast,
 } from '@nexaticket/ui';
 import Link from 'next/link';
+import { useMemo, useState } from 'react';
 import type { SessionIndex, SessionInfo } from '@/lib/session-index';
 import { ApiErrorState } from './ApiErrorState';
 import styles from './wallet.module.css';
@@ -52,6 +54,38 @@ const STATUS_TONE: Record<OrderStatus, 'neutral' | 'accent' | 'success' | 'warn'
   MANUAL_REVIEW: 'warn',
 };
 
+type StatusGroup = 'all' | 'awaiting' | 'paid' | 'closed';
+
+/**
+ * Gộp sáu trạng thái thành ba việc.
+ *
+ * <p>Dùng `Set` chứ không dùng chuỗi `||`: thêm một trạng thái mới ở backend thì đây là chỗ duy
+ * nhất phải sửa, và quên sửa sẽ làm đơn ấy biến mất khỏi MỌI tab thay vì lặng lẽ rơi nhầm nhóm.
+ *
+ * <p>`MANUAL_REVIEW` nằm cùng nhóm "đã thanh toán": tiền đã tới, việc còn lại là của nền tảng.
+ * Xếp nó vào nhóm "đã đóng" sẽ nói với khách rằng đơn hỏng, trong khi họ vừa trả tiền xong.
+ */
+const STATUS_GROUPS: Record<StatusGroup, ReadonlySet<OrderStatus>> = {
+  all: new Set<OrderStatus>([
+    'AWAITING_PAYMENT',
+    'PAID',
+    'EXPIRED',
+    'CANCELLED',
+    'REFUNDED',
+    'MANUAL_REVIEW',
+  ]),
+  awaiting: new Set<OrderStatus>(['AWAITING_PAYMENT']),
+  paid: new Set<OrderStatus>(['PAID', 'MANUAL_REVIEW']),
+  closed: new Set<OrderStatus>(['EXPIRED', 'CANCELLED', 'REFUNDED']),
+};
+
+const STATUS_FILTERS: Array<{ value: StatusGroup; label: string }> = [
+  { value: 'all', label: 'Tất cả' },
+  { value: 'awaiting', label: 'Chờ thanh toán' },
+  { value: 'paid', label: 'Đã thanh toán' },
+  { value: 'closed', label: 'Đã đóng' },
+];
+
 /**
  * Danh sách đơn hàng của khách.
  *
@@ -68,6 +102,15 @@ export function OrderList({ sessionIndex }: OrderListProps) {
   const tickets = useMyTickets({ limit: 100 });
   const cancel = useCancelOrder();
   const toast = useToast();
+  const [group, setGroup] = useState<StatusGroup>('all');
+
+  // Lọc tại chỗ: 50 đơn đã nằm trong bộ nhớ, và `GET /v1/me/orders` không nhận tham số trạng thái.
+  // Thêm nó vào backend chỉ đáng khi một người có hàng nghìn đơn — chuyện không xảy ra với ví của
+  // khách mua vé.
+  const visible = useMemo(
+    () => (orders.data ?? []).filter((order) => STATUS_GROUPS[group].has(order.status)),
+    [orders.data, group],
+  );
 
   if (orders.isPending) {
     return (
@@ -106,7 +149,43 @@ export function OrderList({ sessionIndex }: OrderListProps) {
 
   return (
     <div className={styles.list}>
-      {orders.data.map((order) => (
+      {/*
+        Nhóm theo VIỆC PHẢI LÀM, không theo từng mã trạng thái. Khách không phân biệt EXPIRED với
+        CANCELLED — cả hai đều là "đơn này hỏng rồi". Thứ họ thật sự tìm là "đơn nào tôi còn phải
+        chuyển khoản" và "vé của tôi đâu".
+      */}
+      <div className={styles.filters}>
+        <div className={styles.segmented} role="group" aria-label="Lọc đơn hàng">
+          {STATUS_FILTERS.map((option) => {
+            const count = (orders.data ?? []).filter((order) =>
+              STATUS_GROUPS[option.value].has(order.status),
+            ).length;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                className={cx(styles.segment, group === option.value && styles.segmentOn)}
+                aria-pressed={group === option.value}
+                onClick={() => setGroup(option.value)}
+              >
+                {option.label}
+                {/* Số đếm để khách biết nhóm nào rỗng TRƯỚC khi bấm vào một tab trống. */}
+                <span className={styles.segmentCount}>{count}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {visible.length === 0 ? (
+        <EmptyState
+          title="Không có đơn nào trong mục này"
+          description="Chọn “Tất cả” để xem lại toàn bộ đơn hàng của bạn."
+        />
+      ) : null}
+
+      {visible.map((order) => (
         <OrderCard
           key={order.id}
           order={order}

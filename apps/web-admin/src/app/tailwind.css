@@ -1,0 +1,70 @@
+/*
+ * Tailwind v4 cho web-admin.
+ *
+ * Cố ý **không** nạp preflight của Tailwind: dự án đã có `@nexaticket/tokens/reset.css`, và hai
+ * bộ reset chồng nhau sẽ âm thầm đổi diện mạo của mọi màn đang chạy bằng CSS Modules (26 component
+ * ở `packages/ui`). Ở đây chỉ lấy phần tiện ích.
+ */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/*
+ * Khai báo nguồn tường minh.
+ *
+ * Nhập lẻ `theme.css` + `utilities.css` (thay vì cả gói `tailwindcss`) thì mất luôn phần tự dò
+ * nguồn: Tailwind vẫn nạp bảng biến nhưng không quét file nào, nên không sinh ra một utility nào
+ * và CSS trông "có Tailwind" mà class thì không tồn tại.
+ *
+ * Đường dẫn tính từ file này (`src/app/`) nên `../` là toàn bộ `src/`. Utility viết trong
+ * `packages/ui` sẽ KHÔNG được quét — đó là cố ý: package dùng chung giữ nguyên CSS Modules để bốn
+ * app không phải cùng cài Tailwind mới hiển thị đúng.
+ */
+@source '../';
+
+/*
+ * Tailwind đọc thẳng biến của `packages/tokens` thay vì mang bảng màu riêng vào.
+ *
+ * `inline` nghĩa là giá trị được thay tại chỗ, nên `bg-surface` sinh ra `var(--nt-surface)` — đổi
+ * token là mọi tiện ích đổi theo. Nhờ vậy `admin.css` (nền sáng + indigo) và `tokens.css` (nền
+ * tối) dùng cùng một tập class: không cần cấu hình dark mode, không có class nào phải viết hai lần.
+ *
+ * HỆ QUẢ CẦN BIẾT: utility nằm trong `@layer utilities`, còn CSS Modules thì không nằm trong layer
+ * nào — CSS không-layer luôn thắng CSS có-layer, bất kể specificity. Nên `className="p-0"` đặt lên
+ * một component của `packages/ui` sẽ KHÔNG đè được padding trong module của nó. Muốn đổi thì thêm
+ * prop/variant cho component, đừng chồng utility lên.
+ */
+@theme inline {
+  --color-bg: var(--nt-bg);
+  --color-bg-subtle: var(--nt-bg-subtle);
+  --color-surface: var(--nt-surface);
+  --color-elevated: var(--nt-elevated);
+  --color-hover: var(--nt-hover);
+  --color-border: var(--nt-border);
+  --color-ink: var(--nt-text);
+  --color-muted: var(--nt-text-muted);
+
+  --color-primary: var(--nt-primary);
+  --color-primary-hover: var(--nt-primary-hover);
+  --color-primary-ink: var(--nt-primary-ink);
+  --color-primary-text: var(--nt-primary-text);
+  --color-accent: var(--nt-accent);
+  --color-accent-ink: var(--nt-accent-ink);
+  --color-accent-text: var(--nt-accent-text);
+
+  --color-success: var(--nt-success);
+  --color-success-text: var(--nt-success-text);
+  --color-warn: var(--nt-warn);
+  --color-warn-text: var(--nt-warn-text);
+  --color-danger: var(--nt-danger);
+  --color-danger-text: var(--nt-danger-text);
+
+  --radius-nt: var(--nt-radius);
+  --radius-nt-lg: var(--nt-radius-lg);
+
+  --shadow-nt-panel: var(--nt-shadow-panel);
+  --shadow-nt-card: var(--nt-shadow-card);
+
+  --font-sans: var(--nt-font);
+  --font-mono: var(--nt-font-mono);
+}

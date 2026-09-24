@@ -1,0 +1,149 @@
+/* Khung chat hỗ trợ. Ba trạng thái, xem SupportChat.tsx. */
+
+.gate {
+  display: grid;
+  gap: var(--nt-space-3);
+  justify-items: start;
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  background: var(--nt-surface);
+  padding: var(--nt-space-6);
+}
+
+.gateText {
+  margin: 0;
+  color: var(--nt-text-muted);
+  max-width: 60ch;
+}
+
+.gateLink {
+  font-weight: 600;
+  color: var(--nt-primary-ink);
+  background: var(--nt-primary);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-2) var(--nt-space-4);
+  text-decoration: none;
+}
+
+.chat {
+  display: grid;
+  gap: var(--nt-space-3);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  background: var(--nt-surface);
+  padding: var(--nt-space-4);
+}
+
+/*
+ * Cuộn TRONG danh sách, không cuộn cả trang: ô nhập phải luôn nhìn thấy được, và trang hỗ trợ còn
+ * có phần FAQ dài phía dưới.
+ */
+.messages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--nt-space-3);
+  max-height: 48vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.intro {
+  color: var(--nt-text-muted);
+  font-size: 14px;
+  text-align: center;
+  padding: var(--nt-space-6) var(--nt-space-3);
+}
+
+.message {
+  display: grid;
+  gap: var(--nt-space-1);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-3);
+  max-width: 80%;
+}
+
+.fromUser {
+  background: var(--nt-elevated);
+  justify-self: end;
+}
+
+.fromBot {
+  background: var(--nt-bg-subtle);
+  border: 1px solid var(--nt-border);
+  justify-self: start;
+}
+
+/*
+ * Nhân viên thật trông khác hẳn trợ lý. Khách phải biết mình đang nói với ai — hai bong bóng
+ * giống nhau là giao diện nói dối. Xem ChatRole ở backend.
+ */
+.fromAgent {
+  background: color-mix(in srgb, var(--nt-success) 22%, var(--nt-surface));
+  border: 1px solid var(--nt-success);
+  justify-self: start;
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-2);
+  font-size: 12px;
+  color: var(--nt-text-muted);
+}
+
+.body {
+  margin: 0;
+  white-space: pre-wrap;
+  font-size: 15px;
+}
+
+.handoffBanner {
+  margin: 0;
+  font-size: 14px;
+  color: var(--nt-accent-text);
+  background: color-mix(in srgb, var(--nt-accent) 14%, transparent);
+  border: 1px solid var(--nt-accent);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-3);
+}
+
+.composer {
+  display: grid;
+  gap: var(--nt-space-2);
+}
+
+/* Nhãn thật, ẩn khỏi mắt nhưng không khỏi trình đọc màn hình: placeholder không thay được nhãn. */
+.label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.input {
+  font: inherit;
+  font-size: 15px;
+  color: var(--nt-text);
+  background: var(--nt-bg-subtle);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-3);
+  resize: vertical;
+}
+
+.input:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+.actions {
+  display: flex;
+  gap: var(--nt-space-3);
+  flex-wrap: wrap;
+}

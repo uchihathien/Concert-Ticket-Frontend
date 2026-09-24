@@ -6,12 +6,22 @@ import {
   useApiClient,
   useIdempotencyKey,
   usePlaceHold,
+  usePublicFloorPlan,
   useSeatMap,
   type Seat,
   type StandingLine,
   type StandingZone,
 } from '@nexaticket/ts-sdk';
-import { Button, MoneyText, Skeleton, errorMessage, formatNumber, formatVnd } from '@nexaticket/ui';
+import {
+  Button,
+  MoneyText,
+  SeatMapCanvas,
+  Skeleton,
+  errorMessage,
+  formatNumber,
+  formatVnd,
+  type SeatMark,
+} from '@nexaticket/ui';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 import { ApiErrorState } from './ApiErrorState';
@@ -19,6 +29,8 @@ import styles from './booking.module.css';
 
 export interface SeatPickerProps {
   eventSessionId: string;
+  /** Khoá của mặt bằng khán phòng. Hình học thuộc địa điểm, mà địa điểm tra theo sự kiện. */
+  eventSlug: string;
   eventTitle: string;
 }
 
@@ -41,10 +53,14 @@ export interface SeatPickerProps {
  * khoá qua các lựa chọn khác nhau thì lần bấm thứ hai sẽ nhận lại kết quả của lần thứ nhất, tức là
  * khách trả tiền cho những ghế mình đã bỏ chọn.
  */
-export function SeatPicker({ eventSessionId, eventTitle }: SeatPickerProps) {
+export function SeatPicker({ eventSessionId, eventSlug, eventTitle }: SeatPickerProps) {
   const router = useRouter();
   const client = useApiClient();
   const { data, isPending, isError, error, refetch } = useSeatMap(eventSessionId);
+  // Mặt bằng hỏng KHÔNG chặn việc mua vé: nó chỉ quyết định sơ đồ vẽ theo hình khán phòng hay theo
+  // lưới. Nên không có `isError` nào ở đây — `floorPlan` rỗng thì rơi về lưới, và khách vẫn mua
+  // được vé từ một service đang có vấn đề mà họ không cần biết tới.
+  const { data: floorPlan } = usePublicFloorPlan(eventSlug);
   const placeHold = usePlaceHold(eventSessionId);
 
   const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>([]);
@@ -72,6 +88,61 @@ export function SeatPicker({ eventSessionId, eventTitle }: SeatPickerProps) {
     [map, selectedSeatIds],
   );
 
+  // `seatCode` là khoá chung giữa catalog (hình học) và inventory (trạng thái). Sơ đồ nối hai
+  // nguồn qua nó; `id` chỉ dùng khi gửi lệnh giữ chỗ, vì đó là thứ inventory nhận.
+  const seatsByCode = useMemo(
+    () => new Map((map?.seats ?? []).map((seat) => [seat.seatCode, seat])),
+    [map],
+  );
+
+  const seatMarks = useMemo(() => {
+    const marks = new Map<string, SeatMark>();
+    for (const seat of map?.seats ?? []) {
+      marks.set(seat.seatCode, {
+        id: seat.id,
+        status: seat.status,
+        priceVnd: seat.priceVnd,
+        ticketTypeName: seat.ticketTypeName,
+      });
+    }
+    return marks;
+  }, [map]);
+
+  /**
+   * Toạ độ ghế lấy từ sơ đồ tồn kho, không từ mặt bằng.
+   *
+   * Mặt bằng công khai cố ý không mang ghế — chúng đã nằm ở đây kèm trạng thái còn/hết, và trả
+   * lần thứ hai là gửi 5.000 dòng mà không thêm thông tin gì. Ghế thiếu toạ độ (suất publish từ
+   * trước khi có hình học) bị bỏ qua, và sơ đồ rơi về lưới bên dưới.
+   */
+  const seatPositions = useMemo(() => {
+    const positions = new Map<string, { x: number; y: number }>();
+    for (const seat of map?.seats ?? []) {
+      if (seat.posX !== null && seat.posY !== null) {
+        positions.set(seat.seatCode, { x: seat.posX, y: seat.posY });
+      }
+    }
+    return positions;
+  }, [map]);
+
+  const availableByZone = useMemo(() => {
+    const byZone = new Map<string, number>();
+    for (const seat of map?.seats ?? []) {
+      if (seat.status === 'AVAILABLE') {
+        byZone.set(seat.zoneCode, (byZone.get(seat.zoneCode) ?? 0) + 1);
+      }
+    }
+    for (const zone of map?.standingZones ?? []) {
+      byZone.set(zone.zoneCode, zone.available);
+    }
+    return byZone;
+  }, [map]);
+
+  const selectedSeatCodes = useMemo(
+    () => new Set(selectedSeats.map((seat) => seat.seatCode)),
+    [selectedSeats],
+  );
+
   const unitCount =
     selectedSeats.length + standingLines.reduce((sum, line) => sum + line.quantity, 0);
 
@@ -93,6 +164,11 @@ export function SeatPicker({ eventSessionId, eventTitle }: SeatPickerProps) {
     setSelectedSeatIds((current) =>
       current.includes(seat.id) ? current.filter((id) => id !== seat.id) : [...current, seat.id],
     );
+  }
+
+  function toggleSeatCode(seatCode: string) {
+    const seat = seatsByCode.get(seatCode);
+    if (seat) toggleSeat(seat);
   }
 
   function setStandingQuantity(zoneCode: string, quantity: number) {
@@ -185,28 +261,54 @@ export function SeatPicker({ eventSessionId, eventTitle }: SeatPickerProps) {
 
         {hasSeated ? (
           <section className={styles.seatedBlock} aria-label="Sơ đồ chỗ ngồi">
-            {/*
-              Thanh sân khấu là mốc định hướng, không phải đồ trang trí. Không có nó thì lưới ghế
-              chỉ là một đám ô vuông: khách không biết hàng 1 gần hay xa sân khấu, mà đó chính là
-              câu hỏi duy nhất họ đang cân nhắc khi chọn chỗ.
-            */}
-            <div className={styles.stage} aria-hidden="true">
-              <span>Sân khấu</span>
-            </div>
-
             <Legend hasTaken={hasTaken} />
 
-            <div className={styles.zoneList}>
-              {seatedZones.map(([zoneCode, seats]) => (
-                <SeatedZone
-                  key={zoneCode}
-                  zoneCode={zoneCode}
-                  seats={seats}
-                  selected={selectedSeatIds}
-                  onToggle={toggleSeat}
-                />
-              ))}
-            </div>
+            {/*
+              Hai cách vẽ cùng một sơ đồ, và cái thứ hai không phải đồ thừa.
+
+              `SeatMapCanvas` vẽ đúng hình khán phòng — khu hình cung quanh sân khấu tròn, hai cánh
+              xoay 90° của sân khấu chữ U — và giữ số node DOM ở mức vài trăm dù khán phòng 20.000
+              chỗ. Nó cần hai thứ: mặt bằng từ catalog, và toạ độ từng ghế trong sơ đồ tồn kho.
+
+              Thiếu một trong hai thì rơi về lưới. Điều đó xảy ra thật, với những suất đã publish
+              TRƯỚC khi có hình học: tồn kho của chúng đã dựng xong và mang toạ độ cũ (chỉ số
+              hàng/cột), mà tồn kho thì không dựng lại được nếu không rút sự kiện xuống. Lưới là
+              đúng thứ những suất ấy vẫn hiển thị được, và nó cũng là đường bàn phím đi được.
+            */}
+            {floorPlan && seatPositions.size > 0 ? (
+              <SeatMapCanvas
+                floorPlan={floorPlan}
+                seatMarks={seatMarks}
+                seatPositions={seatPositions}
+                selectedSeatCodes={selectedSeatCodes}
+                onToggleSeat={toggleSeatCode}
+                availableByZone={availableByZone}
+                label={`Sơ đồ chỗ ngồi ${eventTitle}`}
+              />
+            ) : (
+              <>
+                {/*
+                  Thanh sân khấu là mốc định hướng, không phải đồ trang trí. Không có nó thì lưới
+                  ghế chỉ là một đám ô vuông: khách không biết hàng 1 gần hay xa sân khấu, mà đó
+                  chính là câu hỏi duy nhất họ đang cân nhắc khi chọn chỗ.
+                */}
+                <div className={styles.stage} aria-hidden="true">
+                  <span>Sân khấu</span>
+                </div>
+
+                <div className={styles.zoneList}>
+                  {seatedZones.map(([zoneCode, seats]) => (
+                    <SeatedZone
+                      key={zoneCode}
+                      zoneCode={zoneCode}
+                      seats={seats}
+                      selected={selectedSeatIds}
+                      onToggle={toggleSeat}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </section>
         ) : null}
       </div>
