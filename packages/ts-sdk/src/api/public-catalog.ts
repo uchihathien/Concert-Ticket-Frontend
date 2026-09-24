@@ -19,6 +19,12 @@ export async function listPublicEvents(
   if (params.query) search.set('query', params.query);
   if (params.city) search.set('city', params.city);
   if (params.category) search.set('category', params.category);
+  if (params.from) search.set('from', params.from);
+  if (params.to) search.set('to', params.to);
+  // `!== undefined` chứ không phải truthy: 0 là một mức giá hợp lệ ("miễn phí"), và `if (0)` sẽ
+  // lặng lẽ bỏ nó đi.
+  if (params.minPrice !== undefined) search.set('minPrice', String(params.minPrice));
+  if (params.maxPrice !== undefined) search.set('maxPrice', String(params.maxPrice));
   if (params.page !== undefined) search.set('page', String(params.page));
   if (params.size !== undefined) search.set('size', String(params.size));
 

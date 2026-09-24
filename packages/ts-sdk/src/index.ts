@@ -25,7 +25,11 @@ export * from './types/analytics';
 export * from './types/inventory';
 export * from './types/ledger';
 export * from './types/ordering';
+export * from './types/dashboard';
+export * from './types/floor-plan';
+export * from './types/media';
 export * from './types/public-catalog';
+export * from './types/support';
 export * from './types/ticketing';
 
 export {
@@ -45,6 +49,7 @@ export {
   inviteMember,
   listPlatformOrganizations,
   removeMember,
+  renameOrganization,
   revokeInvitation,
   revokeMemberSessions,
   sendMemberPasswordReset,
@@ -68,6 +73,26 @@ export {
   updateTicketType,
 } from './api/catalog';
 export { getPublicEvent, listPublicEvents } from './api/public-catalog';
+export { getPublicFloorPlan, getVenueFloorPlan } from './api/floor-plan';
+export { getEventMasterData, getOrganizationDashboard } from './api/dashboard';
+export { searchOrganizationTickets } from './api/organization-tickets';
+export { requestPosterUpload, uploadPoster } from './api/media';
+export {
+  addKnowledgeChunk,
+  askSupport,
+  claimHandoff,
+  deleteKnowledgeChunk,
+  getChatThread,
+  getEventRules,
+  getHandoffThread,
+  listHandoffs,
+  listKnowledgeChunks,
+  previewKnowledge,
+  replyToHandoff,
+  requestHumanAgent,
+  resolveHandoff,
+  saveEventRules,
+} from './api/support';
 export { listMyTickets, listOrderTickets, scanTicket } from './api/ticketing';
 export { cancelOrder, getOrder, listMyOrders, placeOrder } from './api/ordering';
 export { fetchOrganizationSales } from './api/analytics';
@@ -92,6 +117,7 @@ export {
   usePlatformAuditLogs,
   usePlatformOrganizations,
   useRemoveMember,
+  useRenameOrganization,
   useRevokeInvitation,
   useRevokeMemberSessions,
   useRoles,
@@ -113,6 +139,28 @@ export {
   useUpdateTicketType,
   useVenues,
 } from './hooks/catalog';
+export { usePublicFloorPlan, useVenueFloorPlan } from './hooks/floor-plan';
+export {
+  useEventMasterData,
+  useOrganizationDashboard,
+  useOrganizationTickets,
+} from './hooks/dashboard';
+export {
+  useAddKnowledgeChunk,
+  useAskSupport,
+  useChatThread,
+  useClaimHandoff,
+  useHandoffQueue,
+  useHandoffThread,
+  useReplyToHandoff,
+  useRequestHumanAgent,
+  useDeleteKnowledgeChunk,
+  useEventRules,
+  useKnowledgeChunks,
+  useKnowledgePreview,
+  useResolveHandoff,
+  useSaveEventRules,
+} from './hooks/support';
 export { useMyTickets, useOrderTickets, useScanTicket } from './hooks/ticketing';
 export { useCancelOrder, useMyOrders, useOrder } from './hooks/ordering';
 export { useOrganizationSales } from './hooks/analytics';

@@ -7,7 +7,8 @@
     ".": "./src/index.ts",
     "./identity": "./src/api/identity.ts",
     "./inventory": "./src/api/inventory.ts",
-    "./ledger": "./src/api/ledger.ts"
+    "./ledger": "./src/api/ledger.ts",
+    "./floor-plan": "./src/types/floor-plan.ts"
   },
   "files": [
     "src"

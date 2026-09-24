@@ -71,10 +71,25 @@ export interface EventPage {
   cities: string[];
 }
 
+/**
+ * Tham số của `GET /v1/events`.
+ *
+ * Thời gian và giá đi dưới dạng **khoảng**, không phải tên lựa chọn ("weekend", "under-500"):
+ * "cuối tuần này" phụ thuộc hôm nay là thứ mấy ở Việt Nam, và backend chạy giờ UTC thì giải nghĩa
+ * sai đúng vào buổi sáng. Phép tính ấy nằm ở `timeRange`/`priceRange` của `@nexaticket/ui`.
+ */
 export interface ListEventsParams {
   query?: string;
   city?: string;
   category?: string;
+  /** ISO-8601. Mốc sớm nhất của **suất kế tiếp** — cùng con số hiện trên thẻ sự kiện. */
+  from?: string;
+  /** ISO-8601, **không** lấy mốc này: hai lựa chọn liền nhau phải rời nhau. */
+  to?: string;
+  /** VND. So với **giá thấp nhất** của sự kiện. */
+  minPrice?: number;
+  /** Không lấy mốc này. Bỏ trống nghĩa là không có trần — đó là "trên 1.000.000đ". */
+  maxPrice?: number;
   page?: number;
   /** Backend chặn trần ở 60. */
   size?: number;

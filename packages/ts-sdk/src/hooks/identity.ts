@@ -18,6 +18,7 @@ import {
   inviteMember,
   listPlatformOrganizations,
   removeMember,
+  renameOrganization,
   revokeInvitation,
   revokeMemberSessions,
   sendMemberPasswordReset,
@@ -121,6 +122,29 @@ export function useCreateOrganization() {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['identity', 'platform', 'organizations'] });
+    },
+  });
+}
+
+/**
+ * Đổi tên tổ chức.
+ *
+ * Làm mới cả danh sách nền tảng lẫn `myOrganizations`: cùng một cái tên xuất hiện ở bảng của
+ * superadmin, ở ô chọn tổ chức của `web-admin` và ở tiêu đề màn chi tiết. Bỏ sót một chỗ thì màn
+ * hình còn lại hiện tên cũ và người dùng tưởng lệnh đổi tên đã trượt.
+ */
+export function useRenameOrganization(organizationId: string) {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (name: string) => renameOrganization(client, organizationId, name),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.identity.organization(organizationId),
+      });
+      void queryClient.invalidateQueries({ queryKey: ['identity', 'platform', 'organizations'] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.identity.myOrganizations() });
     },
   });
 }
