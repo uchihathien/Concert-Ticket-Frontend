@@ -23,7 +23,7 @@
 
 export type StageShape = 'RECTANGLE' | 'CIRCLE' | 'THRUST';
 
-export type LayoutShape = 'GRID' | 'ARC';
+export type LayoutShape = 'GRID' | 'ARC' | 'TABLE';
 
 /** `height` đã được backend giải sẵn: sân khấu tròn trả đường kính, không trả 0. */
 export interface FloorPlanStage {
@@ -48,12 +48,32 @@ export interface FloorPlanSeat {
   y: number;
 }
 
+/**
+ * Bố cục **đã giải** của một khu.
+ *
+ * Khác `ZoneLayoutInput` ở một điểm quyết định: nó không bao giờ rỗng. Khu chưa đặt vị trí vẫn có
+ * một chỗ đứng sau khi bố cục tự động chạy xong, và đây là thứ trình sửa sơ đồ cần để ghim khu ấy
+ * tại đúng chỗ nó đang đứng ngay lần kéo đầu tiên.
+ */
+export interface ResolvedZoneLayout {
+  shape: LayoutShape;
+  originX: number;
+  originY: number;
+  /** Có với `GRID` và `TABLE` (xoay cả khối bàn). */
+  rotationDeg: number | null;
+  /** `innerRadius` có với `ARC` (bán kính hàng đầu) và `TABLE` (bán kính bàn); hai góc chỉ có với `ARC`. */
+  innerRadius: number | null;
+  startAngleDeg: number | null;
+  endAngleDeg: number | null;
+}
+
 export interface FloorPlanZone {
   zoneCode: string;
   name: string;
   kind: 'SEATED' | 'STANDING';
   seatCount: number;
   layoutShape: LayoutShape;
+  layout: ResolvedZoneLayout;
   /** Đa giác bao khu; điểm cuối nối về điểm đầu là ngầm định. */
   outline: FloorPlanPoint[];
   /** Rỗng ở đường công khai — xem ghi chú đầu file. */
@@ -113,4 +133,66 @@ export function outlinePath(outline: FloorPlanPoint[]): string {
     .map((p) => `L ${p.x} ${p.y}`)
     .join(' ');
   return `M ${first.x} ${first.y} ${rest} Z`;
+}
+
+/**
+ * Toạ độ ghế có nằm đúng chỗ trên mặt bằng này không.
+ *
+ * Câu hỏi nghe thừa, nhưng nó có thật và đã hỏng: toạ độ ghế do inventory giữ, được chốt lúc suất
+ * diễn được publish. Những suất publish trước khi catalog biết tính hình học đã chốt **chỉ số hàng
+ * và cột** (1…26, 1…18) thay vì toạ độ mét trên mặt bằng — và tồn kho thì không dựng lại được nếu
+ * không rút sự kiện xuống. Trên dữ liệu thật của hệ thống này, 52 trên 63 suất đang như vậy.
+ *
+ * Vẽ chúng bằng `SeatMapCanvas` cho ra một sơ đồ sai một cách khó nhận ra: ghế của cả ba khu chồng
+ * lên nhau ở một góc, và những ghế rơi ra ngoài khung nhìn thì **biến mất** vì phép cắt theo khung.
+ * Khách thấy một khán phòng thiếu quá nửa số chỗ, không có lỗi nào được báo.
+ *
+ * Nên trước khi vẽ phải hỏi câu này, và trả lời "không" thì rơi về cách hiển thị khác.
+ *
+ * Phép đo là **đường bao từng khu**, không phải bao hình cả mặt bằng: dữ liệu chỉ số ngẫu nhiên
+ * trùng vào bao hình chung rất dễ (khán phòng nào chẳng có toạ độ 1…20), nhưng trùng vào đúng khu
+ * của mình thì không — khu B nằm ở y 23…37 mà ghế của nó mang y 1…10 là lộ ngay.
+ *
+ * @param tolerance phần ghế được phép nằm ngoài khu của mình. Không đặt 0: khu hình cung đặt ghế
+ *   theo cung tròn, và vài ghế mép có thể nhô khỏi đa giác bao do làm tròn.
+ */
+export function seatPositionsFitFloorPlan(
+  floorPlan: FloorPlan,
+  positions: Map<string, FloorPlanPoint>,
+  tolerance = 0.1,
+): boolean {
+  if (positions.size === 0) return false;
+
+  for (const zone of floorPlan.zones) {
+    if (zone.outline.length === 0) continue;
+
+    const box = boundingBox(zone.outline);
+    let total = 0;
+    let outside = 0;
+
+    for (const [seatCode, at] of positions) {
+      // Cùng quy ước với `SeatMapCanvas`: mã chỗ mở đầu bằng mã khu.
+      if (!seatCode.startsWith(`${zone.zoneCode}-`)) continue;
+      total += 1;
+      if (at.x < box.minX || at.x > box.maxX || at.y < box.minY || at.y > box.maxY) outside += 1;
+    }
+
+    if (total > 0 && outside / total > tolerance) return false;
+  }
+
+  return true;
+}
+
+function boundingBox(outline: FloorPlanPoint[]): FloorPlanBounds {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const point of outline) {
+    if (point.x < minX) minX = point.x;
+    if (point.x > maxX) maxX = point.x;
+    if (point.y < minY) minY = point.y;
+    if (point.y > maxY) maxY = point.y;
+  }
+  return { minX, minY, maxX, maxY };
 }
