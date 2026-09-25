@@ -168,3 +168,65 @@
   font-size: 13px;
   color: var(--nt-text-muted);
 }
+
+/*
+ * Dấu tích trên ghế đã chọn — mã hoá THỨ HAI cho trạng thái "ghế của tôi".
+ *
+ * Đo được bằng bộ kiểm màu: "còn trống" và "ghế của tôi" chỉ cách nhau ΔE 6,5 với người mù màu
+ * đỏ-lục. Ở mức đó màu một mình không phân biệt được, và đây là hai trạng thái quan trọng nhất của
+ * cả luồng mua vé. Nét vẽ theo màu nền để nó nổi trên mọi màu ghế.
+ */
+.seatCheck {
+  fill: none;
+  stroke: var(--nt-bg);
+  stroke-width: 0.11;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/*
+ * Vòng đánh dấu con trỏ bàn phím.
+ *
+ * KHÔNG đổi màu nền: màu nền mang trạng thái còn/hết, và đổi nó khi con trỏ đi qua sẽ làm người
+ * dùng đọc sai chỗ mình đang đứng. Vòng ngoài là kênh riêng, không tranh với kênh màu.
+ */
+.seatCursor {
+  stroke: var(--nt-text);
+  stroke-width: 0.16;
+  paint-order: stroke;
+}
+
+.zoneCursor {
+  stroke: var(--nt-text);
+  stroke-width: 0.35;
+  stroke-dasharray: 1.2 0.8;
+}
+
+.zoomGroup {
+  display: inline-flex;
+  gap: var(--nt-space-1);
+}
+
+/* Gợi ý bàn phím: có mặt thường trú, không phải tooltip — người cần nó không dùng chuột để hiện nó. */
+.keyHint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--nt-text-muted);
+}
+
+/*
+ * Vùng đọc trực tiếp: nhìn không thấy nhưng trình đọc màn hình đọc được.
+ *
+ * KHÔNG dùng `display: none` — nội dung bị ẩn kiểu đó không được đọc. Đây là cách ẩn duy nhất giữ
+ * lại được nội dung cho trình đọc.
+ */
+.live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import {
   ApiError,
   placeOrder,
@@ -66,6 +67,8 @@ export function SeatPicker({ eventSessionId, eventSlug, eventTitle }: SeatPicker
   const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>([]);
   const [standing, setStanding] = useState<Record<string, number>>({});
   const [submitting, setSubmitting] = useState(false);
+  // Mặc định KHÔNG tick sẵn: một ô đã tick sẵn không phải là sự đồng ý của ai cả.
+  const [agreed, setAgreed] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
 
   const holdKey = useIdempotencyKey([selectedSeatIds, standing]);
@@ -143,6 +146,14 @@ export function SeatPicker({ eventSessionId, eventSlug, eventTitle }: SeatPicker
     [selectedSeats],
   );
 
+  /**
+   * Vẽ bằng sơ đồ hay rơi về lưới.
+   *
+   * Tính một lần rồi dùng ở cả hai chỗ — điều kiện vẽ VÀ chú giải. Viết lại biểu thức ở hai nơi là
+   * hai nơi để lệch, và cái lệch ở đây là một chú giải nói sai về màu người dùng đang nhìn.
+   */
+  const usingMap = Boolean(floorPlan) && seatPositions.size > 0;
+
   const unitCount =
     selectedSeats.length + standingLines.reduce((sum, line) => sum + line.quantity, 0);
 
@@ -183,7 +194,10 @@ export function SeatPicker({ eventSessionId, eventSlug, eventTitle }: SeatPicker
   }
 
   async function submit() {
-    if (unitCount === 0 || submitting) return;
+    // `agreed` được kiểm cả ở đây chứ không chỉ ở thuộc tính `disabled` của nút: `disabled` là
+    // chuyện của giao diện và bỏ qua được bằng công cụ phát triển, còn hàm này là đường duy nhất
+    // thật sự tạo ra đơn hàng.
+    if (unitCount === 0 || submitting || !agreed) return;
     setSubmitting(true);
     setFailure(null);
 
@@ -261,7 +275,7 @@ export function SeatPicker({ eventSessionId, eventSlug, eventTitle }: SeatPicker
 
         {hasSeated ? (
           <section className={styles.seatedBlock} aria-label="Sơ đồ chỗ ngồi">
-            <Legend hasTaken={hasTaken} />
+            <Legend hasTaken={hasTaken} map={usingMap} />
 
             {/*
               Hai cách vẽ cùng một sơ đồ, và cái thứ hai không phải đồ thừa.
@@ -273,9 +287,16 @@ export function SeatPicker({ eventSessionId, eventSlug, eventTitle }: SeatPicker
               Thiếu một trong hai thì rơi về lưới. Điều đó xảy ra thật, với những suất đã publish
               TRƯỚC khi có hình học: tồn kho của chúng đã dựng xong và mang toạ độ cũ (chỉ số
               hàng/cột), mà tồn kho thì không dựng lại được nếu không rút sự kiện xuống. Lưới là
-              đúng thứ những suất ấy vẫn hiển thị được, và nó cũng là đường bàn phím đi được.
+              đúng thứ những suất ấy vẫn hiển thị được.
+
+              Bản trước ghi rằng lưới "cũng là đường bàn phím đi được". Điều đó chỉ đúng với những
+              suất RƠI VỀ lưới: một suất có hình học thì sơ đồ hiện ra, và sơ đồ khi ấy không có
+              đường bàn phím nào — tức là đường chính của sản phẩm không dùng được bằng bàn phím.
+              `SeatMapCanvas` nay tự đi được bằng mũi tên, nên cả hai cách vẽ đều dùng được.
             */}
-            {floorPlan && seatPositions.size > 0 ? (
+            {/* `floorPlan &&` giữ lại phép thu hẹp kiểu cho TypeScript — `usingMap` là boolean
+                nên một mình nó không nói được rằng `floorPlan` khác undefined. */}
+            {floorPlan && usingMap ? (
               <SeatMapCanvas
                 floorPlan={floorPlan}
                 seatMarks={seatMarks}
@@ -398,11 +419,31 @@ export function SeatPicker({ eventSessionId, eventSlug, eventTitle }: SeatPicker
         ) : null}
 
         <div className={styles.action}>
+          <label className={styles.consent}>
+            <input
+              className={styles.consentBox}
+              type="checkbox"
+              checked={agreed}
+              onChange={(event) => setAgreed(event.target.checked)}
+            />
+            <span>
+              Tôi đã đọc và đồng ý với{' '}
+              <Link href="/terms" target="_blank" rel="noreferrer">
+                Điều khoản sử dụng
+              </Link>{' '}
+              và{' '}
+              <Link href="/privacy" target="_blank" rel="noreferrer">
+                Chính sách bảo mật
+              </Link>
+              , bao gồm quy định về hoàn và đổi vé.
+            </span>
+          </label>
+
           <Button
             block
             size="lg"
             onClick={() => void submit()}
-            disabled={unitCount === 0 || overAllowance || submitting}
+            disabled={unitCount === 0 || overAllowance || submitting || !agreed}
             loading={submitting}
           >
             {submitting ? 'Đang giữ chỗ…' : 'Giữ chỗ và thanh toán'}
@@ -424,20 +465,47 @@ export function SeatPicker({ eventSessionId, eventSlug, eventTitle }: SeatPicker
  * Ba ô vuông có chữ, không phải chỉ ba màu: bốn trạng thái ghế phân biệt bằng màu là thứ người mù
  * màu không đọc được, và ô gạch chéo cũng vô nghĩa nếu không ai nói nó nghĩa là gì.
  */
-function Legend({ hasTaken }: { hasTaken: boolean }) {
+/**
+ * Chú giải, khớp với bản ĐANG hiển thị.
+ *
+ * Hai cách vẽ dùng hai bảng màu khác nhau, và cả hai đều có lý: lưới ghế dùng lớp trắng mờ vì bậc
+ * sáng nhất trong bộ token không nổi đủ trên nền thẻ khu (xem `booking.module.css`), còn sơ đồ dùng
+ * bộ `--nt-seat-*` vì nó vẽ trên nền trang. Một chú giải cố định thì đúng với một bên và **nói sai
+ * với bên kia** — trước đây nó dạy "còn trống = trắng mờ" trong khi sơ đồ vẽ màu xanh lục.
+ *
+ * @param map đang vẽ bằng `SeatMapCanvas` hay đang rơi về lưới
+ */
+function Legend({ hasTaken, map }: { hasTaken: boolean; map: boolean }) {
+  const variant = map ? 'map' : 'grid';
+
   return (
     <ul className={styles.legend}>
       <li>
-        <span className={styles.swatch} data-state="available" aria-hidden="true" />
+        <span
+          className={styles.swatch}
+          data-state="available"
+          data-variant={variant}
+          aria-hidden="true"
+        />
         Còn trống
       </li>
       <li>
-        <span className={styles.swatch} data-state="selected" aria-hidden="true" />
+        <span
+          className={styles.swatch}
+          data-state="selected"
+          data-variant={variant}
+          aria-hidden="true"
+        />
         Bạn đang chọn
       </li>
       {hasTaken ? (
         <li>
-          <span className={styles.swatch} data-state="taken" aria-hidden="true" />
+          <span
+            className={styles.swatch}
+            data-state="taken"
+            data-variant={variant}
+            aria-hidden="true"
+          />
           Đã có người mua
         </li>
       ) : null}

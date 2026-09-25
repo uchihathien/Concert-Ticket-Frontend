@@ -1,4 +1,4 @@
-import type { FloorPlan } from '@nexaticket/ts-sdk/floor-plan';
+import type { FloorPlan, ResolvedZoneLayout } from '@nexaticket/ts-sdk/floor-plan';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -12,6 +12,17 @@ import { SeatMapCanvas, type SeatMark } from '../components/SeatMapCanvas';
  * vô tình bỏ mức chi tiết theo khu sẽ không làm hỏng test nào nói về giao diện — nên những test
  * dưới đây đếm node.
  */
+
+/** Bố cục đã giải của một khối chữ nhật — backend luôn trả trường này, kể cả khu tự xếp. */
+const GRID_AT_ORIGIN: ResolvedZoneLayout = {
+  shape: 'GRID',
+  originX: 0,
+  originY: 0,
+  rotationDeg: 0,
+  innerRadius: null,
+  startAngleDeg: null,
+  endAngleDeg: null,
+};
 
 function planWith(seatsPerRow: number): FloorPlan {
   const seats = [];
@@ -33,6 +44,7 @@ function planWith(seatsPerRow: number): FloorPlan {
         kind: 'SEATED',
         seatCount: 4 * seatsPerRow,
         layoutShape: 'GRID',
+        layout: GRID_AT_ORIGIN,
         outline: [
           { x: 0, y: 0 },
           { x: seatsPerRow + 1, y: 0 },
@@ -47,6 +59,7 @@ function planWith(seatsPerRow: number): FloorPlan {
         kind: 'STANDING',
         seatCount: 2_000,
         layoutShape: 'GRID',
+        layout: { ...GRID_AT_ORIGIN, originY: 11 },
         outline: [
           { x: 0, y: 8 },
           { x: 20, y: 8 },
@@ -115,7 +128,98 @@ describe('SeatMapCanvas', () => {
     await userEvent.click(container.querySelector('[data-seat-code="A-2-3"]')!);
 
     // Mã chỗ chứ không phải id: đó là khoá chung giữa hình học của catalog và tồn kho của inventory.
-    expect(onToggleSeat).toHaveBeenCalledWith('A-2-3', expect.objectContaining({ status: 'AVAILABLE' }));
+    expect(onToggleSeat).toHaveBeenCalledWith(
+      'A-2-3',
+      expect.objectContaining({ status: 'AVAILABLE' }),
+    );
+  });
+
+  // --- Bàn phím ------------------------------------------------------------
+  //
+  // Sơ đồ là đường DUY NHẤT để chọn vé ngồi: vé đứng có ô tăng/giảm, còn ghế thì chỉ bấm được trên
+  // hình. Nên nếu hình không dùng được bằng bàn phím thì cả luồng mua vé ngồi không dùng được bằng
+  // bàn phím — và đó là luồng chính của sản phẩm, không phải một góc phụ.
+
+  it('sơ đồ là MỘT điểm dừng Tab, không phải một điểm cho mỗi ghế', async () => {
+    const plan = planWith(50);
+    const { container } = render(<SeatMapCanvas floorPlan={plan} seatMarks={allAvailable(plan)} />);
+
+    // 200 ghế trong dữ liệu. Cho mỗi ghế một tabIndex là 200 lần bấm Tab để đi hết một khu, và với
+    // sân vận động thì con số ấy là 20.000.
+    expect(container.querySelectorAll('[tabindex="0"]')).toHaveLength(1);
+    expect(container.querySelector('svg')).toHaveAttribute('tabindex', '0');
+  });
+
+  it('mũi tên rồi Enter mở được một khu mà không cần chuột', async () => {
+    const plan = planWith(10);
+    const { container } = render(<SeatMapCanvas floorPlan={plan} seatMarks={allAvailable(plan)} />);
+    const svg = container.querySelector('svg')!;
+
+    svg.focus();
+    // Lần bấm đầu đặt con trỏ vào khu gần sân khấu nhất, chưa di chuyển.
+    await userEvent.keyboard('{ArrowDown}');
+    await userEvent.keyboard('{Enter}');
+
+    expect(container.querySelectorAll('[data-seat-code]').length).toBeGreaterThan(0);
+  });
+
+  it('trong một khu, Enter chọn ghế con trỏ đang đứng', async () => {
+    const plan = planWith(10);
+    const onToggleSeat = vi.fn();
+    const { container } = render(
+      <SeatMapCanvas floorPlan={plan} seatMarks={allAvailable(plan)} onToggleSeat={onToggleSeat} />,
+    );
+
+    await userEvent.click(container.querySelector('[data-zone-code="A"]')!);
+    container.querySelector('svg')!.focus();
+    await userEvent.keyboard('{ArrowDown}');
+    await userEvent.keyboard('{Enter}');
+
+    expect(onToggleSeat).toHaveBeenCalledTimes(1);
+    expect(onToggleSeat.mock.calls[0]![0]).toMatch(/^A-/);
+  });
+
+  it('Escape quay về toàn cảnh', async () => {
+    const plan = planWith(10);
+    const { container } = render(<SeatMapCanvas floorPlan={plan} seatMarks={allAvailable(plan)} />);
+
+    await userEvent.click(container.querySelector('[data-zone-code="A"]')!);
+    expect(container.querySelectorAll('[data-seat-code]').length).toBeGreaterThan(0);
+
+    container.querySelector('svg')!.focus();
+    await userEvent.keyboard('{Escape}');
+
+    expect(container.querySelectorAll('[data-seat-code]')).toHaveLength(0);
+  });
+
+  it('con trỏ được đọc ra qua vùng aria-live — <title> của SVG chỉ đọc khi trỏ chuột', async () => {
+    const plan = planWith(10);
+    const { container } = render(<SeatMapCanvas floorPlan={plan} seatMarks={allAvailable(plan)} />);
+
+    container.querySelector('svg')!.focus();
+    await userEvent.keyboard('{ArrowDown}');
+
+    const live = container.querySelector('[aria-live="polite"]')!;
+    expect(live.textContent).not.toBe('');
+  });
+
+  // --- Mã hoá thứ hai cho ghế đã chọn --------------------------------------
+
+  it('ghế đã chọn có dấu tích, không chỉ khác màu', async () => {
+    const plan = planWith(10);
+    const { container } = render(
+      <SeatMapCanvas
+        floorPlan={plan}
+        seatMarks={allAvailable(plan)}
+        selectedSeatCodes={new Set(['A-2-3'])}
+      />,
+    );
+
+    await userEvent.click(container.querySelector('[data-zone-code="A"]')!);
+
+    // "Còn trống" và "ghế của tôi" chỉ cách nhau ΔE 6,5 với người mù màu đỏ-lục — ở mức đó màu một
+    // mình không đủ. Một dấu tích cho mỗi ghế đã chọn, không phải cho mọi ghế.
+    expect(container.querySelectorAll('path[d^="M "]').length).toBeGreaterThanOrEqual(1);
   });
 
   it('nhãn khu nói số chỗ còn trống, để chọn khu trước khi phóng to', () => {
