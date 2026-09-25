@@ -88,6 +88,16 @@ export function SeatMapCanvas({
   const [focusedZone, setFocusedZone] = useState<string | null>(null);
   const [view, setView] = useState<Rect | null>(null);
   const dragRef = useRef<{ x: number; y: number; view: Rect } | null>(null);
+
+  /**
+   * Con trỏ bàn phím: mã khu khi đang xem toàn cảnh, mã chỗ khi đã mở một khu.
+   *
+   * MỘT điểm dừng Tab cho cả sơ đồ, rồi di chuyển bên trong bằng mũi tên — đúng mô hình của một
+   * lưới. Cách kia là cho mỗi ghế một `tabIndex`, và nó sai ở hai đầu: một khu 2.000 chỗ thành
+   * 2.000 điểm dừng Tab, còn thứ tự Tab thì đổi mỗi lần người dùng kéo sơ đồ (chỉ ghế trong khung
+   * nhìn có mặt trong DOM).
+   */
+  const [cursor, setCursor] = useState<string | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
   const fullView = useMemo(() => floorPlanRect(floorPlan.bounds), [floorPlan]);
@@ -105,18 +115,90 @@ export function SeatMapCanvas({
     return cull(placedSeats(zone, seatPositions), current);
   }, [focusedZone, zonesByCode, seatPositions, current]);
 
-  const openZone = useCallback(
-    (zone: FloorPlanZone) => {
-      setFocusedZone(zone.zoneCode);
-      setView(padded(boundsOf(zone.outline)));
-    },
-    [],
-  );
+  /**
+   * Toàn bộ ghế của khu đang mở, KHÔNG cắt theo khung nhìn.
+   *
+   * Khác `visibleSeats` ở đúng một điều, và điều đó quan trọng: con trỏ bàn phím phải đi tới được
+   * một ghế đang nằm ngoài khung — rồi khung mới dịch theo nó. Dùng danh sách đã cắt thì mũi tên
+   * dừng lại ở rìa màn hình và người dùng bàn phím không bao giờ tới được nửa còn lại của khu.
+   */
+  const zoneSeats = useMemo(() => {
+    if (!focusedZone) return [];
+    const zone = zonesByCode.get(focusedZone);
+    if (!zone || zone.kind === 'STANDING') return [];
+    return placedSeats(zone, seatPositions);
+  }, [focusedZone, zonesByCode, seatPositions]);
+
+  const openZone = useCallback((zone: FloorPlanZone) => {
+    setFocusedZone(zone.zoneCode);
+    setView(padded(boundsOf(zone.outline)));
+    setCursor(null);
+  }, []);
 
   const reset = useCallback(() => {
     setFocusedZone(null);
     setView(null);
+    setCursor(null);
   }, []);
+
+  /** Dịch khung để con trỏ nằm trong tầm nhìn. Giữ nguyên mức phóng — chỉ đổi tâm. */
+  const revealAt = useCallback((x: number, y: number) => {
+    setView((previous) => {
+      if (!previous) return previous;
+      const margin = SEAT_RADIUS * 4;
+      const inside =
+        x >= previous.x + margin &&
+        x <= previous.x + previous.width - margin &&
+        y >= previous.y + margin &&
+        y <= previous.y + previous.height - margin;
+      if (inside) return previous;
+      return { ...previous, x: x - previous.width / 2, y: y - previous.height / 2 };
+    });
+  }, []);
+
+  /**
+   * Di chuyển con trỏ theo một hướng.
+   *
+   * Chấm điểm bằng khoảng cách theo trục chính cộng ba lần khoảng lệch ngang: không có hệ số ấy thì
+   * mũi tên "sang phải" ở một khu hình cung sẽ nhảy sang một ghế chéo tận hàng dưới, vì nó gần hơn
+   * theo đường thẳng.
+   */
+  const moveCursor = useCallback(
+    (dx: number, dy: number) => {
+      const points: Array<{ key: string; x: number; y: number }> = focusedZone
+        ? zoneSeats.map((seat) => ({ key: seat.seatCode, x: seat.x, y: seat.y }))
+        : floorPlan.zones.map((zone) => ({ key: zone.zoneCode, ...centreOf(zone.outline) }));
+
+      if (points.length === 0) return;
+
+      const from = points.find((point) => point.key === cursor);
+      if (!from) {
+        // Chưa có con trỏ: đặt vào điểm gần sân khấu nhất — chỗ người ta nhìn trước tiên.
+        const first = [...points].sort((a, b) => a.y - b.y || a.x - b.x)[0];
+        if (first) {
+          setCursor(first.key);
+          revealAt(first.x, first.y);
+        }
+        return;
+      }
+
+      let best: { key: string; x: number; y: number; score: number } | null = null;
+      for (const point of points) {
+        if (point.key === from.key) continue;
+        const alongAxis = (point.x - from.x) * dx + (point.y - from.y) * dy;
+        if (alongAxis <= 0) continue;
+        const across = Math.abs((point.x - from.x) * dy - (point.y - from.y) * dx);
+        const score = alongAxis + across * 3;
+        if (!best || score < best.score) best = { ...point, score };
+      }
+
+      if (best) {
+        setCursor(best.key);
+        revealAt(best.x, best.y);
+      }
+    },
+    [focusedZone, zoneSeats, floorPlan.zones, cursor, revealAt],
+  );
 
   // Một handler cho cả sơ đồ. Đích của sự kiện tự nói nó là ghế nào hay khu nào.
   const handleClick = useCallback(
@@ -197,7 +279,84 @@ export function SeatMapCanvas({
     dragRef.current = null;
   }, []);
 
+  /** Enter/Space: mở khu khi đang xem toàn cảnh, chọn hoặc bỏ chọn ghế khi đã mở khu. */
+  const activateCursor = useCallback(() => {
+    if (!cursor) return;
+
+    if (!focusedZone) {
+      const zone = zonesByCode.get(cursor);
+      if (zone && zone.kind === 'SEATED') openZone(zone);
+      return;
+    }
+    onToggleSeat?.(cursor, seatMarks?.get(cursor));
+  }, [cursor, focusedZone, zonesByCode, openZone, onToggleSeat, seatMarks]);
+
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent<SVGSVGElement>) => {
+      const steps: Record<string, [number, number]> = {
+        ArrowUp: [0, -1],
+        ArrowDown: [0, 1],
+        ArrowLeft: [-1, 0],
+        ArrowRight: [1, 0],
+      };
+      const step = steps[event.key];
+
+      if (step) {
+        // Chặn mặc định: mũi tên trong một sơ đồ phải di chuyển con trỏ, không cuộn cả trang.
+        event.preventDefault();
+        moveCursor(step[0], step[1]);
+        return;
+      }
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        activateCursor();
+        return;
+      }
+      if (event.key === 'Escape' && focusedZone) {
+        event.preventDefault();
+        reset();
+      }
+    },
+    [moveCursor, activateCursor, focusedZone, reset],
+  );
+
+  /** Phóng quanh TÂM khung — nút bấm không có vị trí con trỏ để phóng quanh. */
+  const zoomBy = useCallback(
+    (factor: number) => {
+      setView((previous) => {
+        const from = previous ?? fullView;
+        const width = clampSize(from.width * factor, fullView.width);
+        const height = (width / from.width) * from.height;
+        return {
+          x: from.x + (from.width - width) / 2,
+          y: from.y + (from.height - height) / 2,
+          width,
+          height,
+        };
+      });
+    },
+    [fullView],
+  );
+
   const zoomed = view !== null;
+
+  /**
+   * Câu mô tả chỗ con trỏ đang đứng, đọc qua vùng `aria-live`.
+   *
+   * Không có nó thì người dùng trình đọc màn hình bấm mũi tên mà không nhận được phản hồi nào — với
+   * họ sơ đồ im lặng hoàn toàn, và `<title>` trong SVG chỉ đọc được khi trỏ chuột vào.
+   */
+  const cursorLabel = useMemo(() => {
+    if (!cursor) return '';
+    if (!focusedZone) {
+      const zone = zonesByCode.get(cursor);
+      return zone ? zoneTitle(zone, availableByZone?.get(zone.zoneCode)) : '';
+    }
+    const seat = zoneSeats.find((candidate) => candidate.seatCode === cursor);
+    return seat
+      ? seatTitle(seat, seatMarks?.get(cursor), selectedSeatCodes?.has(cursor) ?? false)
+      : '';
+  }, [cursor, focusedZone, zonesByCode, availableByZone, zoneSeats, seatMarks, selectedSeatCodes]);
 
   return (
     <div className={cx(styles.wrap, className)}>
@@ -207,6 +366,8 @@ export function SeatMapCanvas({
         viewBox={floorPlanViewBox(current)}
         role="group"
         aria-label={label ?? `Sơ đồ chỗ ${floorPlan.venueName}`}
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
         onClick={handleClick}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
@@ -224,6 +385,7 @@ export function SeatMapCanvas({
             dimmed={focusedZone !== null && zone.zoneCode !== focusedZone}
             available={availableByZone?.get(zone.zoneCode)}
             showLabel={!zoomed || zone.zoneCode === focusedZone}
+            cursored={!focusedZone && zone.zoneCode === cursor}
           />
         ))}
 
@@ -231,16 +393,37 @@ export function SeatMapCanvas({
           const mark = seatMarks?.get(seat.seatCode);
           const selected = selectedSeatCodes?.has(seat.seatCode) ?? false;
           return (
-            <circle
-              key={seat.seatCode}
-              data-seat-code={seat.seatCode}
-              className={cx(styles.seat, styles[seatTone(mark, selected)])}
-              cx={seat.x}
-              cy={seat.y}
-              r={SEAT_RADIUS}
-            >
-              <title>{seatTitle(seat, mark, selected)}</title>
-            </circle>
+            <g key={seat.seatCode}>
+              <circle
+                data-seat-code={seat.seatCode}
+                className={cx(
+                  styles.seat,
+                  styles[seatTone(mark, selected)],
+                  seat.seatCode === cursor && styles.seatCursor,
+                )}
+                cx={seat.x}
+                cy={seat.y}
+                r={SEAT_RADIUS}
+              >
+                <title>{seatTitle(seat, mark, selected)}</title>
+              </circle>
+
+              {/*
+                Dấu tích trên ghế đã chọn — mã hoá THỨ HAI, không phải trang trí.
+
+                Đo được: "còn trống" (#3fae74) và "ghế của tôi" (#f4796b) chỉ cách nhau ΔE 6,5 với
+                người mù màu đỏ-lục. Ở mức đó màu một mình không đủ, và đây đúng là hai trạng thái
+                quan trọng nhất của cả luồng mua. Chỉ vẽ cho ghế ĐÃ CHỌN, nên số node thêm vào bị
+                chặn bởi trần mua vé chứ không tăng theo số ghế của khu.
+              */}
+              {selected ? (
+                <path
+                  className={styles.seatCheck}
+                  pointerEvents="none"
+                  d={`M ${seat.x - 0.17} ${seat.y} L ${seat.x - 0.04} ${seat.y + 0.13} L ${seat.x + 0.18} ${seat.y - 0.13}`}
+                />
+              ) : null}
+            </g>
           );
         })}
       </svg>
@@ -253,7 +436,44 @@ export function SeatMapCanvas({
         ) : (
           <p className={styles.hint}>Chọn một khu để xem từng ghế</p>
         )}
+
+        {/*
+          Nút phóng, không chỉ lăn chuột. Lăn chuột là đường duy nhất trước đây, và nó bỏ rơi hai
+          nhóm: người dùng bàn phím, và người dùng cảm ứng — kéo một ngón đã dành cho việc di chuyển
+          sơ đồ, nên không còn cử chỉ nào cho phóng.
+        */}
+        <div className={styles.zoomGroup}>
+          <button
+            type="button"
+            className={styles.control}
+            onClick={() => zoomBy(1 / 1.4)}
+            aria-label="Phóng to sơ đồ"
+          >
+            +
+          </button>
+          <button
+            type="button"
+            className={styles.control}
+            onClick={() => zoomBy(1.4)}
+            aria-label="Thu nhỏ sơ đồ"
+          >
+            −
+          </button>
+        </div>
+
+        <p className={styles.keyHint}>
+          Bàn phím: Tab vào sơ đồ, mũi tên để đi, Enter để chọn
+          {focusedZone ? ', Esc để xem toàn cảnh' : ''}.
+        </p>
       </div>
+
+      {/*
+        Vùng đọc trực tiếp cho con trỏ bàn phím. `<title>` trong SVG chỉ đọc được khi TRỎ CHUỘT vào,
+        nên không có khối này thì người dùng trình đọc màn hình bấm mũi tên và nhận lại sự im lặng.
+      */}
+      <p className={styles.live} role="status" aria-live="polite">
+        {cursorLabel}
+      </p>
     </div>
   );
 }
@@ -300,12 +520,15 @@ function Zone({
   dimmed,
   available,
   showLabel,
+  cursored,
 }: {
   zone: FloorPlanZone;
   focused: boolean;
   dimmed: boolean;
   available: number | undefined;
   showLabel: boolean;
+  /** Con trỏ bàn phím đang đứng ở khu này — vẽ vòng đánh dấu, KHÔNG đổi màu nền khu. */
+  cursored: boolean;
 }) {
   const centre = useMemo(() => centreOf(zone.outline), [zone.outline]);
 
@@ -318,6 +541,7 @@ function Zone({
           styles.zoneShape,
           zone.kind === 'STANDING' && styles.zoneStanding,
           focused && styles.zoneFocused,
+          cursored && styles.zoneCursor,
         )}
       >
         <title>{zoneTitle(zone, available)}</title>
@@ -394,7 +618,9 @@ function cull(seats: PlacedSeat[], view: Rect): PlacedSeat[] {
   const right = view.x + view.width + SEAT_RADIUS;
   const bottom = view.y + view.height + SEAT_RADIUS;
 
-  return seats.filter((seat) => seat.x >= left && seat.x <= right && seat.y >= top && seat.y <= bottom);
+  return seats.filter(
+    (seat) => seat.x >= left && seat.x <= right && seat.y >= top && seat.y <= bottom,
+  );
 }
 
 function clampSize(width: number, fullWidth: number): number {
@@ -430,5 +656,7 @@ function seatTitle(seat: PlacedSeat, mark: SeatMark | undefined, selected: boole
 
 function zoneTitle(zone: FloorPlanZone, available: number | undefined) {
   const size = zone.kind === 'STANDING' ? `${zone.seatCount} chỗ đứng` : `${zone.seatCount} ghế`;
-  return available === undefined ? `${zone.name} — ${size}` : `${zone.name} — còn ${available}/${zone.seatCount}`;
+  return available === undefined
+    ? `${zone.name} — ${size}`
+    : `${zone.name} — còn ${available}/${zone.seatCount}`;
 }

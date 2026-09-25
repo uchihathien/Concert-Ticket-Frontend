@@ -595,3 +595,75 @@
     display: none;
   }
 }
+
+/* Ô đồng ý điều khoản, ngay trên nút đặt vé.
+   Đặt ở đây chứ không ở lúc tạo tài khoản: điều khoản có giá trị thật với người mua vé là chính
+   sách hoàn/đổi của LẦN MUA này, và nó phải nằm trong tầm mắt đúng lúc người ta sắp trả tiền. */
+.consent {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--nt-space-2);
+  margin-bottom: var(--nt-space-3);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--nt-text-muted);
+  cursor: pointer;
+}
+
+.consentBox {
+  /* 18px thay vì cỡ mặc định: ô tick mặc định trên di động nhỏ hơn ngưỡng chạm thoải mái, và đây
+     là thứ chắn giữa khách và nút thanh toán. */
+  inline-size: 18px;
+  block-size: 18px;
+  margin-top: 1px;
+  flex: none;
+  accent-color: var(--nt-primary);
+  cursor: pointer;
+}
+
+.consent a {
+  color: var(--nt-primary-text);
+  text-decoration: underline;
+}
+
+/* Chú giải khi đang vẽ bằng SƠ ĐỒ ---------------------------------------------
+ *
+ * Sơ đồ vẽ trên nền trang bằng bộ `--nt-seat-*`, lưới ghế vẽ trên nền thẻ khu bằng lớp trắng mờ —
+ * hai bảng màu khác nhau, cả hai đều có lý (xem ghi chú ở `.seat[data-state='available']`). Một chú
+ * giải cố định thì đúng với một bên và nói sai với bên kia. Nên nó có hai biến thể, và `Legend` chọn
+ * theo bản đang hiển thị.
+ */
+.swatch[data-variant='map'][data-state='available'] {
+  background: var(--nt-seat-available);
+  border-color: transparent;
+}
+
+.swatch[data-variant='map'][data-state='selected'] {
+  position: relative;
+  background: var(--nt-seat-mine);
+  border-color: transparent;
+}
+
+/*
+ * Dấu tích trong ô chú giải, khớp dấu tích trên ghế đã chọn của sơ đồ.
+ *
+ * Đo được: "còn trống" và "ghế của tôi" chỉ cách nhau ΔE 6,5 với người mù màu đỏ-lục. Sơ đồ vẽ dấu
+ * tích để bù, nên chú giải phải dạy đúng dấu hiệu ấy — một chú giải chỉ có màu sẽ dạy người dùng
+ * trông vào đúng kênh không phân biệt được.
+ */
+.swatch[data-variant='map'][data-state='selected']::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--nt-bg);
+}
+
+.swatch[data-variant='map'][data-state='taken'] {
+  background: var(--nt-seat-sold);
+  border-color: transparent;
+}
