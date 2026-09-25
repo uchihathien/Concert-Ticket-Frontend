@@ -105,6 +105,7 @@ export function MobileMenu({ cities, organizerUrl }: MobileMenuProps) {
           <Link href="/me/tickets">Vé của tôi</Link>
           <Link href="/me/orders">Đơn hàng của tôi</Link>
           <Link href="/account">Tài khoản</Link>
+          <Link href="/support">Hỗ trợ</Link>
           <a href={organizerUrl}>Tạo sự kiện</a>
         </nav>
       </dialog>
