@@ -47,6 +47,7 @@ export async function placeHold(
     `/v1/sessions/${eventSessionId}/holds`,
     {
       seatIds: request.seatIds ?? [],
+      seatedZones: request.seatedZones ?? [],
       standing: request.standing ?? [],
     },
     { idempotencyKey },

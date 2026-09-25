@@ -123,7 +123,7 @@ describe('placeHold', () => {
     const hold = await placeHold(client, 's1', { seatIds: ['seat-1'] }, 'key-1');
 
     expect(key).toBe('key-1');
-    expect(body).toEqual({ seatIds: ['seat-1'], standing: [] });
+    expect(body).toEqual({ seatIds: ['seat-1'], seatedZones: [], standing: [] });
     expect(hold.expiresAt).toBe('2026-11-01T12:05:00Z');
   });
 });

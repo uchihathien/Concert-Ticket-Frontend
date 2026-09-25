@@ -30,6 +30,42 @@
   border-radius: var(--nt-radius-lg);
 }
 
+/* Sơ đồ chỗ — CHỈ ĐỂ XEM -------------------------------------------------- */
+
+/*
+ * Một khung cho cả hai nguồn sơ đồ: ảnh ban tổ chức tải lên và bản hệ thống tự vẽ. Chung một khung
+ * vì với khách chúng là cùng một thứ — "khán phòng trông thế này" — và đặt hai kiểu khung khác
+ * nhau sẽ khiến hai sự kiện cạnh nhau trông như hai sản phẩm khác nhau.
+ */
+.planFigure {
+  margin: 0;
+  padding: var(--nt-space-4);
+  background: var(--nt-bg-subtle);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+}
+
+/*
+ * Trần chiều cao chứ không để ảnh tự do: sơ đồ khán phòng thường là ảnh dọc và rất cao, và một tấm
+ * chiếm hết màn hình sẽ đẩy phần chọn khu — thứ khách đến đây để làm — xuống dưới tầm nhìn.
+ * `object-fit: contain` giữ nguyên tỷ lệ; méo một sơ đồ chỗ là làm sai thông tin, không phải làm
+ * xấu.
+ */
+.planImage {
+  display: block;
+  width: 100%;
+  max-height: 560px;
+  object-fit: contain;
+  border-radius: var(--nt-radius);
+  background: var(--nt-surface);
+}
+
+.planCaption {
+  margin: var(--nt-space-3) 0 0;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
 /* Khối sơ đồ ghế ---------------------------------------------------------- */
 
 .seatedBlock {
@@ -83,6 +119,95 @@
   height: 18px;
   border-radius: 5px;
   flex: none;
+}
+
+/* Nhiều khu: gom theo hạng giá ---------------------------------------------- */
+
+/*
+ * Một nhà thi đấu có tới 91 khu. Trải phẳng thì danh sách dài hơn ba màn hình, phần tóm tắt bên
+ * phải trôi khỏi tầm nhìn, và khách phải cuộn qua 60 khu hạng rẻ mới thấy hết. Ba việc chữa nó,
+ * theo thứ tự hiệu quả: gom theo hạng giá (`<details>` — đóng mở được bằng bàn phím mà không cần
+ * một dòng JS nào), chia cột khi màn đủ rộng, và chặn chiều cao mỗi nhóm bằng thanh cuộn riêng.
+ */
+.zoneGroups {
+  display: grid;
+  gap: var(--nt-space-4);
+}
+
+.zoneGroup {
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  background: var(--nt-surface);
+  overflow: hidden;
+}
+
+.zoneGroupHead {
+  display: flex;
+  align-items: baseline;
+  gap: var(--nt-space-3);
+  padding: var(--nt-space-4);
+  cursor: pointer;
+  /* Tam giác mặc định của trình duyệt nằm sai chỗ khi summary là flex; vẽ lại bằng ::after. */
+  list-style: none;
+}
+
+.zoneGroupHead::-webkit-details-marker {
+  display: none;
+}
+
+.zoneGroupHead::after {
+  content: '▾';
+  margin-left: auto;
+  color: var(--nt-text-muted);
+  transition: transform 120ms ease;
+}
+
+/* Mũi tên quay khi mở. `details[open]` là trạng thái của trình duyệt, không phải state của React. */
+.zoneGroup[open] > .zoneGroupHead::after {
+  transform: rotate(180deg);
+}
+
+/* `--nt-focus` là một giá trị box-shadow, không phải màu — xem tokens.css. */
+.zoneGroupHead:focus-visible {
+  box-shadow: var(--nt-focus);
+  border-radius: var(--nt-radius);
+}
+
+.zoneGroupTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--nt-text);
+}
+
+.zoneGroupMeta {
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+/*
+ * Trần chiều cao + cuộn riêng cho từng nhóm.
+ *
+ * 30 khu hạng rẻ vẫn là 30 khu; chặn ở đây để mở một nhóm không đẩy hai nhóm kia ra khỏi màn hình.
+ * `overscroll-behavior: contain` để cuộn hết danh sách thì dừng, không cuộn lây cả trang — thứ gây
+ * mất phương hướng nhất trên điện thoại.
+ */
+.zoneScroll {
+  max-height: 60vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 var(--nt-space-4) var(--nt-space-4);
+  border-top: 1px solid var(--nt-border);
+}
+
+/*
+ * Chia cột theo bề ngang thật, không theo breakpoint: khối này nằm cạnh phần tóm tắt nên bề ngang
+ * của nó không suy ra được từ bề ngang màn hình.
+ */
+.zoneGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: var(--nt-space-3);
+  padding-top: var(--nt-space-4);
 }
 
 .zoneList {

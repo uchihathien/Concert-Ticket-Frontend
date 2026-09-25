@@ -61,8 +61,16 @@ export interface StandingLine {
 }
 
 export interface PlaceHoldRequest {
-  /** Ghế khách chỉ đích danh. Bỏ trống nếu chỉ mua vé đứng. */
+  /** Ghế khách chỉ đích danh. Bỏ trống nếu mua theo khu. */
   seatIds?: string[];
+  /**
+   * Vé NGỒI xin theo khu — backend chọn chỗ gần sân khấu nhất còn trống.
+   *
+   * Đây là đường mua chính của giao diện hiện nay. Đường `seatIds` vẫn còn cho những nơi thật sự
+   * chỉ đích danh được (bản xem trước của ban tổ chức), nhưng trang khách không dùng nó nữa: nó
+   * đòi sơ đồ vẽ đúng, mà sơ đồ chỉ vẽ đúng khi toạ độ ghế khớp mặt bằng.
+   */
+  seatedZones?: StandingLine[];
   standing?: StandingLine[];
 }
 
