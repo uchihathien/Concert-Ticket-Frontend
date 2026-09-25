@@ -1,0 +1,96 @@
+/* Sơ đồ khán phòng + giá theo khu, trên trang chi tiết sự kiện. */
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 260px);
+  gap: var(--nt-space-6);
+  align-items: start;
+}
+
+/*
+ * Một cột dưới 820px. Bảng giá xuống dưới sơ đồ chứ không thu hẹp cùng nó: một cột giá 120px thì
+ * "1.200.000đ" xuống hai dòng, và khoảng giá "300.000đ – 1.200.000đ" xuống ba.
+ */
+@media (max-width: 820px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
+ * Trần chiều cao cho sơ đồ. Không có nó thì một khán phòng dọc (tỷ lệ cao) chiếm gần hết màn hình
+ * và đẩy bảng hạng vé xuống dưới tầm nhìn — trong khi ở trang này sơ đồ là thông tin phụ.
+ */
+.canvas {
+  max-height: 460px;
+  overflow: hidden;
+  border-radius: var(--nt-radius-lg);
+}
+
+/*
+ * Ảnh sơ đồ do ban tổ chức tải lên.
+ *
+ * `contain` chứ không `cover`: cắt một sơ đồ chỗ là giấu mất vài khu, và khách không có cách nào
+ * biết mình đang thiếu gì. Trần chiều cao giữ cho một tấm sơ đồ dọc không đẩy bảng giá xuống dưới
+ * tầm nhìn — cùng lý do với `.canvas` bên trên.
+ */
+.imageFigure {
+  margin: 0;
+  display: grid;
+  place-items: center;
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  overflow: hidden;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  max-height: 460px;
+  object-fit: contain;
+}
+
+.prices {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--nt-space-2);
+}
+
+.priceRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--nt-space-3);
+  padding: var(--nt-space-2) var(--nt-space-3);
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+}
+
+.zoneName {
+  display: flex;
+  align-items: baseline;
+  gap: var(--nt-space-2);
+  font-size: 14px;
+  color: var(--nt-text);
+  min-width: 0;
+}
+
+/* Mã khu nhỏ và nhạt: nó là thứ để đối chiếu với sơ đồ, không phải tên khu để đọc. */
+.zoneCode {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--nt-text-muted);
+  white-space: nowrap;
+}
+
+.zonePrice {
+  flex: none;
+  font-size: 13px;
+  color: var(--nt-text);
+  white-space: nowrap;
+}

@@ -3,7 +3,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { BookingSteps } from '@/components/BookingSteps';
 import { SeatPicker } from '@/components/SeatPicker';
+import { getPublicEvent } from '@nexaticket/ts-sdk';
 import { loadSessionIndex } from '@/lib/session-index';
+import { serverApi } from '@/lib/server-api';
 import styles from './booking-page.module.css';
 
 /**
@@ -29,6 +31,12 @@ export default async function BookingPage({ params }: { params: Promise<{ sessio
   // Suất không có trong catalog đang bán: hoặc id sai, hoặc sự kiện đã bị rút xuống. Cả hai đều là
   // 404 với khách — 404 không tiết lộ suất đó có tồn tại hay không.
   if (!session) notFound();
+
+  // Sơ đồ ban tổ chức tải lên. Lấy ở server chứ không để SeatPicker tự hỏi: trang này đã chờ một
+  // lượt gọi catalog rồi, và thêm một lượt nữa từ trình duyệt nghĩa là khối sơ đồ nhảy vào sau khi
+  // khách đã bắt đầu đọc bảng giá. Hỏng thì bỏ qua — sơ đồ là thứ phụ, không phải điều kiện để bán
+  // vé.
+  const seatMapImageUrl = await loadSeatMapImage(session.slug);
 
   return (
     <main className={styles.page}>
@@ -60,7 +68,16 @@ export default async function BookingPage({ params }: { params: Promise<{ sessio
         eventSessionId={sessionId}
         eventSlug={session.slug}
         eventTitle={session.eventTitle}
+        seatMapImageUrl={seatMapImageUrl}
       />
     </main>
   );
+}
+
+async function loadSeatMapImage(slug: string): Promise<string | null> {
+  try {
+    return (await getPublicEvent(serverApi, slug)).seatMapImageUrl;
+  } catch {
+    return null;
+  }
 }

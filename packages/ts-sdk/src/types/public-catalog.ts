@@ -56,6 +56,12 @@ export interface PublicEventDetail {
   city: string | null;
   venueName: string | null;
   venueAddress: string | null;
+  /**
+   * Ảnh sơ đồ khu vực ghế do ban tổ chức tải lên, backend đã giải sẵn thứ tự ưu tiên: ảnh riêng
+   * của sự kiện trước, rồi tới ảnh chung của địa điểm. `null` nghĩa là chưa ai tải ảnh nào — và
+   * khi ấy giao diện dùng sơ đồ hệ thống tự vẽ.
+   */
+  seatMapImageUrl: string | null;
   sessions: PublicSession[];
 }
 
