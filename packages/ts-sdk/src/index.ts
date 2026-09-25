@@ -28,6 +28,7 @@ export * from './types/ordering';
 export * from './types/dashboard';
 export * from './types/floor-plan';
 export * from './types/media';
+export * from './types/seating';
 export * from './types/public-catalog';
 export * from './types/support';
 export * from './types/ticketing';
@@ -72,11 +73,18 @@ export {
   updateSession,
   updateTicketType,
 } from './api/catalog';
-export { getPublicEvent, listPublicEvents } from './api/public-catalog';
+export { getPublicEvent, listPublicEvents, listTrendingEvents } from './api/public-catalog';
 export { getPublicFloorPlan, getVenueFloorPlan } from './api/floor-plan';
 export { getEventMasterData, getOrganizationDashboard } from './api/dashboard';
 export { searchOrganizationTickets } from './api/organization-tickets';
 export { requestPosterUpload, uploadPoster } from './api/media';
+export {
+  configureVenueZones,
+  getSeatMapImages,
+  previewFloorPlan,
+  setEventSeatMapImage,
+  setVenueSeatMapImage,
+} from './api/seating';
 export {
   addKnowledgeChunk,
   askSupport,
@@ -140,6 +148,12 @@ export {
   useVenues,
 } from './hooks/catalog';
 export { usePublicFloorPlan, useVenueFloorPlan } from './hooks/floor-plan';
+export {
+  useConfigureVenueZones,
+  useFloorPlanPreview,
+  useSeatMapImages,
+  useSetSeatMapImage,
+} from './hooks/seating';
 export {
   useEventMasterData,
   useOrganizationDashboard,

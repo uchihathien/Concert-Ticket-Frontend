@@ -19,7 +19,43 @@ export interface PosterUploaderProps {
    * (`PosterUrlPolicy`): `null` là "không đổi gì", rỗng là "xoá".
    */
   onSave: (posterUrl: string) => Promise<void>;
+  /**
+   * Chữ trên các nút và dòng gợi ý.
+   *
+   * Có vì cùng ba bước tải ảnh này còn dùng cho **sơ đồ khu vực ghế**, và ở đó mọi câu nói "ảnh
+   * bìa" đều sai. Chép component ra bản thứ hai chỉ để đổi bốn chuỗi nghĩa là chép luôn cả phần
+   * xin URL ký sẵn, chặn kích thước và dọn input — rồi hai bản sẽ lệch nhau ở lần sửa đầu tiên.
+   */
+  labels?: Partial<UploaderLabels>;
+  /**
+   * Cách ảnh lấp khung xem trước.
+   *
+   * `cover` (mặc định) đúng cho ảnh bìa: thẻ sự kiện ở trang khách cũng cắt như vậy, nên xem
+   * trước bằng kiểu khác sẽ khiến ban tổ chức chọn một tấm bị cắt mất phần chính.
+   *
+   * `contain` cho sơ đồ chỗ: cắt một sơ đồ là **giấu mất vài khu**, và người xem không có cách nào
+   * biết mình đang thiếu gì.
+   */
+  previewFit?: 'cover' | 'contain';
 }
+
+export interface UploaderLabels {
+  empty: string;
+  upload: string;
+  replace: string;
+  remove: string;
+  hint: string;
+  alt: string;
+}
+
+const DEFAULT_LABELS: UploaderLabels = {
+  empty: 'Chưa có ảnh bìa',
+  upload: 'Tải ảnh bìa',
+  replace: 'Đổi ảnh bìa',
+  remove: 'Xoá ảnh',
+  hint: 'JPEG, PNG hoặc WebP. Tỷ lệ 16:9 hiển thị đẹp nhất.',
+  alt: 'Ảnh bìa hiện tại',
+};
 
 /** Kiểu ảnh backend chấp nhận. Giữ khớp với `nexaticket.catalog.media.allowed-content-types`. */
 const ACCEPTED = 'image/jpeg,image/png,image/webp';
@@ -46,7 +82,10 @@ export function PosterUploader({
   posterUrl,
   coverSeed,
   onSave,
+  labels,
+  previewFit = 'cover',
 }: PosterUploaderProps) {
+  const text = { ...DEFAULT_LABELS, ...labels };
   const client = useApiClient();
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
@@ -94,6 +133,7 @@ export function PosterUploader({
     <div className={styles.wrap}>
       <div
         className={styles.preview}
+        data-fit={previewFit}
         style={posterUrl ? undefined : { background: coverGradient(coverSeed) }}
       >
         {/*
@@ -104,8 +144,8 @@ export function PosterUploader({
         {/* eslint-disable-next-line @next/next/no-img-element -- host kho ảnh cấu hình được lúc
             chạy, nên `remotePatterns` của next/image không khai trước được. Đây cũng là màn quản
             trị: một người xem, không có ngân sách LCP như trang khách. */}
-        {posterUrl ? <img src={posterUrl} alt="Ảnh bìa hiện tại" /> : null}
-        {!posterUrl ? <span className={styles.empty}>Chưa có ảnh bìa</span> : null}
+        {posterUrl ? <img src={posterUrl} alt={text.alt} /> : null}
+        {!posterUrl ? <span className={styles.empty}>{text.empty}</span> : null}
       </div>
 
       <div className={styles.actions}>
@@ -114,31 +154,27 @@ export function PosterUploader({
           type="file"
           accept={ACCEPTED}
           className={styles.input}
-          id="poster-file"
+          id={`poster-file-${coverSeed}`}
           disabled={busy}
           onChange={(event) => {
             const file = event.target.files?.[0];
             if (file) void choose(file);
           }}
         />
-        <Button
-          variant="secondary"
-          loading={busy}
-          onClick={() => inputRef.current?.click()}
-        >
+        <Button variant="secondary" loading={busy} onClick={() => inputRef.current?.click()}>
           <ImageUp size={18} aria-hidden="true" />
-          {posterUrl ? 'Đổi ảnh bìa' : 'Tải ảnh bìa'}
+          {posterUrl ? text.replace : text.upload}
         </Button>
 
         {posterUrl ? (
           <Button variant="secondary" disabled={busy} onClick={() => void clear()}>
             <Trash2 size={18} aria-hidden="true" />
-            Xoá ảnh
+            {text.remove}
           </Button>
         ) : null}
       </div>
 
-      <p className={styles.hint}>JPEG, PNG hoặc WebP. Tỷ lệ 16:9 hiển thị đẹp nhất.</p>
+      <p className={styles.hint}>{text.hint}</p>
 
       {failure ? (
         <p className={styles.failure} role="alert">

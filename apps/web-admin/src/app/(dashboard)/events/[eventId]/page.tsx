@@ -44,6 +44,7 @@ import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { OrganizationGate } from '@/components/OrganizationGate';
 import { PosterUploader } from '@/components/PosterUploader';
+import { SeatMapImagePanel } from '@/components/SeatMapImagePanel';
 
 /**
  * A-EVENT — suất diễn và giá vé của một sự kiện.
@@ -198,6 +199,23 @@ function EventDetailContent({
             // chuẩn hoá về undefined ở đây.
             await updateEvent.mutateAsync({ posterUrl });
           }}
+        />
+      </Section>
+
+      {/*
+        Sơ đồ chỗ cũng sửa được khi đang bán, cùng lý do với ảnh bìa: nó không đụng tới tồn kho
+        hay số tiền đã thu.
+      */}
+      <Section
+        title="Sơ đồ khu vực ghế"
+        description="Hiện ở bước chọn vé. Chưa có thì hệ thống tự vẽ sơ đồ từ hình học của địa điểm."
+      >
+        <SeatMapImagePanel
+          organizationId={organizationId}
+          eventId={event.id}
+          venueId={event.venue.id}
+          venueName={event.venue.name}
+          eventSlug={event.slug}
         />
       </Section>
 

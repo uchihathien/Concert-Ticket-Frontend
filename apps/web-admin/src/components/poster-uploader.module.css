@@ -29,6 +29,12 @@
   display: block;
 }
 
+/* Sơ đồ chỗ: thấy đủ hơn là lấp đầy. Xem `previewFit` trong PosterUploader.tsx. */
+.preview[data-fit='contain'] img {
+  object-fit: contain;
+  background: var(--nt-surface);
+}
+
 .empty {
   font-size: 14px;
   font-weight: 600;

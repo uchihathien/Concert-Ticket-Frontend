@@ -1,0 +1,39 @@
+/* Hai ô sơ đồ cạnh nhau — xem SeatMapImagePanel.tsx để biết vì sao phải hiện cả hai. */
+
+.wrap {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--nt-space-6);
+}
+
+.slot {
+  min-width: 0;
+}
+
+.slotTitle {
+  margin: 0 0 var(--nt-space-1);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--nt-text);
+}
+
+.slotNote {
+  margin: 0 0 var(--nt-space-3);
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+/*
+ * Dòng "khách đang thấy tấm nào" trải hết chiều ngang, dưới cả hai ô: nó nói về KẾT QUẢ của hai ô
+ * cộng lại, nên đặt nó cạnh một trong hai sẽ đọc như thể nó chỉ nói về ô đó.
+ */
+.effective {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: var(--nt-space-3) var(--nt-space-4);
+  font-size: 13px;
+  color: var(--nt-text-muted);
+  background: var(--nt-bg-subtle);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+}

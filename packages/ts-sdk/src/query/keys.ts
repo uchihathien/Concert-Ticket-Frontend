@@ -18,10 +18,23 @@ export const queryKeys = {
     // Ma trận vai trò là hằng số của hệ thống: một khoá duy nhất, không tham số.
     roles: () => ['identity', 'roles'] as const,
     myPermissions: () => ['identity', 'me', 'permissions'] as const,
-    auditLogs: (organizationId: string, params: { action: string | null; limit: number; offset: number }) =>
-      ['identity', 'organizations', organizationId, 'audit-logs', params] as const,
-    platformAuditLogs: (params: { action: string | null; limit: number; offset: number }) =>
-      ['identity', 'platform', 'audit-logs', params] as const,
+    auditLogs: (
+      organizationId: string,
+      params: {
+        action: string | null;
+        from: string | null;
+        to: string | null;
+        limit: number;
+        offset: number;
+      },
+    ) => ['identity', 'organizations', organizationId, 'audit-logs', params] as const,
+    platformAuditLogs: (params: {
+      action: string | null;
+      from: string | null;
+      to: string | null;
+      limit: number;
+      offset: number;
+    }) => ['identity', 'platform', 'audit-logs', params] as const,
   },
   catalog: {
     venues: (organizationId: string) =>
@@ -34,8 +47,23 @@ export const queryKeys = {
       ['catalog', 'organizations', organizationId, 'dashboard'] as const,
     masterData: (organizationId: string, eventId: string) =>
       ['catalog', 'organizations', organizationId, 'events', eventId, 'master-data'] as const,
+    // Cả bản nháp nằm trong khoá: hai bản nháp khác nhau là hai mục cache khác nhau, nên kéo
+    // một khu rồi kéo ngược lại sẽ lấy từ cache thay vì gọi mạng lần nữa.
+    floorPlanPreview: (organizationId: string, venueId: string, draft: object) =>
+      [
+        'catalog',
+        'organizations',
+        organizationId,
+        'venues',
+        venueId,
+        'floor-plan',
+        'preview',
+        draft,
+      ] as const,
     venueFloorPlan: (organizationId: string, venueId: string) =>
       ['catalog', 'organizations', organizationId, 'venues', venueId, 'floor-plan'] as const,
+    seatMapImages: (organizationId: string, eventId: string) =>
+      ['catalog', 'organizations', organizationId, 'events', eventId, 'seat-map-image'] as const,
     // Không mang organizationId: mặt bằng công khai tra theo slug và ai cũng thấy cùng một bản.
     publicFloorPlan: (slug: string) => ['catalog', 'public', 'events', slug, 'floor-plan'] as const,
   },
