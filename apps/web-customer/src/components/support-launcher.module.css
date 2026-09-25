@@ -1,0 +1,143 @@
+/* Nút chat nổi và khung của nó. Xem SupportLauncher.tsx cho phần lý do. */
+
+/*
+ * Nằm TRÊN bottom nav (z-index 20 của nó) nhưng dưới hộp thoại và toast. Và phải ở trên cả khung
+ * chat bên dưới để nút X luôn bấm được.
+ */
+.launcher {
+  position: fixed;
+  z-index: 30;
+  inset-inline-end: var(--nt-space-4);
+  inset-block-end: var(--nt-space-6);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nt-space-2);
+  /* 48px cao: ngưỡng chạm tối thiểu là 44px, và nút này là thứ người ta bấm trên điện thoại. */
+  min-height: 48px;
+  padding: 0 var(--nt-space-4);
+  border: none;
+  border-radius: 999px;
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--nt-shadow-card);
+}
+
+.launcher:hover {
+  background: var(--nt-primary-hover);
+}
+
+.launcher:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus), var(--nt-shadow-card);
+}
+
+@media (max-width: 900px) {
+  /*
+   * Nhường chỗ cho bottom nav: 56px chiều cao + vùng an toàn của máy có thanh cử chỉ. Không trừ
+   * phần này thì nút nằm đè lên mục "Tài khoản" và người dùng bấm trượt sang chat.
+   */
+  .launcher {
+    inset-block-end: calc(56px + env(safe-area-inset-bottom) + var(--nt-space-3));
+  }
+
+  /* Trên màn hẹp chỉ còn biểu tượng: một nút chữ + icon chiếm gần một phần ba bề ngang. */
+  .launcherLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .launcher {
+    padding: 0;
+    width: 48px;
+    justify-content: center;
+  }
+}
+
+.panel {
+  position: fixed;
+  z-index: 29;
+  inset-inline-end: var(--nt-space-4);
+  /* Ngay trên nút: 48px của nút + khoảng thở. */
+  inset-block-end: calc(var(--nt-space-6) + 48px + var(--nt-space-3));
+  width: min(380px, calc(100vw - 2 * var(--nt-space-4)));
+  /* Trần theo khung nhìn, không theo một con số cứng: bàn phím ảo trên điện thoại ăn mất nửa màn,
+     và một khung cao 560px cố định khi đó đẩy ô nhập ra ngoài vùng thấy được. */
+  max-height: min(560px, calc(100vh - 160px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  background: var(--nt-surface);
+  box-shadow: var(--nt-shadow-card);
+}
+
+.panel:focus-visible {
+  outline: none;
+}
+
+@media (max-width: 900px) {
+  .panel {
+    inset-inline: var(--nt-space-3);
+    width: auto;
+    inset-block-end: calc(56px + env(safe-area-inset-bottom) + 48px + 2 * var(--nt-space-3));
+    max-height: calc(100vh - 56px - 160px);
+  }
+}
+
+.panelHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nt-space-3);
+  padding: var(--nt-space-3) var(--nt-space-4);
+  border-bottom: 1px solid var(--nt-border);
+}
+
+.panelTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--nt-text);
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  /* 36px: nhỏ hơn 44px được, vì Escape và bấm ra ngoài đều đóng được khung — nút này không phải
+     đường duy nhất. */
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--nt-radius);
+  background: transparent;
+  color: var(--nt-text-muted);
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--nt-hover);
+  color: var(--nt-text);
+}
+
+.close:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+/* Cuộn nằm ở ĐÂY, không ở cả khung: phần đầu có tiêu đề và nút đóng phải luôn nhìn thấy. */
+.panelBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--nt-space-3);
+}
