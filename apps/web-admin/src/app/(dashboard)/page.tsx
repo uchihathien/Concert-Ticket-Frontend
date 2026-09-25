@@ -63,6 +63,20 @@ const CATEGORY_FILTERS = [
   ...EVENT_CATEGORIES.map((category) => ({ value: category.value, label: category.label })),
 ];
 
+/**
+ * Lọc theo tình trạng suất diễn.
+ *
+ * `no-session` là lý do khối này tồn tại: ô số "Chưa có suất" vẫn đếm nhóm ấy từ trước, nhưng
+ * không có cách nào xem chúng. Một con số cảnh báo mà không mở ra được danh sách là một con số
+ * bắt người dùng tự dò cả bảng.
+ */
+const SESSION_FILTERS = [
+  { value: '', label: 'Mọi suất diễn' },
+  { value: 'upcoming', label: 'Còn suất sắp tới' },
+  { value: 'past', label: 'Đã diễn ra hết' },
+  { value: 'no-session', label: 'Chưa có suất' },
+];
+
 type SortKey = 'title' | 'next' | 'sessions' | 'capacity';
 
 /**
@@ -83,6 +97,8 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');
   const [category, setCategory] = useState('');
+  const [venue, setVenue] = useState('');
+  const [session, setSession] = useState('');
   const [sortKey, setSortKey] = useState<SortKey>('next');
   const [descending, setDescending] = useState(false);
 
@@ -102,15 +118,31 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
 
   const visible = useMemo(() => {
     const needle = foldText(query.trim());
+    const now = Date.now();
+
     const filtered = (data ?? []).filter((row) => {
       if (status && row.status !== status) return false;
       if (category && row.category !== category) return false;
+      if (venue && row.venueName !== venue) return false;
+      if (session && !matchesSession(row, session, now)) return false;
       return matchesText(needle, [row.title, row.slug, row.venueName]);
     });
     return filtered.sort((a, b) => (descending ? -compare(a, b, sortKey) : compare(a, b, sortKey)));
-  }, [data, query, status, category, sortKey, descending]);
+  }, [data, query, status, category, venue, session, sortKey, descending]);
 
-  const filtering = Boolean(query.trim() || status || category);
+  /** Địa điểm dựng từ chính dữ liệu đang có, không từ danh sách địa điểm của tổ chức: bảng này chỉ
+      lọc được những gì nó đang hiển thị, và một mục chọn ra 0 dòng là một mục gây bực. */
+  const venueOptions = useMemo(() => {
+    const names = new Set<string>();
+    for (const row of data ?? []) {
+      if (row.venueName) names.add(row.venueName);
+    }
+    return [...names]
+      .sort((a, b) => a.localeCompare(b, 'vi'))
+      .map((name) => ({ value: name, label: name }));
+  }, [data]);
+
+  const filtering = Boolean(query.trim() || status || category || venue || session);
   const loading = events.isPending;
   const fail = (error: unknown) => toast.showError(error instanceof ApiError ? error : null);
 
@@ -176,12 +208,31 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
               <StatCard label="Sự kiện" value={loading ? null : stats.total} />
               <StatCard label="Đang bán" value={loading ? null : stats.published} />
               <StatCard label="Nháp" value={loading ? null : stats.draft} />
-              <StatCard
-                label="Chưa có suất"
-                value={loading ? null : stats.noSession}
-                tone={stats.noSession > 0 ? 'warn' : 'default'}
-                hint="Không bán được cho tới khi thêm suất"
-              />
+              {/*
+                Bấm được: ô này cảnh báo một nhóm cần xử lý, nên nó phải mở ra được chính nhóm ấy.
+                `StatCard` không nhận `onClick`, và bọc ngoài bằng <button> sẽ lồng nút trong nút —
+                nên dùng một lớp bao bấm được, có bàn phím, không phải nút.
+              */}
+              <div
+                role="button"
+                tabIndex={0}
+                aria-pressed={session === 'no-session'}
+                className="cursor-pointer rounded-[var(--nt-radius)] focus-visible:shadow-[var(--nt-focus)] focus-visible:outline-none"
+                onClick={() => setSession(session === 'no-session' ? '' : 'no-session')}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    setSession(session === 'no-session' ? '' : 'no-session');
+                  }
+                }}
+              >
+                <StatCard
+                  label="Chưa có suất"
+                  value={loading ? null : stats.noSession}
+                  tone={stats.noSession > 0 ? 'warn' : 'default'}
+                  hint={session === 'no-session' ? 'Đang lọc — bấm để bỏ' : 'Bấm để xem nhóm này'}
+                />
+              </div>
             </StatGrid>
           </div>
 
@@ -194,6 +245,8 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
                   setQuery('');
                   setStatus('');
                   setCategory('');
+                  setVenue('');
+                  setSession('');
                 }}
               >
                 Xoá bộ lọc
@@ -212,7 +265,6 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
               type="search"
               value={query}
               placeholder="Tên sự kiện, đường dẫn hoặc địa điểm"
-              hint="Gõ không dấu vẫn khớp tên có dấu."
               onChange={(event) => setQuery(event.target.value)}
             />
             <Select
@@ -227,6 +279,23 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
               options={CATEGORY_FILTERS}
               onChange={(event) => setCategory(event.target.value)}
             />
+            {/* Ẩn hẳn khi tổ chức chỉ có một địa điểm: một mục chọn luôn cho ra cùng kết quả là
+                một mục chiếm chỗ mà không trả lời câu hỏi nào. */}
+            {venueOptions.length > 1 ? (
+              <Select
+                label="Địa điểm"
+                value={venue}
+                placeholder="Mọi địa điểm"
+                options={venueOptions}
+                onChange={(event) => setVenue(event.target.value)}
+              />
+            ) : null}
+            <Select
+              label="Suất diễn"
+              value={session}
+              options={SESSION_FILTERS}
+              onChange={(event) => setSession(event.target.value)}
+            />
           </FilterBar>
 
           <div className="mt-5">
@@ -235,6 +304,11 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
               loading={loading}
               rows={visible}
               rowKey={(row) => row.id}
+              // Bấm vào dòng là XEM sự kiện bán thế nào — việc người ta làm nhiều nhất ở bảng này.
+              // Đường sửa suất và giá vẫn là một nút riêng ở cột cuối.
+              onRowClick={(row) =>
+                router.push(`/events/${row.id}/master-data?org=${organizationId}`)
+              }
               sort={{ key: sortKey, descending }}
               onSortChange={(key) => {
                 if (key === sortKey) {
@@ -251,12 +325,12 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
                   key: 'title',
                   header: 'Sự kiện',
                   sortable: true,
-                  // Đường vào trang suất diễn & giá vé. Danh sách này không đặt giá được, và trước
-                  // khi có link ở đây thì không có đường nào tới chỗ đặt giá cả.
+                  // Link thật chứ không chỉ dựa vào `onRowClick`: mở tab mới, sao chép địa chỉ và
+                  // điều hướng bằng bàn phím đều đi qua thẻ <a>, không đi qua sự kiện click.
                   cell: (row) => (
                     <div className="grid gap-0.5">
                       <Link
-                        href={`/events/${row.id}?org=${organizationId}`}
+                        href={`/events/${row.id}/master-data?org=${organizationId}`}
                         className="font-medium"
                       >
                         {row.title}
@@ -385,6 +459,25 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
  * `null` mà quy về 0 thì chúng nhảy lên đầu bảng như thể sắp diễn ra tới nơi — đúng ngược với sự
  * thật là chúng chưa bán được vé nào.
  */
+/**
+ * Sự kiện có khớp bộ lọc suất diễn không.
+ *
+ * `nextSessionAt` là suất **sắp tới gần nhất**, và backend chỉ tính suất còn ở tương lai. Nên
+ * `null` có hai nghĩa gộp lại: chưa khai suất nào, hoặc mọi suất đã diễn ra. `sessionCount` tách
+ * được hai trường hợp ấy — và chúng cần xử lý khác hẳn nhau: một bên là việc chưa làm, một bên là
+ * sự kiện đã xong.
+ */
+function matchesSession(row: AdminEventRow, filter: string, now: number): boolean {
+  if (filter === 'no-session') return row.sessionCount === 0;
+
+  const upcoming = row.nextSessionAt !== null && Date.parse(row.nextSessionAt) >= now;
+  if (filter === 'upcoming') return upcoming;
+  // "Đã diễn ra hết" KHÔNG bao gồm sự kiện chưa khai suất nào — nhóm đó có mục riêng, và gộp vào
+  // đây sẽ nói rằng một bản nháp vừa tạo đã diễn ra xong.
+  if (filter === 'past') return !upcoming && row.sessionCount > 0;
+  return true;
+}
+
 function compare(a: AdminEventRow, b: AdminEventRow, sort: SortKey): number {
   const byTitle = a.title.localeCompare(b.title, 'vi');
   switch (sort) {

@@ -109,6 +109,13 @@ export interface SessionReport {
 export interface MasterDataTotals {
   declaredCapacity: number;
   materializedSeats: number;
+  /**
+   * Chỗ CÒN BÁN ĐƯỢC, đếm từ tồn kho.
+   *
+   * Không suy ra bằng `materializedSeats - seatsSold`: hiệu ấy gộp cả chỗ đang giữ, chỗ đã đặt
+   * chưa trả tiền và chỗ bị khoá vào phần "còn vé".
+   */
+  seatsAvailable: number;
   seatsSold: number;
   ticketsSold: number;
   grossVnd: number;

@@ -95,6 +95,22 @@ export function EventMasterPanel({
               : 'default'
           }
         />
+        {/*
+          "Còn lại" đọc từ TỒN KHO, không phải từ analytics — nên nó vẫn có số khi analytics im
+          lặng, và nó đếm đúng chỗ còn bán được chứ không gộp chỗ đang giữ hay chỗ bị khoá.
+        */}
+        <StatCard
+          label="Vé còn lại"
+          value={seatingDown ? null : data.totals.seatsAvailable}
+          hint={
+            seatingDown
+              ? 'Chưa hỏi được'
+              : data.totals.materializedSeats > 0
+                ? `trên ${formatNumber(data.totals.materializedSeats)} chỗ`
+                : undefined
+          }
+          tone={!seatingDown && data.totals.seatsAvailable === 0 ? 'warn' : 'default'}
+        />
         <StatCard
           label="Vé đã bán"
           value={salesDown ? null : data.totals.ticketsSold}
