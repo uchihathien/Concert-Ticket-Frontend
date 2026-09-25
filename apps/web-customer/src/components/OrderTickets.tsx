@@ -4,7 +4,7 @@ import { useOrder, useOrderTickets, type Ticket } from '@nexaticket/ts-sdk';
 import {
   Badge,
   Modal,
-  QrCode,
+  QrPanel,
   Skeleton,
   TicketPoster,
   formatDateLong,
@@ -151,7 +151,10 @@ export function OrderTickets({ orderId, sessionIndex }: OrderTicketsProps) {
               <li key={ticket.id} className={styles.ticket}>
                 <div className={styles.qrBox}>
                   {ticket.status === 'VALID' ? (
-                    <QrCode
+                    <QrPanel
+                      variant="ticket"
+                      title="Mã vào cửa"
+                      meta={ticket.ticketTypeName}
                       value={ticket.qrToken}
                       size={168}
                       label={`Mã vào cửa cho ${ticket.ticketTypeName}`}
@@ -198,11 +201,7 @@ export function OrderTickets({ orderId, sessionIndex }: OrderTicketsProps) {
         </Link>
       </div>
 
-      <Modal
-        open={posterFor !== null}
-        onClose={() => setPosterFor(null)}
-        title="Ảnh vé"
-      >
+      <Modal open={posterFor !== null} onClose={() => setPosterFor(null)} title="Ảnh vé">
         {posterFor ? (
           <TicketPoster
             eventTitle={posterInfo?.eventTitle ?? 'Sự kiện'}
@@ -220,6 +219,9 @@ export function OrderTickets({ orderId, sessionIndex }: OrderTicketsProps) {
             zoneCode={posterFor.zoneCode}
             seatLabel={posterFor.seatLabel}
             ticketTypeName={posterFor.ticketTypeName}
+            // Ảnh bìa sự kiện thành dải tranh ở đầu vé. `sessionIndex` đã mang nó sẵn, nên không
+            // thêm lời gọi nào; sự kiện chưa có ảnh thì vé ra đúng như trước.
+            posterUrl={posterInfo?.posterUrl ?? null}
             ticketCode={posterFor.id.slice(0, 8).toUpperCase()}
             qrToken={posterFor.qrToken}
           />

@@ -1,7 +1,7 @@
 'use client';
 
 import QRCode from 'qrcode';
-import { useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { cx } from '../cx';
 import styles from './ticket-poster.module.css';
 
@@ -19,6 +19,13 @@ export interface TicketPosterProps {
   ticketCode: string;
   /** Chuỗi JWS đã ký. Đây là thứ duy nhất máy quét đọc. */
   qrToken: string;
+  /**
+   * Ảnh bìa sự kiện, dùng làm dải tranh ở đầu vé.
+   *
+   * Bỏ trống thì vé vẫn ra đúng như trước — dải tranh biến mất và phần đầu là nền tối. Sự kiện chưa
+   * có ảnh không được vì thế mà không xuất được vé.
+   */
+  posterUrl?: string | null;
   className?: string;
 }
 
@@ -28,6 +35,15 @@ const HEIGHT = 1200;
 
 /** Cạnh mã QR trong poster. Đủ lớn để quét được từ ảnh chụp màn hình của người khác. */
 const QR_SIZE = 420;
+
+/**
+ * Chiều cao dải tranh ở đầu vé.
+ *
+ * Dừng ở 520, tức TRÊN đế trắng của mã QR (y = 560). Tranh tràn xuống dưới mã sẽ không làm mã khó
+ * đọc — đế trắng vẫn đục — nhưng nó làm cái vé trông như một tấm ảnh có mã dán lên, chứ không như
+ * một cái vé. Vé thật cũng chia làm hai phần đúng như vậy: phần hình ở trên, phần thông tin ở dưới.
+ */
+const ART_HEIGHT = 520;
 
 /**
  * Kiểu chữ viết thẳng vào thuộc tính SVG, KHÔNG qua CSS module.
@@ -74,10 +90,12 @@ export function TicketPoster({
   holderName,
   ticketCode,
   qrToken,
+  posterUrl,
   className,
 }: TicketPosterProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const titleId = useId();
+  const artwork = useInlinedImage(posterUrl);
 
   const titleLines = wrap(eventTitle, 22).slice(0, 3);
   const qr = qrPath(qrToken);
@@ -92,9 +110,38 @@ export function TicketPoster({
         aria-labelledby={titleId}
         xmlns="http://www.w3.org/2000/svg"
       >
-        <title id={titleId}>{`Vé ${eventTitle} — ${zoneCode}${seatLabel ? ` ghế ${seatLabel}` : ''}`}</title>
+        <title
+          id={titleId}
+        >{`Vé ${eventTitle} — ${zoneCode}${seatLabel ? ` ghế ${seatLabel}` : ''}`}</title>
 
         <rect width={WIDTH} height={HEIGHT} fill="#171211" />
+
+        {/*
+          Dải tranh ở đầu vé, kèm màn mờ chuyển dần xuống nền vé.
+          Không có màn mờ thì chữ vàng "NEXATICKET" và tên sự kiện nằm trên một tấm ảnh bất kỳ —
+          có ảnh sáng, có ảnh tối, và không thể chọn một màu chữ đúng cho cả hai.
+        */}
+        {artwork ? (
+          <>
+            <image
+              href={artwork}
+              x={0}
+              y={0}
+              width={WIDTH}
+              height={ART_HEIGHT}
+              preserveAspectRatio="xMidYMid slice"
+            />
+            <defs>
+              <linearGradient id={`${titleId}-scrim`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#171211" stopOpacity="0.55" />
+                <stop offset="55%" stopColor="#171211" stopOpacity="0.78" />
+                <stop offset="100%" stopColor="#171211" stopOpacity="1" />
+              </linearGradient>
+            </defs>
+            <rect x={0} y={0} width={WIDTH} height={ART_HEIGHT} fill={`url(#${titleId}-scrim)`} />
+          </>
+        ) : null}
+
         <rect x={0} y={0} width={WIDTH} height={10} fill="#c02a2a" />
 
         <text
@@ -110,7 +157,15 @@ export function TicketPoster({
         </text>
 
         {titleLines.map((line, index) => (
-          <text key={line} x={56} y={188 + index * 62} fontFamily={FONT} fontSize={54} fontWeight={700} fill={INK}>
+          <text
+            key={line}
+            x={56}
+            y={188 + index * 62}
+            fontFamily={FONT}
+            fontSize={54}
+            fontWeight={700}
+            fill={INK}
+          >
             {line}
           </text>
         ))}
@@ -192,7 +247,15 @@ export function TicketPoster({
 function Field({ x, y, label, value }: { x: number; y: number; label: string; value: string }) {
   return (
     <>
-      <text x={x} y={y} fontFamily={FONT} fontSize={20} fontWeight={600} letterSpacing={3} fill={MUTED}>
+      <text
+        x={x}
+        y={y}
+        fontFamily={FONT}
+        fontSize={20}
+        fontWeight={600}
+        letterSpacing={3}
+        fill={MUTED}
+      >
         {label}
       </text>
       <text x={x} y={y + 40} fontFamily={FONT} fontSize={36} fontWeight={700} fill={INK}>
@@ -284,6 +347,65 @@ function slug(text: string): string {
  * <p>Ảnh được nạp qua data-URI của chính chuỗi SVG. Điều đó bắt buộc: một {@code blob:} URL sẽ làm
  * canvas bị đánh dấu "nhiễm bẩn" trên vài trình duyệt và {@code toBlob} ném lỗi bảo mật.
  */
+/**
+ * Nạp một ảnh về rồi đổi thành data URI.
+ *
+ * <h3>Vì sao không dùng thẳng URL</h3>
+ *
+ * Phần xuất ảnh tuần tự hoá chính thẻ {@code <svg>} rồi nạp chuỗi ấy vào một {@code <img>} qua
+ * {@code data:image/svg+xml}. Một SVG được dùng làm NGUỒN ẢNH bị trình duyệt chạy trong chế độ
+ * tách biệt: nó <b>không tải được tài nguyên ngoài</b> nào. Nên một {@code <image href="https://…">}
+ * hiện ra bình thường trên màn hình rồi biến mất khỏi file PNG — đúng kiểu hỏng chỉ thấy sau khi
+ * người dùng đã tải ảnh về.
+ *
+ * <p>Đổi ảnh thành data URI trước là cách duy nhất để nó nằm TRONG chuỗi được tuần tự hoá.
+ *
+ * <h3>Và nó cũng là thứ giữ cho canvas không bị "nhiễm"</h3>
+ *
+ * Vẽ một ảnh khác nguồn gốc lên canvas rồi gọi {@code toBlob} sẽ ném lỗi bảo mật. Data URI được coi
+ * là cùng nguồn, nên đường này tránh luôn cả vấn đề đó.
+ *
+ * <p>Hỏng thì trả {@code null} và vé ra không có dải tranh. Kho ảnh chưa bật CORS, mạng chập, ảnh bị
+ * xoá — cả ba đều không phải lý do để khách không tải được vé của mình.
+ */
+function useInlinedImage(url: string | null | undefined): string | null {
+  const [dataUrl, setDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!url) {
+      setDataUrl(null);
+      return;
+    }
+
+    // Cờ này chặn việc ghi state sau khi component đã tháo, và cả việc một lần nạp cũ về muộn hơn
+    // lần mới rồi ghi đè ảnh đúng bằng ảnh của vé trước.
+    let alive = true;
+
+    void (async () => {
+      try {
+        const response = await fetch(url, { mode: 'cors' });
+        if (!response.ok) return;
+        const blob = await response.blob();
+        const encoded = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(String(reader.result));
+          reader.onerror = () => reject(reader.error);
+          reader.readAsDataURL(blob);
+        });
+        if (alive) setDataUrl(encoded);
+      } catch {
+        // Im lặng có chủ đích: xem ghi chú ở đầu hàm.
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [url]);
+
+  return dataUrl;
+}
+
 export function downloadPoster(svg: SVGSVGElement | null, filename: string): void {
   if (!svg || typeof window === 'undefined') return;
 
