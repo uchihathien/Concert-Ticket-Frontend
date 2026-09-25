@@ -38,10 +38,11 @@ import {
   useToast,
   vnLocalToIso,
 } from '@nexaticket/ui';
-import { ArrowLeft, CalendarPlus, Eye, EyeOff, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, CalendarPlus, Eye, EyeOff, Layers, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
+import { BulkPriceDialog } from '@/components/BulkPriceDialog';
 import { OrganizationGate } from '@/components/OrganizationGate';
 import { PosterUploader } from '@/components/PosterUploader';
 import { SeatMapImagePanel } from '@/components/SeatMapImagePanel';
@@ -91,6 +92,7 @@ function EventDetailContent({
     session: AdminSession;
     ticketType: AdminTicketType | null;
   } | null>(null);
+  const [bulkSession, setBulkSession] = useState<AdminSession | null>(null);
   const [confirm, setConfirm] = useState<{
     title: string;
     body: string;
@@ -227,6 +229,7 @@ function EventDetailContent({
             session={session}
             editable={!published}
             onAddPrice={() => setPriceForm({ session, ticketType: null })}
+            onBulkPrice={() => setBulkSession(session)}
             onEditPrice={(ticketType) => setPriceForm({ session, ticketType })}
             onEditSession={() => setSessionForm(session)}
             onDeleteSession={() =>
@@ -280,6 +283,24 @@ function EventDetailContent({
         />
       ) : null}
 
+      {bulkSession ? (
+        <BulkPriceDialog
+          organizationId={organizationId}
+          eventId={event.id}
+          session={bulkSession}
+          zones={unpricedZones(event, bulkSession)}
+          onClose={() => setBulkSession(null)}
+          onDone={(priced) => {
+            if (priced > 0) {
+              toast.show({
+                tone: 'success',
+                message: `Đã khai giá cho ${formatNumber(priced)} khu.`,
+              });
+            }
+          }}
+        />
+      ) : null}
+
       {confirm ? (
         <Modal
           open
@@ -315,6 +336,7 @@ function SessionPanel({
   session,
   editable,
   onAddPrice,
+  onBulkPrice,
   onEditPrice,
   onDeletePrice,
   onEditSession,
@@ -324,6 +346,7 @@ function SessionPanel({
   session: AdminSession;
   editable: boolean;
   onAddPrice: () => void;
+  onBulkPrice: () => void;
   onEditPrice: (ticketType: AdminTicketType) => void;
   onDeletePrice: (ticketType: AdminTicketType) => void;
   onEditSession: () => void;
@@ -352,6 +375,16 @@ function SessionPanel({
           >
             Thêm hạng vé
           </Button>
+          {/*
+            Chỉ hiện khi còn nhiều khu chưa khai giá. Một suất còn hai khu thì hộp thoại hàng loạt
+            là đường vòng; một suất còn 91 khu thì đường một-khu-một-lần không đi nổi.
+          */}
+          {missing.length > 2 ? (
+            <Button variant="secondary" disabled={!editable} onClick={onBulkPrice}>
+              <Layers size={16} aria-hidden="true" />
+              Khai giá hàng loạt ({formatNumber(missing.length)} khu)
+            </Button>
+          ) : null}
           <Button variant="secondary" disabled={!editable} onClick={onEditSession}>
             Sửa suất
           </Button>
@@ -414,9 +447,16 @@ function SessionPanel({
         // chỉ liệt kê những khu ĐÃ khai giá. Khi không còn khu nào thì vẫn phải nói ra, nếu không
         // nút "Thêm hạng vé" mờ đi mà không ai biết vì sao.
         <p className="m-0 mt-3 text-muted">
-          {missing.length > 0
-            ? `Chưa có giá: ${missing.map((zone) => `${zone.zoneCode} · ${zone.name}`).join(', ')}.`
-            : 'Mọi khu của địa điểm đều đã có giá ở suất này.'}
+          {missing.length === 0
+            ? 'Mọi khu của địa điểm đều đã có giá ở suất này.'
+            : // Liệt kê hết 91 tên khu cho ra một đoạn văn 1.800 ký tự mà không ai đọc. Nêu vài cái
+              // đầu để nhận ra dãy nào còn thiếu, còn con số mới là thứ cần biết.
+              `Chưa có giá ${formatNumber(missing.length)} khu: ${missing
+                .slice(0, 6)
+                .map((zone) => `${zone.zoneCode} · ${zone.name}`)
+                .join(
+                  ', ',
+                )}${missing.length > 6 ? `, và ${formatNumber(missing.length - 6)} khu nữa` : ''}.`}
         </p>
       ) : null}
     </Panel>

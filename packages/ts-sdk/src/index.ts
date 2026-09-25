@@ -134,6 +134,7 @@ export {
 export {
   useAdminEvent,
   useAdminEvents,
+  useBulkTicketTypes,
   useCreateEvent,
   useCreateSession,
   useCreateTicketType,

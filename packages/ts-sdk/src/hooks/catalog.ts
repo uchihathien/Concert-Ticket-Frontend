@@ -18,6 +18,7 @@ import {
   updateSession,
   updateTicketType,
 } from '../api/catalog';
+import { ApiError } from '../http/api-error';
 import { queryKeys, staleTime } from '../query/keys';
 import { useApiClient } from '../query/provider';
 import type {
@@ -210,6 +211,63 @@ export function usePublishEvent(organizationId: string) {
         ? publishEvent(client, organizationId, eventId)
         : unpublishEvent(client, organizationId, eventId),
     onSuccess: (event) => syncEvent(queryClient, organizationId, event),
+  });
+}
+
+/**
+ * Khai giá cho NHIỀU khu trong một thao tác.
+ *
+ * <h3>Vì sao cần</h3>
+ *
+ * Một nhà thi đấu có 91 khu. Đường một-khu-một-lần nghĩa là mở hộp thoại 91 lần, và bảng hạng vé
+ * thành 91 dòng phải sửa từng dòng. Đó không phải sự bất tiện — đó là lý do một sân như vậy không
+ * dựng nổi bằng giao diện.
+ *
+ * <h3>Vì sao gọi tuần tự chứ không bắn song song</h3>
+ *
+ * Mỗi lời gọi là một transaction ở catalog và trả về TOÀN BỘ chi tiết sự kiện. Bắn 91 request song
+ * song là 91 bản chi tiết cùng lúc trên đường mạng, và những bản về sau mang trạng thái cũ hơn
+ * những bản về trước — ghi bừa vào cache thì bảng nhảy ngược. Tuần tự thì bản cuối cùng là bản mới
+ * nhất, và đó là bản duy nhất được ghi vào cache.
+ *
+ * <h3>Hỏng một khu không được huỷ cả lô</h3>
+ *
+ * Endpoint không có giao dịch chung, nên "tất cả hoặc không gì" là lời hứa không giữ được. Thay vì
+ * giả vờ, hàm này đi hết danh sách và trả về những khu hỏng kèm lý do — người dùng thấy "đã khai 88
+ * khu, 3 khu lỗi" và biết phải làm gì tiếp, thay vì một thông báo lỗi che mất 88 việc đã xong.
+ */
+export function useBulkTicketTypes(organizationId: string, eventId: string) {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      sessionId: string;
+      lines: CreateTicketTypeRequest[];
+      onProgress?: (done: number, total: number) => void;
+    }) => {
+      let event: AdminEventDetail | null = null;
+      const failed: Array<{ venueZoneId: string; message: string }> = [];
+
+      for (const [index, line] of input.lines.entries()) {
+        try {
+          event = await createTicketType(client, organizationId, eventId, input.sessionId, line);
+        } catch (error) {
+          failed.push({
+            venueZoneId: line.venueZoneId,
+            // `code` chứ không phải `detail`: detail là tiếng Anh dành cho log và có thể rỗng,
+            // còn code là thứ giao diện dịch được sang câu cho người dùng.
+            message: error instanceof ApiError ? error.code : String(error),
+          });
+        }
+        input.onProgress?.(index + 1, input.lines.length);
+      }
+
+      return { event, failed };
+    },
+    onSuccess: ({ event }) => {
+      if (event) syncEvent(queryClient, organizationId, event);
+    },
   });
 }
 
