@@ -46,6 +46,18 @@ export interface RequestOptions {
   idempotencyKey?: string;
   headers?: Record<string, string>;
   signal?: AbortSignal;
+  /**
+   * Ghi đè hạn cho MỘT lời gọi, ms.
+   *
+   * Hạn mặc định của client là 15 giây — con số đúng cho lời gọi CRUD, và sai hẳn với một lượt
+   * chat mà mô hình chạy tại chỗ trên CPU cần 100 giây chỉ để sinh chữ. Không có chỗ ghi đè này
+   * thì mọi lượt chat bị trình duyệt cắt ở giây 15 trong khi backend vẫn đang trả lời, và người
+   * dùng nhận "Máy chủ phản hồi quá lâu" — không cách nào nhắn được câu nào.
+   *
+   * Nới hạn là việc của TỪNG endpoint, không phải của client: đặt 540 giây làm mặc định chung sẽ
+   * biến một lời gọi danh mục bị treo thành chín phút màn hình trắng.
+   */
+  timeoutMs?: number;
   /** Gửi `If-None-Match`; response 304 trả về `notModified: true` với `data: null`. */
   etag?: string | null;
 }
@@ -111,7 +123,7 @@ export class ApiClient {
         method: options.method ?? 'GET',
         headers,
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
-        signal: options.signal ?? timeoutSignal(this.timeoutMs),
+        signal: options.signal ?? timeoutSignal(options.timeoutMs ?? this.timeoutMs),
         // Không gửi cookie sang gateway: xác thực đi bằng Bearer token, và cookie phiên là của
         // Next.js chứ không phải của backend.
         credentials: 'omit',

@@ -179,6 +179,44 @@ describe('ApiClient', () => {
     expect(error.code).toBe('NETWORK_ERROR');
     expect(error.status).toBe(0);
   });
+
+  /**
+   * Hạn mặc định 15 giây là đúng cho CRUD và sai cho một lượt chat: mô hình chạy tại chỗ trên CPU
+   * cần ~114 giây, nên nếu không có ghi đè theo từng lời gọi thì trình duyệt cắt ở giây 15 và
+   * khung chat hỗ trợ không gửi được câu nào. `askSupport` dựa vào đúng bất biến này.
+   */
+  it('timeoutMs của một lời gọi thắng hạn mặc định của client', async () => {
+    let seen: number | null = null;
+
+    // Đọc hạn từ chính AbortSignal mà client dựng: `AbortSignal.timeout(ms)` không phơi ms ra, nên
+    // chặn ở tầng fetch là chỗ duy nhất thấy được nó. Bọc `AbortSignal.timeout` để ghi lại tham số.
+    const realTimeout = AbortSignal.timeout.bind(AbortSignal);
+    const spy = vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms: number) => {
+      seen = ms;
+      return realTimeout(ms);
+    });
+
+    server.use(http.post(`${BASE_URL}/v1/chat/agent/support`, () => HttpResponse.json({})));
+    await client().post('/v1/chat/agent/support', { message: 'hỏi' }, { timeoutMs: 540_000 });
+
+    expect(seen).toBe(540_000);
+    spy.mockRestore();
+  });
+
+  it('không truyền timeoutMs thì vẫn là 15 giây — nới hạn là việc của từng endpoint', async () => {
+    let seen: number | null = null;
+    const realTimeout = AbortSignal.timeout.bind(AbortSignal);
+    const spy = vi.spyOn(AbortSignal, 'timeout').mockImplementation((ms: number) => {
+      seen = ms;
+      return realTimeout(ms);
+    });
+
+    server.use(http.get(`${BASE_URL}/v1/events`, () => HttpResponse.json([])));
+    await client().get('/v1/events');
+
+    expect(seen).toBe(15_000);
+    spy.mockRestore();
+  });
 });
 
 /**

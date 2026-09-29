@@ -289,6 +289,8 @@ export function useAuditLogs(
   const client = useApiClient();
   const normalized = {
     action: params.action ?? null,
+    from: params.from ?? null,
+    to: params.to ?? null,
     limit: params.limit ?? 50,
     offset: params.offset ?? 0,
   };
@@ -306,6 +308,8 @@ export function usePlatformAuditLogs(params: AuditLogParams = {}) {
   const client = useApiClient();
   const normalized = {
     action: params.action ?? null,
+    from: params.from ?? null,
+    to: params.to ?? null,
     limit: params.limit ?? 50,
     offset: params.offset ?? 0,
   };

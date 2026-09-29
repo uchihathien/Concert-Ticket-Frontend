@@ -26,7 +26,8 @@ import {
   useToast,
 } from '@nexaticket/ui';
 import { useMemo, useState } from 'react';
-import { MapPin, Plus } from 'lucide-react';
+import { LayoutGrid, MapPin, Plus } from 'lucide-react';
+import { FloorPlanEditor } from '@/components/FloorPlanEditor';
 import { OrganizationGate } from '@/components/OrganizationGate';
 
 /**
@@ -54,6 +55,7 @@ function VenuesContent({ organization }: { organization: OrganizationSummary }) 
   const [venueQuery, setVenueQuery] = useState('');
   const [venueFormOpen, setVenueFormOpen] = useState(false);
   const [zoneFor, setZoneFor] = useState<AdminVenue | null>(null);
+  const [planFor, setPlanFor] = useState<AdminVenue | null>(null);
 
   // Tìm cả trong MÃ KHU, không chỉ tên địa điểm: ban tổ chức thường nhớ "khu VIP nằm ở đâu" chứ
   // không nhớ tên đầy đủ của nhà thi đấu.
@@ -158,10 +160,24 @@ function VenuesContent({ organization }: { organization: OrganizationSummary }) 
                     {formatNumber(venue.capacity)}
                   </p>
                 </div>
-                <Button variant="secondary" onClick={() => setZoneFor(venue)}>
-                  <Plus size={16} aria-hidden="true" />
-                  Thêm khu vực
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="secondary" onClick={() => setZoneFor(venue)}>
+                    <Plus size={16} aria-hidden="true" />
+                    Thêm khu vực
+                  </Button>
+                  {/*
+                    Chỉ mở được khi đã có khu: trình sửa sơ đồ đặt VỊ TRÍ cho khu, và một khán
+                    phòng chưa có khu nào thì không có gì để đặt.
+                  */}
+                  <Button
+                    variant="secondary"
+                    disabled={venue.zones.length === 0}
+                    onClick={() => setPlanFor(venue)}
+                  >
+                    <LayoutGrid size={16} aria-hidden="true" />
+                    Sửa sơ đồ
+                  </Button>
+                </div>
               </div>
 
               {venue.zones.length > 0 ? (
@@ -215,6 +231,33 @@ function VenuesContent({ organization }: { organization: OrganizationSummary }) 
           venue={zoneFor}
           onClose={() => setZoneFor(null)}
         />
+      ) : null}
+
+      {/*
+        `Modal` chứ không phải `Drawer`: trình sửa sơ đồ có khung vẽ rộng cộng một cột điều khiển,
+        và ngăn kéo bên phải bóp khung vẽ xuống còn một dải hẹp — đúng thứ người dùng cần nhìn
+        rộng nhất.
+
+        `dismissible={false}`: bấm nhầm ra ngoài khi đang kéo khu sẽ mất cả bản nháp chưa lưu.
+      */}
+      {planFor ? (
+        <Modal
+          open
+          dismissible={false}
+          onClose={() => setPlanFor(null)}
+          title={`Sơ đồ · ${planFor.name}`}
+          footer={
+            <Button variant="secondary" onClick={() => setPlanFor(null)}>
+              Đóng
+            </Button>
+          }
+        >
+          <FloorPlanEditor
+            organizationId={organization.id}
+            venue={planFor}
+            onSaved={() => setPlanFor(null)}
+          />
+        </Modal>
       ) : null}
     </>
   );

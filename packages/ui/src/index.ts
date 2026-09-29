@@ -17,6 +17,9 @@ export {
 } from './quick-filters';
 export type { QuickFilterOption } from './quick-filters';
 
+export { groupZonesByPrice, zoneFamilyLabel } from './zone-groups';
+export type { ZoneGroup, ZoneLike } from './zone-groups';
+
 export {
   AUDIT_ACTION_LABELS,
   auditActionFilters,

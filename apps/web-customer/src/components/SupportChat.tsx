@@ -45,6 +45,7 @@ export function SupportChat() {
   const ask = useAskSupport();
   const requestHuman = useRequestHumanAgent();
   const listRef = useRef<HTMLOListElement>(null);
+  const waited = useElapsedSeconds(ask.isPending);
 
   /**
    * Khoá chống trùng của câu đang gửi, giữ qua các lần thử lại.
@@ -85,7 +86,12 @@ export function SupportChat() {
 
   const messages = thread.data?.messages ?? [];
   const handoff = thread.data?.handoff ?? null;
+  // Có phiếu = trợ lý đã ngừng trả lời, bất kể phiếu đang chờ hay đã có người nhận. Ô nhập phải
+  // nói rõ là đang nhắn cho người, không cho trợ lý.
   const waitingForHuman = handoff !== null;
+  // Dải "đang chờ" CHỈ đúng khi chưa ai nhận. Sau khi nhân viên bấm nhận, câu đó thành sai: khách
+  // đang được hỗ trợ mà màn hình vẫn nói là đang chờ, và họ chờ tiếp thay vì nhắn.
+  const stillQueued = handoff?.status === 'WAITING';
 
   async function send() {
     const message = draft.trim();
@@ -136,21 +142,45 @@ export function SupportChat() {
               {roleLabel(message.role)}
               <time dateTime={message.at}>{formatTime(message.at)}</time>
             </span>
-            <p className={styles.body}>{message.content}</p>
+            <p className={styles.body}>
+              {message.role === 'USER' ? message.content : <WithTicketLinks text={message.content} />}
+            </p>
           </li>
         ))}
 
         {ask.isPending ? (
           <li className={cx(styles.message, styles.fromBot)} aria-live="polite">
+            <span className={styles.who}>
+              Trợ lý đang soạn câu trả lời
+              {/*
+                Đồng hồ KHÔNG được đọc lên: cả bong bóng này nằm trong vùng aria-live, nên mỗi giây
+                trôi qua sẽ là một lần trình đọc màn hình đọc lại cả câu. Phần chữ đứng yên phía
+                trên mới là thứ cần thông báo.
+              */}
+              <span className={styles.clock} aria-hidden="true">
+                {waited}s
+              </span>
+            </span>
             <Skeleton lines={2} />
           </li>
         ) : null}
       </ol>
 
-      {waitingForHuman ? (
+      {stillQueued ? (
         <p className={styles.handoffBanner} role="status">
           Đang chờ nhân viên hỗ trợ. Bạn cứ nhắn tiếp — nhân viên sẽ đọc được toàn bộ nội dung phía
           trên.
+        </p>
+      ) : handoff?.assignedAgentName ? (
+        /*
+          Đã có người nhận: nói TÊN người đó.
+
+          Khách vừa chờ trong hàng đợi, nên thứ họ cần biết đầu tiên là đã có người thật đọc tin của
+          mình — và một cái tên nói điều đó rõ hơn mọi cách diễn đạt khác. Dải này thay hẳn câu "đang
+          chờ", chứ không nằm thêm bên cạnh: hai câu cùng lúc thì câu nào cũng mất nghĩa.
+        */
+        <p className={styles.handoffBanner} role="status">
+          <strong>{handoff.assignedAgentName}</strong> từ bộ phận hỗ trợ đang trả lời bạn.
         </p>
       ) : null}
 
@@ -212,6 +242,93 @@ export function SupportChat() {
  * lại hội thoại của người trước, trong đó có mã đơn và số tiền.
  */
 const SESSION_KEY = 'nexaticket.support.session';
+
+/**
+ * Đường dẫn sự kiện trong tin nhắn, dạng `/events/<slug>`.
+ *
+ * Bám sát: slug của catalog chỉ gồm chữ thường, số và dấu gạch ngang, nên mẫu này không quét lan
+ * sang chữ liền sau. Phần `(?![\w-])` chặn việc cắt mất một nửa slug dài.
+ */
+const EVENT_PATH = /\/events\/([a-z0-9-]+)(?![\w-])/g;
+
+/**
+ * Hiện tin nhắn của trợ lý, biến đường dẫn sự kiện thành liên kết bấm được.
+ *
+ * <h3>Vì sao dựng liên kết từ CHỮ, không từ một danh sách kèm theo</h3>
+ *
+ * Câu trả lời được lưu vào lịch sử hội thoại dưới dạng chữ. Nếu danh sách sự kiện đi riêng bên cạnh
+ * phản hồi của lượt đó, thì sau khi khách chuyển trang và hội thoại được đọc lại từ cơ sở dữ liệu,
+ * mọi liên kết biến mất — chỗ bấm chỉ tồn tại đúng một lượt rồi mất. Đường dẫn nằm trong chính chữ
+ * thì nó sống đúng bằng tuổi của tin nhắn.
+ *
+ * <p>Backend là nơi gắn đường dẫn ấy vào (xem `SupportAgentPrompts.withTicketLinks`), nên mọi slug
+ * xuất hiện ở đây đều đến từ catalog — không phải slug mô hình tự dựng, loại dẫn tới trang 404.
+ */
+function WithTicketLinks({ text }: { text: string }) {
+  const parts: Array<string | { slug: string }> = [];
+  let cursor = 0;
+
+  for (const match of text.matchAll(EVENT_PATH)) {
+    const slug = match[1];
+    // `noUncheckedIndexedAccess` coi nhóm bắt được là có thể undefined — đúng về kiểu, dù mẫu này
+    // luôn có nhóm 1 khi đã khớp. Bỏ qua thay vì dùng `!`: một lần khớp không có slug thì không có
+    // gì để dẫn tới, và giữ nguyên chữ vẫn đọc được.
+    if (!slug) continue;
+    const at = match.index ?? 0;
+    if (at > cursor) parts.push(text.slice(cursor, at));
+    parts.push({ slug });
+    cursor = at + match[0].length;
+  }
+  if (cursor < text.length) parts.push(text.slice(cursor));
+
+  // Không có đường dẫn nào: trả lại đúng chuỗi gốc, không bọc thêm thẻ nào. Phần lớn tin nhắn rơi
+  // vào nhánh này — câu trả lời về chính sách không có sự kiện nào để dẫn tới.
+  if (parts.length === 1 && typeof parts[0] === 'string') {
+    return <>{text}</>;
+  }
+
+  return (
+    <>
+      {parts.map((part, index) =>
+        typeof part === 'string' ? (
+          part
+        ) : (
+          <Link key={`${part.slug}-${index}`} href={`/events/${part.slug}`} className={styles.ticketLink}>
+            Chọn chỗ và mua vé
+          </Link>
+        ),
+      )}
+    </>
+  );
+}
+
+/**
+ * Số giây đã chờ của lượt đang gửi.
+ *
+ * Đếm bằng mốc thời gian chứ không bằng biến tăng dần: trình duyệt hãm `setInterval` ở tab nền
+ * xuống một lần mỗi phút, nên đếm theo nhịp sẽ báo "18s" cho một lượt đã chạy hai phút — con số
+ * sai còn tệ hơn không có con số nào.
+ */
+function useElapsedSeconds(active: boolean): number {
+  const [seconds, setSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!active) {
+      setSeconds(0);
+      return;
+    }
+
+    const startedAt = Date.now();
+    setSeconds(0);
+    const timer = window.setInterval(() => {
+      setSeconds(Math.round((Date.now() - startedAt) / 1000));
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [active]);
+
+  return seconds;
+}
 
 function roleLabel(role: ChatMessage['role']): string {
   switch (role) {

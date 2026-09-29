@@ -1,0 +1,168 @@
+/* Trình sửa sơ đồ. Mọi toạ độ đến từ backend — xem FloorPlanEditor.tsx. */
+
+.layout {
+  display: grid;
+  gap: var(--nt-space-6);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 320px);
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.canvasColumn {
+  display: grid;
+  gap: var(--nt-space-2);
+}
+
+/*
+ * `touch-action: none` bắt buộc: thiếu nó thì trình duyệt di động nuốt pointermove để cuộn trang,
+ * và kéo khu trên máy bảng không hoạt động.
+ */
+.canvas {
+  width: 100%;
+  height: clamp(320px, 55vh, 560px);
+  background: var(--nt-bg-subtle);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  touch-action: none;
+  user-select: none;
+}
+
+.stage > :first-child {
+  fill: var(--nt-elevated);
+  stroke: var(--nt-border);
+  stroke-width: 0.15;
+}
+
+.stageLabel {
+  fill: var(--nt-text-muted);
+  font-size: 1.6px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.zoneShape {
+  fill: var(--nt-surface);
+  stroke: var(--nt-border);
+  stroke-width: 0.12;
+  cursor: grab;
+}
+
+.zoneShape:hover {
+  fill: var(--nt-hover);
+}
+
+.zoneShape:active {
+  cursor: grabbing;
+}
+
+.zoneStanding {
+  fill: var(--nt-zone-standing-bg);
+  stroke: var(--nt-zone-standing-border);
+}
+
+.zoneSelected {
+  stroke: var(--nt-accent);
+  stroke-width: 0.25;
+}
+
+.zoneLabel {
+  fill: var(--nt-text);
+  font-size: 2px;
+  font-weight: 700;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.hint,
+.fieldHint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+.controls {
+  display: grid;
+  gap: var(--nt-space-6);
+}
+
+.group {
+  display: grid;
+  gap: var(--nt-space-3);
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--nt-text-muted);
+}
+
+/* Hai ô số cạnh nhau: x/y và bề ngang/chiều sâu luôn được đọc thành cặp. */
+.pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--nt-space-3);
+}
+
+.zoneTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nt-space-2);
+}
+
+.zoneTab {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--nt-text-muted);
+  background: var(--nt-surface);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-1) var(--nt-space-3);
+  cursor: pointer;
+}
+
+.zoneTabOn {
+  color: var(--nt-primary-ink);
+  background: var(--nt-primary);
+  border-color: var(--nt-primary);
+}
+
+.zoneTab:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+.zoneForm {
+  display: grid;
+  gap: var(--nt-space-3);
+}
+
+.zoneMeta {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: var(--nt-space-3);
+  flex-wrap: wrap;
+}
+
+.warning {
+  margin: 0;
+  font-size: 13px;
+  color: var(--nt-warn-text);
+  border-inline-start: 2px solid var(--nt-warn);
+  padding-inline-start: var(--nt-space-3);
+}

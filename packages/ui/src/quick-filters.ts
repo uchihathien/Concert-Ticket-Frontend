@@ -155,3 +155,31 @@ export function quickFilterParams(
       : {}),
   };
 }
+
+/**
+ * Khoảng `[from, to)` của N ngày gần nhất, tính theo **giờ Việt Nam**, trả về mốc ISO tuyệt đối.
+ *
+ * <p>Dùng cho những bộ lọc gửi khoảng thời gian cho backend (nhật ký kiểm toán). Khác
+ * {@link timeRange} ở chỗ nó đếm lùi từ hôm nay thay vì tả một mốc có tên ("cuối tuần này"), và
+ * trả chuỗi ISO thay vì timestamp — đó là thứ query string cần.
+ *
+ * <p><b>Vì sao không dùng `setHours(0,0,0,0)`:</b> hàm ấy lấy nửa đêm theo múi giờ của **máy người
+ * dùng**. Một người mở nhật ký khi đang ở nước ngoài sẽ thấy "hôm nay" lệch mất một ngày so với
+ * đồng nghiệp trong nước — mà nhật ký là thứ hai người cùng đọc để đối chiếu một sự cố.
+ *
+ * <p>`to` là nửa đêm **sắp tới**, không phải `now`: lấy `now` làm cận trên thì một thao tác vừa
+ * xảy ra trong lúc trang đang mở sẽ rơi ra ngoài khoảng.
+ *
+ * @param daysBack 0 là chỉ hôm nay, 6 là bảy ngày gồm cả hôm nay
+ */
+export function vnDayRange(daysBack: number, now = new Date()): { from: string; to: string } {
+  // Việt Nam không có giờ mùa hè, nên độ lệch cố định — không cần tra bảng múi giờ.
+  const offsetMs = 7 * 60 * 60 * 1000;
+  const startOfTodayVn =
+    Math.floor((now.getTime() + offsetMs) / 86_400_000) * 86_400_000 - offsetMs;
+
+  return {
+    from: new Date(startOfTodayVn - daysBack * 86_400_000).toISOString(),
+    to: new Date(startOfTodayVn + 86_400_000).toISOString(),
+  };
+}

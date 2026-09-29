@@ -1,0 +1,33 @@
+/* Ảnh bìa từ database — xem PosterImage.tsx. */
+
+/*
+ * Lấp đầy khung đã cắt của phần tử cha. Mọi nơi dùng đều đặt `aspect-ratio` và `overflow: hidden`
+ * ở lớp bao, nên ảnh không bao giờ tự quyết định kích thước — cả lưới thẻ giữ nguyên bố cục dù
+ * ảnh về lúc nào.
+ */
+.image {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+
+  /* Bắt đầu trong suốt, hiện dần khi tải xong — xem ghi chú "Hiện dần" ở component. */
+  opacity: 0;
+  transition: opacity 260ms ease-out;
+}
+
+.ready {
+  opacity: 1;
+}
+
+/*
+ * Người bật giảm chuyển động vẫn cần ảnh hiện ra, chỉ là không cần nó mờ dần. Bỏ hẳn transition
+ * chứ không rút ngắn: `prefers-reduced-motion` là yêu cầu về sức khoẻ, không phải sở thích.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .image {
+    transition: none;
+  }
+}

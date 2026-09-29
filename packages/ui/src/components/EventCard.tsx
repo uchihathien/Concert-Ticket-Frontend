@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { Badge } from './Badge';
+import { PosterImage } from './PosterImage';
 import { coverGradient } from '../cover';
 import { cx } from '../cx';
 import { formatVnd } from '../format';
@@ -57,11 +58,13 @@ export function EventCard({
   return (
     <Link href={href} className={cx(styles.card, className)}>
       <article>
-        <div
-          className={styles.media}
-          style={imageUrl ? undefined : { background: coverGradient(coverSeed ?? title) }}
-        >
-          {imageUrl ? <img src={imageUrl} alt="" loading="lazy" /> : null}
+        {/*
+          Dải màu LUÔN được đặt, kể cả khi có ảnh. Trước đây nó chỉ xuất hiện khi `imageUrl` rỗng —
+          nên một ảnh tải hỏng để lại ô đen. Giờ nó là nền thật sự: `PosterImage` tự gỡ mình khi
+          ảnh không tải được, và dải màu của chính sự kiện lộ ra.
+        */}
+        <div className={styles.media} style={{ background: coverGradient(coverSeed ?? title) }}>
+          <PosterImage src={imageUrl} alt="" decorative />
           {tag ? <span className={styles.tag}>{tag}</span> : null}
           {badge ? (
             <span className={styles.badge}>

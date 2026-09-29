@@ -24,7 +24,7 @@ import {
   useToast,
 } from '@nexaticket/ui';
 import { Bot, Hand, User } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styles from './support.module.css';
 
 /**
@@ -42,9 +42,35 @@ import styles from './support.module.css';
  * Hàng đợi bên trái, hội thoại bên phải. Người trực làm việc bằng cách quét hàng đợi rồi ở lại lâu
  * trong một cuộc — nên hàng đợi phải hiện đủ để chọn (câu hỏi, thời gian chờ) mà không phải mở ra.
  */
+/** Bộ lọc của ô chọn, cùng thứ tự với cách người trực dùng trong ngày. */
+const FILTERS = [
+  { key: 'OPEN', label: 'Đang chờ' },
+  { key: 'ASSIGNED', label: 'Đang xử lý' },
+  { key: 'RESOLVED', label: 'Đã xong' },
+  { key: 'ALL', label: 'Tất cả' },
+] as const;
+
+type FilterKey = (typeof FILTERS)[number]['key'];
+
 export default function SupportPage() {
   const [openId, setOpenId] = useState<string | null>(null);
-  const queue = useHandoffQueue();
+  const [filter, setFilter] = useState<FilterKey>('OPEN');
+  const [search, setSearch] = useState('');
+
+  /*
+   * Hoãn 300ms trước khi gọi API.
+   *
+   * Người trực gõ mã đơn hoặc tên khách — mười ký tự là mười request nếu gọi ngay theo từng phím,
+   * và mỗi request lại làm danh sách nhảy dưới con trỏ trong lúc họ còn đang gõ. 300ms là khoảng
+   * giữa hai phím của người gõ nhanh, nên nó gộp đúng một lần gõ thành một lần gọi.
+   */
+  const [debounced, setDebounced] = useState('');
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebounced(search), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
+
+  const queue = useHandoffQueue({ status: filter, q: debounced });
 
   return (
     <>
@@ -55,6 +81,33 @@ export default function SupportPage() {
 
       <div className={styles.layout}>
         <section className={styles.queue} aria-label="Hàng đợi">
+          <div className={styles.filters}>
+            <label className={styles.searchLabel} htmlFor="support-search">
+              Tìm phiếu
+            </label>
+            <input
+              id="support-search"
+              type="search"
+              className={styles.searchInput}
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Tìm theo lý do hoặc câu khách hỏi…"
+            />
+            <div className={styles.filterTabs} role="group" aria-label="Lọc theo trạng thái">
+              {FILTERS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  className={cx(styles.filterTab, filter === option.key && styles.filterTabOn)}
+                  aria-pressed={filter === option.key}
+                  onClick={() => setFilter(option.key)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {queue.isPending ? (
             <Panel>
               <Skeleton lines={4} />
@@ -62,10 +115,22 @@ export default function SupportPage() {
           ) : queue.isError ? (
             <ErrorState error={null} onRetry={() => void queue.refetch()} />
           ) : queue.data.length === 0 ? (
-            <EmptyState
-              title="Không có ai đang chờ"
-              description="Trợ lý đang xử lý được mọi câu hỏi. Danh sách tự làm mới mỗi vài giây."
-            />
+            // Hai câu khác nhau cho hai chuyện khác nhau: "không ai đang chờ" là tin tốt, còn "không
+            // tìm thấy" là kết quả của một phép tìm. Dùng chung một câu thì người vừa gõ sai một chữ
+            // sẽ đọc thành "bàn hỗ trợ trống".
+            debounced.trim() !== '' ? (
+              <EmptyState
+                title="Không có phiếu nào khớp"
+                description={`Không tìm thấy phiếu nào chứa “${debounced.trim()}”. Thử từ khoá ngắn hơn, hoặc chọn "Tất cả".`}
+              />
+            ) : filter === 'OPEN' ? (
+              <EmptyState
+                title="Không có ai đang chờ"
+                description="Trợ lý đang xử lý được mọi câu hỏi. Danh sách tự làm mới mỗi vài giây."
+              />
+            ) : (
+              <EmptyState title="Chưa có phiếu nào ở trạng thái này" />
+            )
           ) : (
             <ul className={styles.queueList}>
               {queue.data.map((handoff) => (
@@ -88,6 +153,17 @@ export default function SupportPage() {
                     <span className={styles.queueReason}>{handoff.reason}</span>
                     {handoff.lastQuestion ? (
                       <span className={styles.queueQuestion}>“{handoff.lastQuestion}”</span>
+                    ) : null}
+                    {/*
+                      Ai đang cầm phiếu này. Quan trọng nhất ở màn nhiều người trực: không có dòng
+                      này thì hai người cùng mở một phiếu và người thứ hai chỉ biết khi bấm nhận rồi
+                      nhận 409.
+                    */}
+                    {handoff.assignedAgentName ? (
+                      <span className={styles.queueAgent}>
+                        {handoff.status === 'RESOLVED' ? 'Đã xử lý bởi' : 'Đang xử lý'}{' '}
+                        {handoff.assignedAgentName}
+                      </span>
                     ) : null}
                   </button>
                 </li>
@@ -118,6 +194,17 @@ function Conversation({ handoffId, onResolved }: { handoffId: string; onResolved
   const resolve = useResolveHandoff();
   const toast = useToast();
   const [draft, setDraft] = useState('');
+  const listRef = useRef<HTMLOListElement>(null);
+  const messageCount = thread.data?.messages.length ?? 0;
+
+  // Cuộn xuống tin mới nhất. Hội thoại được hỏi lại mỗi 5 giây, nên khách nhắn thêm trong lúc người
+  // trực đang gõ là chuyện thường — không có bước này thì câu đó nằm ngoài tầm nhìn và người trực
+  // trả lời một câu hỏi đã cũ.
+  //
+  // Hook phải đứng TRƯỚC mọi return sớm ở dưới, nếu không thứ tự hook đổi giữa hai lần render.
+  useEffect(() => {
+    listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
+  }, [messageCount]);
 
   if (thread.isPending) {
     return (
@@ -135,7 +222,9 @@ function Conversation({ handoffId, onResolved }: { handoffId: string; onResolved
 
   async function send() {
     const text = draft.trim();
-    if (!text) return;
+    // `reply.isPending` chặn lần gửi thứ hai khi người trực bấm Enter hai lần trong lúc lần đầu
+    // chưa xong — không có nó thì cùng một câu trả lời tới khách hai lần.
+    if (!text || reply.isPending) return;
     try {
       await reply.mutateAsync(text);
       setDraft('');
@@ -149,9 +238,15 @@ function Conversation({ handoffId, onResolved }: { handoffId: string; onResolved
       <header className={styles.threadHead}>
         <StatusBadge handoff={handoff} />
         <span className={styles.threadReason}>{handoff.reason}</span>
+        {handoff.assignedAgentName ? (
+          <span className={styles.threadAgent}>
+            {handoff.status === 'RESOLVED' ? 'đã xử lý bởi' : 'đang xử lý:'}{' '}
+            <strong>{handoff.assignedAgentName}</strong>
+          </span>
+        ) : null}
       </header>
 
-      <ol className={styles.messages}>
+      <ol className={styles.messages} ref={listRef}>
         {messages.map((message, index) => (
           <li
             key={`${message.at}-${index}`}
@@ -179,7 +274,21 @@ function Conversation({ handoffId, onResolved }: { handoffId: string; onResolved
             value={draft}
             maxLength={4000}
             onChange={(event) => setDraft(event.target.value)}
-            placeholder="Nhập câu trả lời…"
+            onKeyDown={(event) => {
+              // Enter gửi, Shift+Enter xuống dòng — cùng quy ước với khung chat của khách
+              // (xem SupportChat của web-customer). Người trực trả lời liên tục hàng chục phiếu,
+              // và bắt họ rời bàn phím để bấm nút sau mỗi câu là bắt họ chậm đi ở đúng chỗ tốc độ
+              // là thứ khách nhìn thấy.
+              //
+              // `isComposing` loại những lần Enter thuộc về bộ gõ chứ không thuộc về người: bàn
+              // phím ảo trên điện thoại và các bộ gõ có cửa sổ ghép chữ dùng Enter để chốt từ đang
+              // gõ dở. Thiếu nó thì câu gõ tới giữa chữ đã bị gửi đi.
+              if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) {
+                event.preventDefault();
+                void send();
+              }
+            }}
+            placeholder="Nhập câu trả lời… (Enter để gửi, Shift+Enter xuống dòng)"
           />
           <div className={styles.composerActions}>
             <Button onClick={() => void send()} loading={reply.isPending} disabled={!draft.trim()}>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { priceRange, quickFilterParams, timeRange } from '../quick-filters';
+import { priceRange, quickFilterParams, timeRange, vnDayRange } from '../quick-filters';
 
 /**
  * Múi giờ là chỗ hỏng âm thầm của bộ lọc này: tiến trình Next chạy UTC, còn "hôm nay" mà người
@@ -112,5 +112,32 @@ describe('quickFilterParams', () => {
     const params = quickFilterParams('today', '500-1000', WED_MORNING_VN);
 
     expect(Object.keys(params).sort()).toEqual(['from', 'maxPrice', 'minPrice', 'to']);
+  });
+});
+
+describe('vnDayRange', () => {
+  it('"hôm nay" bám theo ngày ở Việt Nam, không theo ngày UTC', () => {
+    // 2026-09-09T16:30Z vẫn là 23:30 thứ Tư ở VN. Nửa đêm VN của ngày ấy là 2026-09-08T17:00Z.
+    // Dùng `setHours(0,0,0,0)` ở máy chạy UTC sẽ ra 2026-09-09T00:00Z — lệch mất một ngày, và
+    // đúng những thao tác buổi sáng sẽ rơi ra ngoài khoảng.
+    expect(vnDayRange(0, WED_LATE_UTC)).toEqual({
+      from: '2026-09-08T17:00:00.000Z',
+      to: '2026-09-09T17:00:00.000Z',
+    });
+  });
+
+  it('cận trên là nửa đêm SẮP TỚI, không phải bây giờ', () => {
+    const range = vnDayRange(0, WED_MORNING_VN);
+
+    // Lấy `now` làm cận trên thì một thao tác vừa xảy ra trong lúc trang đang mở sẽ rơi ra ngoài.
+    expect(Date.parse(range.to)).toBeGreaterThan(WED_MORNING_VN.getTime());
+  });
+
+  it('đếm lùi gồm cả hôm nay', () => {
+    const range = vnDayRange(6, WED_MORNING_VN);
+    const days = (Date.parse(range.to) - Date.parse(range.from)) / 86_400_000;
+
+    // 6 ngày lùi + hôm nay = 7 ngày. Ra 6 nghĩa là nhãn "7 ngày qua" đang nói dối.
+    expect(days).toBe(7);
   });
 });

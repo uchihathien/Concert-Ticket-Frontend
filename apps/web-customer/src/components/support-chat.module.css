@@ -147,3 +147,43 @@
   gap: var(--nt-space-3);
   flex-wrap: wrap;
 }
+
+/*
+ * Đồng hồ chờ.
+ *
+ * Cùng tông với `.who` — đây là chú thích trạng thái, không phải nội dung hội thoại. Để nó đậm
+ * bằng tin nhắn sẽ kéo mắt khỏi đúng chỗ khách đang chờ chữ hiện ra.
+ */
+.clock {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * Chỗ bấm để mua vé, nằm trong tin nhắn của trợ lý.
+ *
+ * Trông như một nút nhỏ chứ không như chữ gạch chân: đây là hành động tiếp theo của cả cuộc hội
+ * thoại, và một liên kết chữ lẫn vào đoạn văn thì khách đọc qua mà không nhận ra đó là chỗ bấm.
+ */
+.ticketLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--nt-space-1);
+  margin-top: var(--nt-space-1);
+  padding: 2px var(--nt-space-2);
+  border: 1px solid var(--nt-accent);
+  border-radius: var(--nt-radius);
+  background: color-mix(in srgb, var(--nt-accent) 12%, transparent);
+  color: var(--nt-accent-text);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ticketLink:hover {
+  background: color-mix(in srgb, var(--nt-accent) 20%, transparent);
+}
+
+.ticketLink:focus-visible {
+  outline: 2px solid var(--nt-accent);
+  outline-offset: 1px;
+}

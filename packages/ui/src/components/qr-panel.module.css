@@ -1,0 +1,132 @@
+/* Khung cho mã QR. Xem javadoc của QrPanel.tsx về vì sao trang trí dừng ở rìa tấm nền trắng. */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--nt-space-3);
+  align-items: center;
+  margin: 0;
+  padding: var(--nt-space-4);
+  border-radius: var(--nt-radius-lg);
+  border: 1px solid var(--nt-border);
+  background: var(--nt-elevated);
+  box-shadow: var(--nt-shadow-card);
+
+  /* Dải màu ở mép trên nói đây là mã của hệ thống nào — thứ một mã trần không nói được. */
+  border-top: 4px solid var(--strip);
+}
+
+.ticket {
+  --strip: var(--nt-primary);
+  --corner: var(--nt-primary);
+}
+
+.payment {
+  /* Khác màu vé một cách rõ ràng: hai loại mã này trông y hệt nhau và dùng ở hai hoàn cảnh
+     khác hẳn. Màu là thứ người ta nhận ra trước khi kịp đọc chữ. */
+  --strip: var(--nt-accent);
+  --corner: var(--nt-accent);
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--nt-space-2);
+  text-align: center;
+}
+
+.title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--nt-primary-text);
+}
+
+.meta {
+  font-family: var(--nt-font-mono);
+  font-size: 0.8125rem;
+  color: var(--nt-accent-text);
+  letter-spacing: 0.04em;
+}
+
+/*
+  Tấm nền TRẮNG là bắt buộc, không phải lựa chọn thẩm mỹ.
+
+  Máy quét tìm mã bằng tương phản sáng/tối. Ở giao diện tối, đặt mã lên chính nền của trang làm
+  tương phản đảo ngược — nhiều máy quét vẫn đọc được, nhiều máy thì không, và sự khác nhau ấy chỉ
+  lộ ra ở cửa soát vé.
+*/
+.plate {
+  position: relative;
+  display: flex;
+  padding: var(--nt-space-3);
+  border-radius: var(--nt-radius);
+  background: #ffffff;
+}
+
+.plate svg,
+.plate img {
+  display: block;
+}
+
+.corner {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--corner);
+}
+
+.tl {
+  top: 6px;
+  left: 6px;
+  border-right: none;
+  border-bottom: none;
+  border-top-left-radius: 4px;
+}
+
+.tr {
+  top: 6px;
+  right: 6px;
+  border-left: none;
+  border-bottom: none;
+  border-top-right-radius: 4px;
+}
+
+.bl {
+  bottom: 6px;
+  left: 6px;
+  border-right: none;
+  border-top: none;
+  border-bottom-left-radius: 4px;
+}
+
+.br {
+  bottom: 6px;
+  right: 6px;
+  border-left: none;
+  border-top: none;
+  border-bottom-right-radius: 4px;
+}
+
+.caption {
+  max-width: 34ch;
+  text-align: center;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--nt-primary-text);
+  opacity: 0.85;
+}
+
+/* Trên điện thoại khung chiếm gần hết chiều ngang, nên bỏ bớt đệm để mã vẫn đủ lớn. Mã nhỏ đi là
+   mã khó quét — chính điều ta đang tránh. */
+@media (max-width: 420px) {
+  .panel {
+    padding: var(--nt-space-3);
+    width: 100%;
+  }
+
+  .plate {
+    padding: var(--nt-space-2);
+  }
+}

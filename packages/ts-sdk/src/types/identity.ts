@@ -179,6 +179,15 @@ export interface AuditEntry {
 export interface AuditLogParams {
   /** Lọc theo tên hành động, ví dụ `MEMBER_ROLE_CHANGED`. Bỏ trống thì lấy hết. */
   action?: string | null;
+  /**
+   * ISO-8601. Mốc sớm nhất.
+   *
+   * Lọc ở **server**, không ở client: nhật ký phân trang ở backend, nên một bộ lọc client-side chỉ
+   * lọc trong trang đang xem — trông như tìm kiếm nhưng nói dối về phần còn lại.
+   */
+  from?: string | null;
+  /** ISO-8601, **không** lấy mốc này: "hôm nay" và "hôm qua" không được cùng trả về một dòng. */
+  to?: string | null;
   limit?: number;
   offset?: number;
 }

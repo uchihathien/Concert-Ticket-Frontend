@@ -4,7 +4,7 @@ import { useMyTickets, type Ticket } from '@nexaticket/ts-sdk';
 import {
   Badge,
   EmptyState,
-  QrCode,
+  QrPanel,
   Skeleton,
   cx,
   foldText,
@@ -194,14 +194,15 @@ function TicketRow({ ticket }: { ticket: Ticket }) {
 
       {open && usable ? (
         <div className={styles.qrBox}>
-          <QrCode
+          <QrPanel
+            variant="ticket"
+            title="Mã vào cửa"
+            meta={ticket.ticketTypeName}
             value={ticket.qrToken}
             size={200}
             label={`Mã vào cửa cho ${ticket.ticketTypeName}`}
+            caption="Đưa mã này cho nhân viên soát vé. Mã có hạn — mở lại trang nếu máy quét báo hết hạn."
           />
-          <p className={styles.qrNote}>
-            Đưa mã này cho nhân viên soát vé. Mã có hạn — mở lại trang nếu máy quét báo hết hạn.
-          </p>
         </div>
       ) : null}
     </li>

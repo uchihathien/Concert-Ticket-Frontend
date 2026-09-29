@@ -34,7 +34,18 @@ export interface Handoff {
   /** Câu khách đang hỏi, chụp lúc chuyển. Có mặt ngay ở danh sách để khỏi phải mở từng phiếu. */
   lastQuestion: string | null;
   assignedAgentId: string | null;
+  /**
+   * Tên người trực đang cầm phiếu, để hiện lên màn hình.
+   *
+   * `null` khi chưa ai nhận, và cũng `null` khi backend không tra được tên — hai chuyện khác nhau mà
+   * giao diện xử lý như nhau, vì `status` đã nói rõ phiếu đã được nhận hay chưa.
+   */
+  assignedAgentName: string | null;
   requestedAt: string;
+  /** Lúc có người nhận phiếu. `null` khi còn trong hàng đợi. */
+  assignedAt: string | null;
+  /** Lúc phiếu được đóng. `null` khi chưa xong. */
+  resolvedAt: string | null;
   /** Tính ở backend: đồng hồ máy khách lệch vài phút thì phiếu chờ lâu nhất bị xếp sai thứ tự. */
   waitingSeconds: number;
 }

@@ -20,8 +20,9 @@ import {
   auditActionLabel,
   auditActionTone,
   formatDateTime,
+  vnDayRange,
 } from '@nexaticket/ui';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { OrganizationGate } from '@/components/OrganizationGate';
 
 /**
@@ -46,17 +47,33 @@ const FILTERS = auditActionFilters('organization');
 
 const PAGE_SIZE = 50;
 
+const RANGE_FILTERS = [
+  { value: '', label: 'Mọi lúc' },
+  { value: 'today', label: 'Hôm nay' },
+  { value: '7d', label: '7 ngày qua' },
+  { value: '30d', label: '30 ngày qua' },
+];
+
 function AuditContent({ organization }: { organization: OrganizationSummary }) {
   const organizationId = organization.id;
   const canRead = useHasPermission('ORG_AUDIT_READ', organizationId);
 
   const [action, setAction] = useState('');
+  const [range, setRange] = useState('');
   const [offset, setOffset] = useState(0);
+
+  // Nửa đêm tính theo giờ VIỆT NAM, không theo máy người dùng — xem `vnDayRange`.
+  const period = useMemo(() => {
+    if (!range) return null;
+    return vnDayRange(range === 'today' ? 0 : range === '7d' ? 6 : 29);
+  }, [range]);
 
   // Không gọi API khi thiếu quyền: backend trả 403 và màn hình sẽ hiện một khối lỗi mà người dùng
   // không làm gì được. Nói thẳng "không có quyền" thì rõ hơn.
   const logs = useAuditLogs(canRead ? organizationId : null, {
     action: action || null,
+    from: period?.from ?? null,
+    to: period?.to ?? null,
     limit: PAGE_SIZE,
     offset,
   });
@@ -81,18 +98,36 @@ function AuditContent({ organization }: { organization: OrganizationSummary }) {
         title="Nhật ký"
         description={`Vết của mọi thao tác quản trị trong ${organization.name}.`}
         actions={
-          <div className="min-w-[220px]">
-            <Select
-              label="Lọc"
-              value={action}
-              options={FILTERS}
-              onChange={(event) => {
-                setAction(event.target.value);
-                // Đổi bộ lọc thì phải quay về trang đầu: giữ nguyên offset sẽ cho ra một trang
-                // trống ở giữa tập kết quả mới, và người dùng tưởng là không có dữ liệu.
-                setOffset(0);
-              }}
-            />
+          <div className="flex flex-wrap gap-3">
+            <div className="min-w-[200px]">
+              <Select
+                label="Hành động"
+                value={action}
+                options={FILTERS}
+                onChange={(event) => {
+                  setAction(event.target.value);
+                  // Đổi bộ lọc thì phải quay về trang đầu: giữ nguyên offset sẽ cho ra một trang
+                  // trống ở giữa tập kết quả mới, và người dùng tưởng là không có dữ liệu.
+                  setOffset(0);
+                }}
+              />
+            </div>
+            <div className="min-w-[200px]">
+              {/*
+                Lọc ở SERVER, không ở client. Danh sách này phân trang ở backend, nên một bộ lọc
+                client-side chỉ lọc trong trang đang xem — nó trông như tìm kiếm nhưng nói dối về
+                phần còn lại, và nhật ký là đúng chỗ người ta mở ra khi đang đi tìm sự cố.
+              */}
+              <Select
+                label="Thời gian"
+                value={range}
+                options={RANGE_FILTERS}
+                onChange={(event) => {
+                  setRange(event.target.value);
+                  setOffset(0);
+                }}
+              />
+            </div>
           </div>
         }
       />

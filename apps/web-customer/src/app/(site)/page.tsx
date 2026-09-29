@@ -1,4 +1,4 @@
-import { listPublicEvents, type PublicEventCard } from '@nexaticket/ts-sdk';
+import { listPublicEvents, listTrendingEvents, type PublicEventCard } from '@nexaticket/ts-sdk';
 import {
   CarouselRow,
   CategoryChips,
@@ -60,13 +60,17 @@ const CATEGORY_ROWS = [
  */
 async function loadHome() {
   try {
-    const [latest, ...categoryPages] = await Promise.all([
+    const [latest, trending, ...categoryPages] = await Promise.all([
       listPublicEvents(serverApi, { size: MAX_PAGE_SIZE }),
+      // `catch` riêng cho hàng "đang hot": nó phụ thuộc service thống kê, còn cả trang chủ thì
+      // không. Để nó rơi vào `catch` chung thì một service phụ trợ hỏng sẽ xoá sạch trang chủ —
+      // đúng thứ mà backend đã cố tránh bằng cách trả danh sách rỗng thay vì lỗi.
+      listTrendingEvents(serverApi, 8).catch(() => []),
       ...CATEGORY_ROWS.map((row) =>
         listPublicEvents(serverApi, { category: row.category, size: 12 }),
       ),
     ]);
-    return { ok: true as const, latest, categoryPages };
+    return { ok: true as const, latest, trending, categoryPages };
   } catch {
     return { ok: false as const };
   }
@@ -91,7 +95,7 @@ export default async function HomePage() {
     );
   }
 
-  const { latest, categoryPages } = result;
+  const { latest, categoryPages, trending } = result;
   const featured = latest.items.slice(0, 8);
 
   // Sự kiện chưa có suất nào thì không thuộc về khối "sắp diễn ra" — xếp nó vào đâu cũng sai.
@@ -137,6 +141,19 @@ export default async function HomePage() {
           </div>
           <div className={styles.grid}>{featured.map(toCard)}</div>
         </section>
+      ) : null}
+
+      {/*
+        Đặt trên các hàng thể loại vì nó là hàng có nhiều khả năng dẫn tới một lượt mua nhất — và
+        đặt DƯỚI "Sự kiện nổi bật" vì hàng kia luôn có nội dung, còn hàng này rỗng khi chưa ai mua
+        vé. Một hàng rỗng ở ngay đầu trang làm trang chủ trông như hỏng.
+      */}
+      {trending.length > 0 ? (
+        <div className={styles.row}>
+          <CarouselRow title="Đang hot" seeAllHref="/events">
+            {trending.map(toCard)}
+          </CarouselRow>
+        </div>
       ) : null}
 
       {CATEGORY_ROWS.map((row, index) => {

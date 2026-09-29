@@ -23,6 +23,36 @@ export interface AdminZone {
   seatsPerRow: number | null;
   capacity: number | null;
   seatCount: number;
+  /**
+   * Vị trí trên mặt bằng.
+   *
+   * `null` nghĩa là **chưa đặt**, và bố cục tự động xếp khu này xuống dưới sân khấu. Khác hẳn
+   * "đặt đúng chỗ mặc định": khu chưa đặt sẽ tự dịch xuống khi chèn thêm khu phía trên, khu đã
+   * đặt thì đứng yên. Đừng chuẩn hoá `null` thành một giá trị mặc định trước khi gửi lại —
+   * một lần lưu như thế sẽ ghim mọi khu lại vĩnh viễn.
+   */
+  layout: AdminZoneLayout | null;
+}
+
+/** `rotationDeg` có với `GRID`/`TABLE`; `innerRadius` có với `ARC`/`TABLE`; hai góc chỉ có với `ARC`.
+ * Trường không dùng trả `null`. */
+export interface AdminZoneLayout {
+  shape: 'GRID' | 'ARC' | 'TABLE';
+  originX: number;
+  originY: number;
+  rotationDeg: number | null;
+  innerRadius: number | null;
+  startAngleDeg: number | null;
+  endAngleDeg: number | null;
+}
+
+/** `height` với `CIRCLE` là đường kính, backend đã giải sẵn. */
+export interface AdminStage {
+  shape: 'RECTANGLE' | 'CIRCLE' | 'THRUST';
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface AdminVenue {
@@ -31,6 +61,8 @@ export interface AdminVenue {
   city: string;
   address: string | null;
   capacity: number;
+  /** `null` nghĩa là chưa khai và hệ thống dùng sân khấu mặc định — xem `AdminZone.layout`. */
+  stage: AdminStage | null;
   zones: AdminZone[];
 }
 

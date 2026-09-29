@@ -81,14 +81,22 @@ export function useRequestHumanAgent() {
  * lại rẻ hơn hẳn việc dựng thêm một kênh đẩy cùng phần dò kết nối lại của nó. Xem ghi chú ở
  * `SupportDeskController`.
  */
-export function useHandoffQueue(params: { mine?: boolean } = {}) {
+export function useHandoffQueue(
+  params: {
+    mine?: boolean;
+    status?: 'OPEN' | 'WAITING' | 'ASSIGNED' | 'RESOLVED' | 'ALL';
+    q?: string;
+  } = {},
+) {
   const client = useApiClient();
 
   return useQuery({
     queryKey: queryKeys.support.queue(params),
     queryFn: () => listHandoffs(client, params),
     staleTime: staleTime.SUPPORT_THREAD,
-    refetchInterval: 5_000,
+    // Chỉ hỏi lại liên tục khi đang xem việc phải làm. Bảng lịch sử thì không: phiếu đã đóng không
+    // tự đổi, và hỏi lại mỗi 5 giây trong lúc người ta đang đọc sẽ làm danh sách nhảy dưới con trỏ.
+    refetchInterval: params.status && params.status !== 'OPEN' ? false : 5_000,
   });
 }
 

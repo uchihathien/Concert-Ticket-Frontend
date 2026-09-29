@@ -9,6 +9,7 @@ import {
   Badge,
   Button,
   MoneyText,
+  PosterImage,
   coverGradient,
   eventCategoryLabel,
   formatDate,
@@ -20,6 +21,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { serverApi } from '@/lib/server-api';
+import { EventSeatMapPreview } from '@/components/EventSeatMapPreview';
 import styles from './detail.module.css';
 
 /** Backend đặt Cache-Control 2 phút; ISR khớp theo. */
@@ -101,10 +103,14 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
         {/* Poster làm nền, thổi to và làm mờ. Sự kiện chưa có poster thì rơi về dải màu của
             chính nó — cùng dải màu với thẻ ở trang chủ, nên khách nhận ra mình vừa bấm vào đâu. */}
         <div className={styles.heroBackdrop} style={{ background: coverGradient(event.slug) }}>
-          {event.posterUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img className={styles.heroBackdropImage} src={event.posterUrl} alt="" aria-hidden />
-          ) : null}
+          <PosterImage
+            className={styles.heroBackdropImage}
+            src={event.posterUrl}
+            alt=""
+            decorative
+            // Ảnh ở màn đầu: `lazy` ở đây làm chính ảnh lớn nhất của trang về muộn hơn cần thiết.
+            loading="eager"
+          />
         </div>
 
         <div className={styles.heroInner}>
@@ -196,12 +202,15 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
                 className={styles.heroPosterFrame}
                 style={{ background: coverGradient(event.slug) }}
               >
-                {event.posterUrl ? (
-                  // Dùng `<img>` chứ không `next/image`: poster đến từ database nên tên miền
-                  // không biết trước lúc build, không khai được `images.remotePatterns`.
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={event.posterUrl} alt={`Áp phích ${event.title}`} fetchPriority="high" />
-                ) : null}
+                {/*
+                  Poster chính — ảnh lớn nhất của trang, nên tải ngay thay vì lười. Ảnh hỏng thì
+                  `PosterImage` gỡ mình đi và dải màu của sự kiện lộ ra, không để lại khung trống.
+                */}
+                <PosterImage
+                  src={event.posterUrl}
+                  alt={`Áp phích ${event.title}`}
+                  loading="eager"
+                />
               </div>
             </div>
           </div>
@@ -244,6 +253,26 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
             </ul>
           )}
         </section>
+
+        {/*
+          Sơ đồ khán phòng đặt NGAY SAU danh sách suất và TRƯỚC khối địa điểm.
+          Đó là thứ tự câu hỏi của người đang cân nhắc: có suất nào phù hợp không → chỗ ngồi thế nào
+          và giá bao nhiêu → đi tới đó bằng cách nào. Đẩy sơ đồ xuống cuối trang thì phần lớn khách
+          bấm "Chọn chỗ" mà chưa từng thấy hình khán phòng.
+        */}
+        {event.sessions.length > 0 ? (
+          <section className={styles.panel}>
+            <h2 className={styles.panelTitle}>Sơ đồ chỗ và giá vé</h2>
+            <p className={styles.note}>
+              Giá theo từng khu, gộp qua mọi suất diễn. Chọn ghế cụ thể ở bước tiếp theo.
+            </p>
+            <EventSeatMapPreview
+              eventSlug={event.slug}
+              sessions={event.sessions}
+              seatMapImageUrl={event.seatMapImageUrl}
+            />
+          </section>
+        ) : null}
 
         {venueLine ? (
           <section className={styles.panel}>

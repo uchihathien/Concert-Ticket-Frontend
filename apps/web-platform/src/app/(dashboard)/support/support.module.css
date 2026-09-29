@@ -8,12 +8,54 @@
   display: grid;
   gap: var(--nt-space-6);
   grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
-  align-items: start;
+  /*
+   * Cả bàn hỗ trợ nằm gọn trong MỘT màn hình, và chỉ hai danh sách bên trong cuộn.
+   *
+   * Trước đó trang tự cao theo nội dung: hội thoại cao 52vh cộng ô soạn cộng tiêu đề trang vượt
+   * khung nhìn, nên người trực phải cuộn xuống mới thấy nút gửi — mỗi phiếu một lần cuộn, và họ
+   * làm việc này hàng chục lần một buổi.
+   *
+   * `--desk-chrome` là khoảng đệm của .content (2 × 32px) cộng chiều cao tiêu đề trang. Nó là con
+   * số ƯỚC LƯỢNG, không phải phép đo — tiêu đề đổi cỡ chữ thì sửa ở đây. `min-height` giữ cho khung
+   * còn dùng được trên màn thấp, chấp nhận trang cuộn một ít ở trường hợp ấy.
+   */
+  --desk-chrome: 9.5rem;
+  height: calc(100dvh - var(--desk-chrome));
+  min-height: 420px;
+  align-items: stretch;
+}
+
+/* Hai cột đều là khung cuộn độc lập. `min-height: 0` là BẮT BUỘC: thiếu nó thì con trong grid/flex
+   không co lại được và tự đẩy cao ra ngoài khung nhìn, đúng cái lỗi đang sửa. */
+.queue,
+.thread {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/*
+ * `.queue` KHÔNG cuộn — `.queueList` bên trong nó mới cuộn.
+ *
+ * Nếu để khung cuộn ở đây thì ô tìm và bộ lọc trượt lên mất khi người trực kéo danh sách, đúng lúc
+ * họ cần đổi từ khoá.
+ */
+.queue {
+  overflow: hidden;
 }
 
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
+    /* Một cột thì xếp chồng và cuộn cả trang: nhồi hai khung cuộn vào một màn hẹp là không đọc được. */
+    height: auto;
+    min-height: 0;
+  }
+
+  .queue,
+  .queueList {
+    overflow: visible;
+    min-height: 0;
   }
 }
 
@@ -22,7 +64,11 @@
   margin: 0;
   padding: 0;
   display: grid;
+  align-content: start;
   gap: var(--nt-space-2);
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .queueItem {
@@ -81,8 +127,12 @@
 }
 
 .conversation {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: var(--nt-space-4);
+  /* Chiếm hết cột, để ô soạn trả lời luôn nằm ở đáy khung — không trôi theo độ dài hội thoại. */
+  flex: 1;
+  min-height: 0;
 }
 
 .threadHead {
@@ -99,14 +149,20 @@
 /*
  * Cuộn TRONG khung hội thoại, không cuộn cả trang: ô soạn trả lời phải luôn nhìn thấy được, kể cả
  * khi hội thoại dài hai trăm lượt.
+ *
+ * `flex: 1` + `min-height: 0` thay cho `max-height: 52vh` trước đây. Chiều cao cố định theo vh
+ * không biết gì về tiêu đề phiếu và ô soạn nằm cùng cột, nên tổng ba thứ vẫn vượt khung nhìn —
+ * đúng lý do người trực phải cuộn mới bấm được nút gửi.
  */
 .messages {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
+  align-content: start;
   gap: var(--nt-space-3);
-  max-height: 52vh;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -155,6 +211,8 @@
   gap: var(--nt-space-2);
   border-top: 1px solid var(--nt-border);
   padding-top: var(--nt-space-4);
+  /* Không co lại khi hội thoại dài: ô soạn là thứ cuối cùng được phép mất chỗ. */
+  flex-shrink: 0;
 }
 
 .composerLabel {
@@ -197,4 +255,87 @@
   margin: 0;
   font-size: 13px;
   color: var(--nt-text-muted);
+}
+
+/*
+ * Ô tìm và bộ lọc trạng thái.
+ *
+ * Nằm TRONG cột hàng đợi và không cuộn theo nó: người trực gõ tìm rồi đọc kết quả, nên ô tìm phải
+ * đứng yên trong lúc danh sách bên dưới trượt.
+ */
+.filters {
+  display: grid;
+  gap: var(--nt-space-2);
+  padding-bottom: var(--nt-space-3);
+  margin-bottom: var(--nt-space-3);
+  border-bottom: 1px solid var(--nt-border);
+  flex-shrink: 0;
+}
+
+.searchLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--nt-text-muted);
+}
+
+.searchInput {
+  width: 100%;
+  font: inherit;
+  padding: var(--nt-space-2) var(--nt-space-3);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  background: var(--nt-surface);
+  color: var(--nt-text);
+}
+
+.searchInput:focus-visible {
+  outline: 2px solid var(--nt-accent);
+  outline-offset: 1px;
+}
+
+.filterTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nt-space-1);
+}
+
+.filterTab {
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  padding: var(--nt-space-1) var(--nt-space-3);
+  border: 1px solid var(--nt-border);
+  border-radius: 999px;
+  background: var(--nt-surface);
+  color: var(--nt-text-muted);
+}
+
+.filterTab:hover {
+  border-color: var(--nt-accent);
+}
+
+.filterTab:focus-visible {
+  outline: 2px solid var(--nt-accent);
+  outline-offset: 1px;
+}
+
+/* Trạng thái đang chọn phải đọc được mà KHÔNG chỉ dựa vào màu — `aria-pressed` cho trình đọc màn
+   hình, chữ đậm và viền cho người phân biệt màu kém. */
+.filterTabOn {
+  border-color: var(--nt-accent);
+  color: var(--nt-accent-text);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--nt-accent) 12%, transparent);
+}
+
+/* Ai đang cầm phiếu. Cùng tông với thời gian chờ: đây là dữ liệu phụ trợ, không phải nội dung. */
+.queueAgent {
+  font-size: 12px;
+  color: var(--nt-text-muted);
+}
+
+.threadAgent {
+  font-size: 13px;
+  color: var(--nt-text-muted);
+  margin-left: auto;
 }

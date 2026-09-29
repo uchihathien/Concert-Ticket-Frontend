@@ -6,7 +6,7 @@ import {
   Countdown,
   CopyField,
   MoneyText,
-  QrCode,
+  QrPanel,
   Skeleton,
   formatDateLong,
   formatTime,
@@ -262,8 +262,14 @@ function ManualTransfer({ order }: { order: Order }) {
     <div className={styles.transferBody}>
       {order.vietQrPayload ? (
         <div className={styles.qr}>
-          <QrCode value={order.vietQrPayload} size={220} label="Mã VietQR của đơn hàng" />
-          <p className={styles.qrNote}>Mở app ngân hàng và quét mã này.</p>
+          <QrPanel
+            variant="payment"
+            title="Chuyển khoản VietQR"
+            value={order.vietQrPayload}
+            size={220}
+            label="Mã VietQR của đơn hàng"
+            caption="Mở app ngân hàng và quét mã này."
+          />
         </div>
       ) : null}
 

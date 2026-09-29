@@ -16,7 +16,7 @@ import {
   Countdown,
   EmptyState,
   MoneyText,
-  QrCode,
+  QrPanel,
   Skeleton,
   cx,
   formatDateLong,
@@ -293,10 +293,14 @@ function PaymentPanel({
   return (
     <div className={styles.payment}>
       {order.vietQrPayload ? (
-        <QrCode
+        <QrPanel
+          variant="payment"
+          title="Chuyển khoản VietQR"
+          meta={order.orderNumber}
           value={order.vietQrPayload}
           size={180}
           label={`Mã VietQR để chuyển khoản cho đơn ${order.orderNumber}`}
+          caption="Mở app ngân hàng và quét mã này."
         />
       ) : null}
 

@@ -15,9 +15,7 @@ import type { FloorPlan } from '../types/floor-plan';
  * khi đã bán vé, nên đừng thêm cache-buster vào URL này.
  */
 export async function getPublicFloorPlan(client: ApiClient, slug: string): Promise<FloorPlan> {
-  const response = await client.get<FloorPlan>(
-    `/v1/events/${encodeURIComponent(slug)}/floor-plan`,
-  );
+  const response = await client.get<FloorPlan>(`/v1/events/${encodeURIComponent(slug)}/floor-plan`);
   return response.data;
 }
 

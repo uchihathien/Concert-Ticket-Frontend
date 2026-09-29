@@ -8,16 +8,23 @@ import {
   type SessionSales,
 } from '@nexaticket/ts-sdk';
 import {
+  Button,
   EmptyState,
   ErrorState,
+  FilterBar,
+  Input,
   MoneyText,
   PageHeader,
   Panel,
+  Select,
   Skeleton,
   Table,
+  foldText,
   formatNumber,
+  matchesText,
 } from '@nexaticket/ui';
 import { PlugZap } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { OrganizationGate } from '@/components/OrganizationGate';
 
 /**
@@ -41,6 +48,33 @@ function SalesBody({ organization }: { organization: OrganizationSummary }) {
   // nhất tra được tên — và nó đã nằm sẵn trong cache của trang Sự kiện.
   const events = useAdminEvents(organization.id);
 
+  const [query, setQuery] = useState('');
+  const [eventId, setEventId] = useState('');
+
+  const titleOf = useMemo(
+    () => new Map((events.data ?? []).map((event) => [event.id, event.title])),
+    [events.data],
+  );
+
+  /**
+   * Lọc tại chỗ, và ở đây điều đó đúng: `GET …/sales` trả **toàn bộ** suất trong một payload, nên
+   * dữ liệu đã nằm sẵn trong bộ nhớ. Khác hẳn trang Nhật ký — nó phân trang ở server, và một ô
+   * tìm kiếm client-side ở đó chỉ tìm trong trang đang xem.
+   *
+   * Sắp theo doanh thu giảm dần giữ nguyên sau khi lọc: câu hỏi của màn này luôn là "suất nào
+   * mang về nhiều tiền nhất", kể cả khi đã thu hẹp về một sự kiện.
+   */
+  const rows = useMemo(() => {
+    const needle = foldText(query.trim());
+    return [...(sales.data?.sessions ?? [])]
+      .filter((row) => {
+        if (eventId && row.eventId !== eventId) return false;
+        // Tìm cả theo mã: sự kiện đã xoá khỏi bảng quản trị vẫn còn số liệu và chỉ hiện ra mã.
+        return matchesText(needle, [titleOf.get(row.eventId), row.eventId]);
+      })
+      .sort((a, b) => b.grossVnd - a.grossVnd);
+  }, [sales.data, query, eventId, titleOf]);
+
   if (sales.isPending) {
     return (
       <>
@@ -61,8 +95,11 @@ function SalesBody({ organization }: { organization: OrganizationSummary }) {
     );
   }
 
-  const titleOf = new Map((events.data ?? []).map((event) => [event.id, event.title]));
-  const rows = [...sales.data.sessions].sort((a, b) => b.grossVnd - a.grossVnd);
+  const filtering = Boolean(query.trim() || eventId);
+  const totals = rows.reduce(
+    (sum, row) => ({ tickets: sum.tickets + row.ticketsSold, gross: sum.gross + row.grossVnd }),
+    { tickets: 0, gross: 0 },
+  );
 
   return (
     <>
@@ -71,19 +108,73 @@ function SalesBody({ organization }: { organization: OrganizationSummary }) {
       <div className="grid gap-4">
         {/* Hai ô số: dưới 640px xếp dọc. Một con số tiền bị bóp còn nửa màn hình điện thoại là
             một con số phải đọc hai lần. */}
+        {/*
+          Hai ô số cộng theo phần ĐANG LỌC, không phải tổng của cả tổ chức.
+
+          Lý do: một ô số đứng yên trong khi bảng bên dưới đổi sẽ đọc như hai câu trả lời cho cùng
+          một câu hỏi. Khi có bộ lọc, nhãn nói rõ đây là số của phần đã lọc.
+        */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Stat label="Vé đã bán" value={formatNumber(sales.data.totalTicketsSold)} />
           <Stat
-            label="Doanh thu"
-            value={<MoneyText amountVnd={sales.data.totalGrossVnd} strong />}
+            label={filtering ? 'Vé đã bán (đã lọc)' : 'Vé đã bán'}
+            value={formatNumber(totals.tickets)}
+          />
+          <Stat
+            label={filtering ? 'Doanh thu (đã lọc)' : 'Doanh thu'}
+            value={<MoneyText amountVnd={totals.gross} strong />}
           />
         </div>
 
-        {rows.length === 0 ? (
-          <EmptyState
-            title="Chưa bán được vé nào"
-            description="Số liệu xuất hiện ở đây sau đơn hàng đầu tiên được thanh toán."
+        <FilterBar
+          count={`${formatNumber(rows.length)} / ${formatNumber(
+            sales.data.sessions.length,
+          )} suất diễn`}
+          actions={
+            filtering ? (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setQuery('');
+                  setEventId('');
+                }}
+              >
+                Xoá bộ lọc
+              </Button>
+            ) : undefined
+          }
+        >
+          <Input
+            label="Tìm sự kiện"
+            placeholder="Tên sự kiện"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
           />
+          <Select
+            label="Sự kiện"
+            placeholder="Mọi sự kiện"
+            value={eventId}
+            options={(events.data ?? []).map((event) => ({
+              value: event.id,
+              label: event.title,
+            }))}
+            onChange={(event) => setEventId(event.target.value)}
+          />
+        </FilterBar>
+
+        {rows.length === 0 ? (
+          // Hai câu khác nhau cho hai tình huống khác nhau: nói "chưa bán được vé nào" với người
+          // vừa gõ nhầm một từ khoá là báo sai về chính doanh thu của họ.
+          filtering ? (
+            <EmptyState
+              title="Không có suất nào khớp"
+              description="Thử bỏ bớt từ khoá hoặc chọn lại sự kiện."
+            />
+          ) : (
+            <EmptyState
+              title="Chưa bán được vé nào"
+              description="Số liệu xuất hiện ở đây sau đơn hàng đầu tiên được thanh toán."
+            />
+          )
         ) : (
           <Panel>
             <Table<SessionSales>
