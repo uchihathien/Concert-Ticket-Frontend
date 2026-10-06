@@ -111,6 +111,20 @@
   color: var(--nt-text-muted);
 }
 
+/*
+ * Tên + email người hỏi. Đứng TRƯỚC lý do chuyển và nhỏ hơn nó một bậc: người trực quét hàng chờ để
+ * chọn phiếu, và thứ họ cần biết trước tiên là "ai", còn "vì sao" quyết định thứ tự xử lý.
+ * Cắt một dòng — email dài không được đẩy phần còn lại của thẻ xuống.
+ */
+.queueCustomer {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--nt-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .queueReason {
   font-weight: 600;
   font-size: 14px;
