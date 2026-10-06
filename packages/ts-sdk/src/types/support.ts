@@ -55,6 +55,18 @@ export interface Handoff {
   details: string | null;
   /** Câu khách đang hỏi, chụp lúc chuyển. Có mặt ngay ở danh sách để khỏi phải mở từng phiếu. */
   lastQuestion: string | null;
+  /** Id người hỏi. Luôn có — phiếu nào cũng thuộc về một tài khoản. */
+  customerId: string;
+  /**
+   * Tên và email người hỏi, để người trực biết đang trả lời AI.
+   *
+   * Trước đây phiếu không mang gì về khách, nên hàng chờ là một danh sách phiếu giống hệt nhau. Email
+   * cũng là đường duy nhất liên hệ lại khi khách đóng tab — phiếu bỏ dở sống 24 giờ.
+   *
+   * `null` khi identity-service không trả lời. Bàn hỗ trợ vẫn làm việc được, chỉ thiếu một cái tên.
+   */
+  customerName: string | null;
+  customerEmail: string | null;
   assignedAgentId: string | null;
   /**
    * Tên người trực đang cầm phiếu, để hiện lên màn hình.

@@ -168,6 +168,20 @@ export default function SupportPage() {
                         {formatDuration(handoff.waitingSeconds * 1000)}
                       </span>
                     </span>
+                    {/*
+                      AI đang hỏi — đặt NGAY dưới hàng nhãn, trước cả lý do chuyển.
+                      Người trực quét hàng chờ bằng mắt theo cột trái; tên nằm dưới câu hỏi thì phải
+                      đọc hết mới biết đang trả lời ai. Email đi kèm vì phiếu bỏ dở sống 24 giờ và
+                      trong 24 giờ đó đó là đường duy nhất chạm tới khách.
+                      Thiếu tên (identity không trả lời) thì vẫn hiện email; thiếu cả hai mới ẩn hẳn
+                      dòng này thay vì hiện chữ "khách hàng" không nói lên điều gì.
+                    */}
+                    {handoff.customerName || handoff.customerEmail ? (
+                      <span className={styles.queueCustomer}>
+                        {handoff.customerName ?? 'Chưa rõ tên'}
+                        {handoff.customerEmail ? ` · ${handoff.customerEmail}` : ''}
+                      </span>
+                    ) : null}
                     <span className={styles.queueReason}>{handoff.reason}</span>
                     {handoff.lastQuestion ? (
                       <span className={styles.queueQuestion}>“{handoff.lastQuestion}”</span>
