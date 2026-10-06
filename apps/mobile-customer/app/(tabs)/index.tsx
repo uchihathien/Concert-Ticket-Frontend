@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { publicApi } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/media-url';
+import { SaveEventButton } from '@/components/SaveEventButton';
 
 const categories = [
   { id: 'all', label: 'Tất cả' },
@@ -215,6 +216,7 @@ function EventCard({ event, index }: { event: PublicEventCard; index: number }) 
         <View style={styles.posterBadge}>
           <Text numberOfLines={1} style={styles.posterBadgeText}>{event.category}</Text>
         </View>
+        <SaveEventButton slug={event.slug} title={event.title} />
       </View>
       <Text numberOfLines={2} style={styles.eventTitle}>{event.title}</Text>
       <Text numberOfLines={1} style={styles.eventMeta}>
@@ -271,7 +273,7 @@ const styles = StyleSheet.create({
   posterRule: { position: 'absolute', top: 0, right: 16, width: 1, height: '58%', backgroundColor: 'rgba(255,255,255,0.45)' },
   posterWord: { color: '#FFF8EB', fontSize: 27, lineHeight: 27, fontWeight: '900', letterSpacing: 0.5 },
   posterCategory: { color: '#FFF8EB', fontSize: 9, textTransform: 'uppercase', marginTop: 7, opacity: 0.8 },
-  posterBadge: { position: 'absolute', top: 9, left: 9, maxWidth: '85%', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 5, backgroundColor: 'rgba(16,13,12,0.8)' },
+  posterBadge: { position: 'absolute', top: 9, left: 9, maxWidth: '68%', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 5, backgroundColor: 'rgba(16,13,12,0.8)' },
   posterBadgeText: { color: '#F5F1EF', fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
   eventTitle: { color: '#F5F1EF', fontSize: 14, lineHeight: 19, fontWeight: '700', marginTop: 10, minHeight: 38 },
   eventMeta: { color: '#A89E99', fontSize: 11, marginTop: 4 },

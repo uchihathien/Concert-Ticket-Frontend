@@ -11,7 +11,7 @@ export default createAuthMiddleware(nexaAuthEdge, {
   // '/auth' phải công khai: popup hạ cánh xuống '/auth/popup-done', và nếu người dùng huỷ
   // giữa chừng thì middleware sẽ đá popup sang '/login' — một trang đăng nhập lồng trong
   // popup đăng nhập.
-  publicPaths: ['/', '/events', '/login', '/auth', '/terms', '/privacy', '/support'],
+  publicPaths: ['/', '/events', '/login', '/auth', '/terms', '/privacy', '/support', '/me/saved'],
   signInPath: '/login',
 });
 
