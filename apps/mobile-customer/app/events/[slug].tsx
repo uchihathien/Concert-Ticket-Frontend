@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { publicApi } from '@/lib/api';
 import { useMobileAuth } from '@/lib/auth-context';
 import { resolveMediaUrl } from '@/lib/media-url';
+import { SaveEventButton } from '@/components/SaveEventButton';
 
 export default function EventDetailScreen() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
@@ -80,6 +81,7 @@ export default function EventDetailScreen() {
               <Text numberOfLines={3} style={styles.heroFallbackTitle}>{event.title}</Text>
             </View>
           )}
+          <SaveEventButton slug={event.slug} title={event.title} size="lg" />
         </View>
 
         <Text style={styles.category}>{event.category.replaceAll('-', ' ').toUpperCase()}</Text>

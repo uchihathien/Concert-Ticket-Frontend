@@ -43,6 +43,33 @@ const FAQ = [
     answer:
       'Tài khoản tổ chức do quản trị nền tảng tạo sau khi thẩm định, không có luồng tự đăng ký. Liên hệ để được hướng dẫn thủ tục.',
   },
+  // Năm câu dưới cũng có trong app điện thoại (apps/mobile-customer/lib/help-content.ts) — sửa một
+  // bên thì sửa cả bên kia để hai nơi trả lời giống nhau.
+  {
+    question: 'Mua vé gồm những bước nào?',
+    answer:
+      'Chọn sự kiện → chọn suất diễn → chọn khu và số lượng vé → đồng ý điều khoản → bấm “Giữ chỗ và thanh toán”. Chỗ được giữ trong ít phút; bạn quét mã QR thanh toán và chuyển khoản trong thời gian đó. Vé được phát ngay khi hệ thống nhận tiền.',
+  },
+  {
+    question: 'Tôi xem vé và mã vào cửa ở đâu?',
+    answer:
+      'Mở mục “Vé của tôi”. Mỗi vé ghi tên sự kiện, suất diễn, địa điểm, khu và ghế. Mở vé để hiện mã QR và đưa cho nhân viên soát vé ở cửa.',
+  },
+  {
+    question: 'Xem lại đơn hàng đã thanh toán ở đâu?',
+    answer:
+      'Vào Tài khoản → Đơn hàng của tôi. Lọc “Đã thanh toán” để xem các đơn đã trả tiền; đơn còn chờ thanh toán có thể mở lại để trả tiếp mà không tạo đơn mới.',
+  },
+  {
+    question: 'Một lần được mua tối đa bao nhiêu vé?',
+    answer:
+      'Mỗi suất diễn có giới hạn số vé cho một tài khoản do ban tổ chức đặt. Màn chọn chỗ hiện “Bạn còn mua được … vé cho suất này” trước khi bạn giữ chỗ.',
+  },
+  {
+    question: 'Sự kiện đã lưu được giữ ở đâu?',
+    answer:
+      'Danh sách sự kiện đã lưu nằm trên trình duyệt hoặc điện thoại bạn đang dùng — chưa đồng bộ giữa website và app. Xoá dữ liệu trình duyệt hoặc gỡ app sẽ xoá danh sách này.',
+  },
 ];
 
 export default function SupportPage() {

@@ -1,55 +1,146 @@
-import { SymbolView } from 'expo-symbols';
-import { Link } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SymbolView, type SymbolViewProps } from 'expo-symbols';
+import { Link, router, type Href } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMobileAuth } from '@/lib/auth-context';
+import { getMobileIdentity, type MobileIdentity } from '@/lib/auth-session';
+import { useSavedEvents } from '@/lib/saved-events';
 
 export default function AccountScreen() {
   const { ready, signedIn, signOut } = useMobileAuth();
+  const { slugs } = useSavedEvents();
+  const [identity, setIdentity] = useState<MobileIdentity | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    if (!signedIn) return;
+    void getMobileIdentity().then((value) => { if (active) setIdentity(value); });
+    return () => { active = false; };
+  }, [signedIn]);
+
+  const shownIdentity = signedIn ? identity : null;
+  const display = shownIdentity?.name || shownIdentity?.email || 'Tài khoản NexaTicket';
+  const initials = display
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(-2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('');
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.content}>
+    <SafeAreaView style={styles.screen} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <Text style={styles.eyebrow}>NEXATICKET / CÁ NHÂN</Text>
         <Text style={styles.title}>Tài khoản</Text>
-        <View style={styles.accountPanel}>
+
+        <View style={styles.identity}>
           <View style={styles.avatar}>
-            <SymbolView name={{ ios: 'person.fill', android: 'person', web: 'person' }} tintColor="#F2B705" size={28} />
+            {signedIn && initials ? (
+              <Text style={styles.avatarText}>{initials}</Text>
+            ) : (
+              <SymbolView name={{ ios: 'person.fill', android: 'person', web: 'person' }} tintColor="#F2B705" size={26} />
+            )}
           </View>
-          <Text style={styles.panelTitle}>{signedIn ? 'Bạn đã đăng nhập' : 'Chào bạn đến với NexaTicket'}</Text>
-          <Text style={styles.body}>{signedIn ? 'Phiên đăng nhập của bạn đã sẵn sàng.' : 'Đăng nhập để quản lý vé, đơn hàng và nhận gợi ý sự kiện phù hợp.'}</Text>
-          {!signedIn ? (
-            <Link href="/login" asChild>
-              <Pressable accessibilityRole="button" style={styles.loginButton}>
-                <Text style={styles.loginText}>{ready ? 'Đăng nhập' : 'Đang kiểm tra phiên...'}</Text>
-              </Pressable>
-            </Link>
-          ) : (
-            <Pressable accessibilityRole="button" onPress={() => void signOut()} style={styles.loginButton}>
-              <Text style={styles.loginText}>Đăng xuất</Text>
-            </Pressable>
-          )}
-          <View style={styles.divider} />
-          <Text style={styles.rowText}>Đơn hàng của tôi</Text>
-          <Text style={styles.rowText}>Sự kiện đã lưu</Text>
-          <Text style={styles.rowText}>Trợ giúp & hỗ trợ</Text>
+          <View style={styles.identityText}>
+            {signedIn ? (
+              <>
+                <Text numberOfLines={1} style={styles.name}>{display}</Text>
+                {shownIdentity?.email && shownIdentity.email !== display ? (
+                  <Text numberOfLines={1} style={styles.email}>{shownIdentity.email}</Text>
+                ) : null}
+              </>
+            ) : (
+              <>
+                <Text style={styles.name}>Chào bạn đến với NexaTicket</Text>
+                <Text style={styles.email}>Đăng nhập để quản lý vé và đơn hàng.</Text>
+              </>
+            )}
+          </View>
         </View>
-      </View>
+
+        {!signedIn ? (
+          <Link href="/login" asChild>
+            <Pressable accessibilityRole="button" style={styles.primaryButton}>
+              <Text style={styles.primaryText}>{ready ? 'Đăng nhập' : 'Đang kiểm tra phiên...'}</Text>
+            </Pressable>
+          </Link>
+        ) : null}
+
+        <View style={styles.menu}>
+          <MenuRow
+            icon={{ ios: 'bag.fill', android: 'receipt_long', web: 'receipt_long' }}
+            title="Đơn hàng của tôi"
+            detail={signedIn ? 'Đơn đã thanh toán và đang chờ' : 'Cần đăng nhập'}
+            href={signedIn ? '/orders' : '/login'}
+          />
+          <MenuRow
+            icon={{ ios: 'bookmark.fill', android: 'bookmark', web: 'bookmark' }}
+            title="Sự kiện đã lưu"
+            detail={slugs.length > 0 ? `${slugs.length} sự kiện` : 'Chưa lưu sự kiện nào'}
+            href="/saved"
+          />
+          <MenuRow
+            icon={{ ios: 'questionmark.circle.fill', android: 'help', web: 'help' }}
+            title="Trợ giúp & hỗ trợ"
+            detail="Câu hỏi thường gặp, liên hệ"
+            href="/help"
+            last
+          />
+        </View>
+
+        {signedIn ? (
+          <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}>
+            <Text style={styles.signOutText}>Đăng xuất</Text>
+          </Pressable>
+        ) : null}
+      </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function MenuRow({ icon, title, detail, href, last = false }: { icon: SymbolViewProps['name']; title: string; detail: string; href: Href; last?: boolean }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${detail}`}
+      onPress={() => router.push(href)}
+      style={({ pressed }) => [styles.row, !last && styles.rowBorder, pressed && styles.rowPressed]}
+    >
+      <View style={styles.rowIcon}>
+        <SymbolView name={icon} tintColor="#F2B705" size={18} />
+      </View>
+      <View style={styles.rowText}>
+        <Text style={styles.rowTitle}>{title}</Text>
+        <Text style={styles.rowDetail}>{detail}</Text>
+      </View>
+      <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor="#7A706B" size={16} />
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#171211' },
-  content: { flex: 1, paddingHorizontal: 20, paddingTop: 30 },
-  eyebrow: { color: '#F4796B', fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
+  content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 },
+  eyebrow: { color: '#F4796B', fontSize: 11, fontWeight: '800', letterSpacing: 1.2 },
   title: { color: '#F5F1EF', fontSize: 28, fontWeight: '800', marginTop: 8 },
-  accountPanel: { borderRadius: 14, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19', padding: 20, marginTop: 26 },
-  avatar: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center', borderRadius: 18, backgroundColor: '#2A2321', marginBottom: 15 },
-  panelTitle: { color: '#F5F1EF', fontSize: 17, fontWeight: '800' },
-  body: { color: '#A89E99', fontSize: 13, lineHeight: 20, marginTop: 7 },
-  loginButton: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16, marginTop: 16, borderRadius: 9, backgroundColor: '#C02A2A' },
-  loginText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  divider: { height: 1, backgroundColor: '#362E2B', marginVertical: 16 },
-  rowText: { color: '#C9C0BB', fontSize: 14, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#362E2B' },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 22, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
+  avatar: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center', borderRadius: 28, backgroundColor: '#2A2321', borderWidth: 1, borderColor: '#4A3F3B' },
+  avatarText: { color: '#F2B705', fontSize: 19, fontWeight: '800' },
+  identityText: { flex: 1, minWidth: 0 },
+  name: { color: '#F5F1EF', fontSize: 17, fontWeight: '800' },
+  email: { color: '#A89E99', fontSize: 13, marginTop: 4 },
+  primaryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 14, borderRadius: 10, backgroundColor: '#C02A2A' },
+  primaryText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
+  menu: { marginTop: 18, borderRadius: 14, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19', overflow: 'hidden' },
+  row: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: '#362E2B' },
+  rowPressed: { backgroundColor: '#2A2321' },
+  rowIcon: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#2A2321' },
+  rowText: { flex: 1, minWidth: 0 },
+  rowTitle: { color: '#F5F1EF', fontSize: 15, fontWeight: '700' },
+  rowDetail: { color: '#A89E99', fontSize: 12, marginTop: 2 },
+  signOut: { minHeight: 46, alignItems: 'center', justifyContent: 'center', marginTop: 18, borderRadius: 10, borderWidth: 1, borderColor: '#4A3F3B' },
+  signOutText: { color: '#FF7A6E', fontSize: 14, fontWeight: '700' },
+  pressed: { opacity: 0.8 },
 });

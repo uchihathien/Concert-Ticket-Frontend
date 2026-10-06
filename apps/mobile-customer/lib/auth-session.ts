@@ -105,3 +105,32 @@ async function clearMobileSession() {
     await SecureStore.deleteItemAsync(refreshTokenKey).catch(() => undefined);
   }
 }
+export interface MobileIdentity {
+  name: string | null;
+  email: string | null;
+}
+
+/**
+ * Tên + email của người đang đăng nhập, đọc từ claim trong access token Keycloak.
+ *
+ * Chỉ để HIỂN THỊ — không xác thực chữ ký (backend làm việc đó ở mọi request). Không gọi thêm API
+ * nào: token đã có sẵn `name`, `email`, `preferred_username` nhờ scope `profile email`.
+ */
+export async function getMobileIdentity(): Promise<MobileIdentity | null> {
+  const token = await getMobileAccessToken();
+  if (!token) return null;
+  try {
+    const segment = token.split('.')[1] ?? '';
+    const base64 = segment.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(segment.length / 4) * 4, '=');
+    const json = decodeURIComponent(
+      Array.from(atob(base64), (char) => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`).join(''),
+    );
+    const claims = JSON.parse(json) as { name?: string; email?: string; preferred_username?: string };
+    return {
+      name: claims.name?.trim() || claims.preferred_username || null,
+      email: claims.email ?? null,
+    };
+  } catch {
+    return null;
+  }
+}

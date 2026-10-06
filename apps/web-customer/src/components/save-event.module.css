@@ -1,0 +1,54 @@
+/* Nút lưu sự kiện — đè góc trên bên phải ảnh. Xem SaveEventButton.tsx. */
+
+.cardWrap {
+  position: relative;
+  min-width: 0;
+}
+
+.button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgb(255 255 255 / 18%);
+  /* Nền tối trong mờ: nổi trên mọi poster, sáng hay tối. */
+  background: rgb(16 12 11 / 62%);
+  color: #ffffff;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition:
+    background-color var(--nt-motion-ui),
+    transform var(--nt-motion-ui);
+}
+
+.button[data-size='lg'] {
+  top: 14px;
+  right: 14px;
+  width: 44px;
+  height: 44px;
+}
+
+.button:hover {
+  background: rgb(16 12 11 / 82%);
+}
+
+.button:active {
+  transform: scale(0.92);
+}
+
+/* Đã lưu: vàng kim — màu nhấn của site. */
+.button[data-saved] {
+  background: var(--nt-accent);
+  border-color: var(--nt-accent);
+  color: var(--nt-accent-ink);
+}
+
+.button:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
