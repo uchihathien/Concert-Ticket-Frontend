@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "NexaTicket Platform",
+    "slug": "nexaticket-mobile-platform",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "nexaticket-platform",
+    "userInterfaceStyle": "dark",
+    "ios": { "bundleIdentifier": "com.nexaticket.platform", "supportsTablet": true },
+    "android": { "package": "com.nexaticket.platform" },
+    "plugins": ["expo-router", "expo-secure-store"],
+    "experiments": { "typedRoutes": true }
+  }
+}

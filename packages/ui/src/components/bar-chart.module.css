@@ -69,7 +69,8 @@
 .fill {
   display: block;
   height: 100%;
-  background: var(--nt-primary);
+  /* Token riêng cho mark dữ liệu, dự phòng về primary: app nào không khai thì không đổi gì. */
+  background: var(--nt-chart-bar, var(--nt-primary));
   /*
    * Đầu mút tròn 4px, chân vuông: thanh mọc từ một đường gốc chung, và làm tròn cả hai đầu sẽ
    * làm những thanh ngắn trông dài hơn thực tế.
