@@ -30,7 +30,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
     <AppShell
       brand={
         <>
-          <BrandLogo variant="lockup-on-light" height={26} priority />
+          <BrandLogo variant="lockup" height={26} priority />
           <BrandSuffix>Tổ chức</BrandSuffix>
         </>
       }

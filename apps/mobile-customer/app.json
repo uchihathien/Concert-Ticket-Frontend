@@ -9,6 +9,9 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "bundleIdentifier": "com.nexaticket.customer",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
       "supportsTablet": true
     },
     "android": {
@@ -40,6 +43,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2c265cc9-4a68-4565-8bf6-e83166117d3b"
+      }
     }
   }
 }
