@@ -218,7 +218,20 @@ function RulesForm({
 
   const submit = (published: boolean) => {
     save.mutate(
-      { eventTitle: title.trim(), content: content.trim(), published },
+      {
+        eventTitle: title.trim(),
+        content: content.trim(),
+        // GIỮ NGUYÊN chính sách hoàn vé đang lưu. Form này chỉ sửa VĂN BẢN quy định; hai trường dưới
+        // đây chưa có ô nhập, nên gửi một giá trị tự nghĩ ra là âm thầm đổi chính sách tiền bạc của
+        // sự kiện mỗi lần ai đó sửa một dấu phẩy trong quy định.
+        //
+        // Mặc định cho bản ghi MỚI lấy đúng mặc định của cột trong V0102 (false / 0), không phải một
+        // con số dễ chịu hơn: bật hoàn vé là một quyết định, và nó phải do người khai quy định bấm,
+        // không phải do giá trị mặc định của một form quyết định hộ.
+        refundAllowed: initial?.refundAllowed ?? false,
+        refundWindowHours: initial?.refundWindowHours ?? 0,
+        published,
+      },
       {
         onSuccess: () =>
           toast.show({
