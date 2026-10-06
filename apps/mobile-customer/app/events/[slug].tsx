@@ -102,6 +102,7 @@ export default function EventDetailScreen() {
           </View>
         ) : (
           event.sessions.map((session) => {
+            const sales = salesState(session);
             const selected = selectedSession === session.id;
             const start = new Date(session.startsAt);
             const sessionPrice = session.tiers.length
@@ -111,16 +112,23 @@ export default function EventDetailScreen() {
               <Pressable
                 key={session.id}
                 accessibilityRole="button"
-                accessibilityState={{ selected }}
+                accessibilityState={{ selected, disabled: sales !== 'open' }}
+                disabled={sales !== 'open'}
                 onPress={() => setSelectedSession(session.id)}
-                style={[styles.session, selected && styles.sessionSelected]}>
+                style={[styles.session, selected && styles.sessionSelected, sales !== 'open' && styles.sessionDisabled]}>
                 <View style={styles.sessionDate}>
                   <Text style={styles.sessionDay}>{new Intl.DateTimeFormat('vi-VN', { day: '2-digit' }).format(start)}</Text>
                   <Text style={styles.sessionMonth}>{new Intl.DateTimeFormat('vi-VN', { month: 'short' }).format(start)}</Text>
                 </View>
                 <View style={styles.sessionInfo}>
                   <Text style={styles.sessionTime}>{new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' }).format(start)}</Text>
-                  <Text style={styles.muted}>{event.venueName ?? event.city ?? 'Địa điểm sẽ cập nhật'}</Text>
+                  <Text style={styles.muted}>
+                    {sales === 'upcoming'
+                      ? `Mở bán ${formatSalesTime(session.salesOpenAt)}`
+                      : sales === 'closed'
+                        ? 'Đã đóng bán'
+                        : event.venueName ?? event.city ?? 'Địa điểm sẽ cập nhật'}
+                  </Text>
                 </View>
                 <Text style={styles.price}>{sessionPrice === null ? '—' : formatPrice(sessionPrice)}</Text>
               </Pressable>
@@ -168,6 +176,18 @@ export default function EventDetailScreen() {
   );
 }
 
+/** Cùng điều kiện với inventory `SessionInventory.isSalesOpenAt`: mở từ salesOpenAt, đóng tại salesCloseAt. */
+function salesState(session: { salesOpenAt: string | null; salesCloseAt: string | null }, now = Date.now()) {
+  if (session.salesOpenAt && now < Date.parse(session.salesOpenAt)) return 'upcoming';
+  if (session.salesCloseAt && now >= Date.parse(session.salesCloseAt)) return 'closed';
+  return 'open';
+}
+
+function formatSalesTime(value: string | null) {
+  if (!value) return '';
+  return new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }).format(new Date(value));
+}
+
 function Header() {
   return (
     <View style={styles.header}>
@@ -190,7 +210,7 @@ const styles = StyleSheet.create({
   backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
   headerTitle: { color: '#F5F1EF', fontSize: 14, fontWeight: '700' },
   content: { paddingHorizontal: 18, paddingBottom: 26 },
-  hero: { width: '100%', aspectRatio: 1.28, overflow: 'hidden', borderRadius: 16, marginTop: 5, marginBottom: 21, backgroundColor: '#44272A' },
+  hero: { width: '100%', aspectRatio: 1.7, overflow: 'hidden', borderRadius: 16, marginTop: 5, marginBottom: 21, backgroundColor: '#211B19' },
   heroImage: { width: '100%', height: '100%' },
   heroFallback: { flex: 1, justifyContent: 'flex-end', padding: 21, backgroundColor: '#44272A' },
   heroKicker: { color: '#F2B705', fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
@@ -206,6 +226,7 @@ const styles = StyleSheet.create({
   emptySession: { minHeight: 70, justifyContent: 'center', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#362E2B' },
   session: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 13, padding: 12, marginBottom: 9, borderRadius: 12, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
   sessionSelected: { borderColor: '#F2B705' },
+  sessionDisabled: { opacity: 0.45 },
   sessionDate: { width: 46, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: '#2A2321' },
   sessionDay: { color: '#F5F1EF', fontSize: 17, fontWeight: '800' },
   sessionMonth: { color: '#A89E99', fontSize: 10, textTransform: 'uppercase' },

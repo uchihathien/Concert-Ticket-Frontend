@@ -411,7 +411,11 @@ function SessionCard({ session }: { session: PublicSession }) {
           {session.tiers.map((tier) => (
             <li key={tier.id} className={styles.tier}>
               <span className={styles.tierName}>{tier.name}</span>
-              <span className={styles.tierZone}>{tier.zoneName}</span>
+              {/* Nhiều sự kiện đặt tên hạng vé đúng bằng tên khu ("Khu chính" · "Khu chính"): khi đó
+                  dòng phụ chỉ lặp lại dòng chính. Chỉ hiện khi nó thêm được thông tin. */}
+              {tier.zoneName && tier.zoneName !== tier.name ? (
+                <span className={styles.tierZone}>{tier.zoneName}</span>
+              ) : null}
               <span className={styles.tierPrice}>{formatVnd(tier.priceVnd)}</span>
             </li>
           ))}

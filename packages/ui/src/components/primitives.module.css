@@ -32,8 +32,17 @@
 /* Vùng chạm ≥ 44px trên mobile (ui-direction.md §6.6). Chiều cao hiển thị nhỏ hơn vẫn được,
    nhưng vùng bấm thì không. */
 .md {
-  min-height: 44px;
-  font-size: 15px;
+  /* Biến mật độ do `admin.css` khai; không khai thì giữ 44px/15px như cũ. */
+  min-height: var(--nt-control-height, 44px);
+  font-size: var(--nt-control-font, 15px);
+}
+
+/* Nút trong dòng bảng và thanh công cụ. Không dùng cho hành động chính của trang. */
+.sm {
+  min-height: 32px;
+  font-size: 13px;
+  padding: 0 var(--nt-space-3);
+  gap: 6px;
 }
 
 .lg {
@@ -133,7 +142,8 @@
 }
 
 .control {
-  min-height: 44px;
+  min-height: var(--nt-control-height, 44px);
+  font-size: var(--nt-control-font, inherit);
   width: 100%;
   padding: 0 var(--nt-space-3);
   background: var(--nt-surface);
@@ -148,6 +158,10 @@
 
 .control[aria-invalid='true'] {
   border-color: var(--nt-danger-text);
+}
+
+.control:hover:not(:disabled):not(:focus) {
+  border-color: color-mix(in srgb, var(--nt-text-muted) 45%, var(--nt-border));
 }
 
 .control:disabled {
@@ -254,4 +268,45 @@
 .moneyStrong {
   font-weight: 700;
   color: var(--nt-primary-text);
+}
+
+
+/* Khu quản trị -------------------------------------------------------------
+   Huy hiệu trạng thái có chấm màu ở đầu: đọc được trạng thái ngay cả khi lướt nhanh một cột dài,
+   và đó là quy ước của hầu hết bảng điều khiển. Giới hạn ở hai app quản trị — trang khách hàng
+   dùng huy hiệu làm nhãn trang trí trên poster, chấm ở đó là nhiễu. */
+:global(:root[data-app='admin']) .badge,
+:global(:root[data-app='platform']) .badge {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  padding: 1px 8px;
+  white-space: nowrap;
+}
+
+:global(:root[data-app='admin']) :is(.badgeSuccess, .badgeWarn, .badgeDanger, .badgeAccent)::before,
+:global(:root[data-app='platform']) :is(.badgeSuccess, .badgeWarn, .badgeDanger, .badgeAccent)::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex: none;
+}
+
+:global(:root[data-app='admin']) .label,
+:global(:root[data-app='platform']) .label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nt-text);
+}
+
+:global(:root[data-app='admin']) .primary,
+:global(:root[data-app='platform']) .primary {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+:global(:root[data-app='admin']) .secondary,
+:global(:root[data-app='platform']) .secondary {
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }

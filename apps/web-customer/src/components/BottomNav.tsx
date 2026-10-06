@@ -14,11 +14,13 @@ const ITEMS = [
  * Bottom nav mobile — ba việc người dùng thật sự làm (ui-direction.md §4).
  *
  * Màn chọn chỗ (C-SEATS) phải ẩn thanh này: ở đó mỗi pixel chiều cao là một hàng ghế, và một
- * thanh cố định 56px đè lên vùng chạm là nguồn bấm nhầm. Khi dựng C-SEATS ở G2, thêm điều kiện
- * ẩn theo `pathname` tại đây.
+ * thanh cố định 56px đè lên vùng chạm là nguồn bấm nhầm. Ở đó khung tóm tắt + nút "Giữ chỗ" đã
+ * dính đáy, nên thanh này chỉ chồng thêm một lớp nữa lên đúng vùng khách cần bấm.
  */
 export function BottomNav() {
   const pathname = usePathname();
+
+  if (pathname.startsWith('/booking/')) return null;
 
   return (
     <nav className={styles.bottomNav} aria-label="Điều hướng chính">

@@ -19,6 +19,16 @@ export interface ScanRequest {
   deviceId?: string;
 }
 
+/** Suất diễn được nhân viên phép check-in trong một tổ chức. */
+export interface CheckinSession {
+  eventSessionId: string;
+  eventId: string;
+  eventTitle: string;
+  venueName: string;
+  startsAt: string;
+  endsAt: string | null;
+}
+
 /**
  * Backend **luôn trả 200**, kể cả khi vé bị từ chối — kết quả nằm trong body.
  *

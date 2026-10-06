@@ -136,10 +136,10 @@
 /* Nền trắng đặc quanh mã, kể cả ở giao diện tối: máy quét cần tương phản đúng chiều, và vùng
    trắng cũng là thứ khách nhìn thấy trước khi giơ điện thoại ra. */
 .qrBox {
-  padding: var(--nt-space-2);
-  background: #fff;
-  border-radius: var(--nt-radius);
-  line-height: 0;
+  /* Chỉ là chỗ đặt. Bản trước có nền trắng + padding + `line-height: 0` — dáng dành cho một ảnh
+     QR trần. Bên trong giờ là `QrPanel`, vốn đã có khung và nền trắng riêng cho mã: viền trắng
+     ngoài thành thừa, và `line-height: 0` truyền xuống chữ của panel làm "Mã vào cửa" chồng lên
+     tên hạng vé khi dòng tiêu đề xuống hàng trong ô hẹp. */
   margin-bottom: var(--nt-space-3);
 }
 

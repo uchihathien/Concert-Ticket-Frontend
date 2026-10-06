@@ -26,6 +26,8 @@ const nextConfig = {
   // Access token KHÔNG BAO GIỜ chạm localStorage/sessionStorage (plan/frontend.md §4).
   // Session nằm ở cookie httpOnly do route handler quản lý.
   poweredByHeader: false,
+  // Biểu tượng dev của Next mặc định ở góc trái dưới — đúng chỗ khối tài khoản của sidebar.
+  devIndicators: { position: 'bottom-right' },
   // CI chạy `pnpm lint` riêng với cấu hình flat của workspace. Next không đọc được cấu hình
   // tái xuất từ package nên báo nhầm là thiếu plugin, và lint hai lần chỉ tốn thời gian.
   eslint: { ignoreDuringBuilds: true },
