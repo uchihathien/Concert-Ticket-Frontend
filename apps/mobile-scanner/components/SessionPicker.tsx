@@ -8,9 +8,10 @@ import {
   type CheckinSession,
 } from '@nexaticket/ts-sdk';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { api } from '@/lib/api';
+import { matchesSession } from '@/lib/session-search';
 
 interface SelectableSession extends CheckinSession {
   organizationId: string;
@@ -27,6 +28,13 @@ export function SessionPicker() {
   const [acceptingId, setAcceptingId] = useState<string | null>(null);
   const [hasCheckinPermission, setHasCheckinPermission] = useState(false);
   const [reload, setReload] = useState(0);
+  const [query, setQuery] = useState('');
+
+  const visibleSessions = useMemo(
+    () => sessions.filter((session) => matchesSession(session, query)),
+    [sessions, query],
+  );
+  const searching = query.trim().length > 0;
 
   useEffect(() => {
     let active = true;
@@ -189,7 +197,50 @@ export function SessionPicker() {
       ) : (
         <View style={styles.list}>
           <Text style={styles.sectionTitle}>SUẤT ĐƯỢC PHÉP SOÁT</Text>
-          {sessions.map((session) => (
+
+          {/* Lọc tại chỗ: không phân biệt dấu/hoa thường, nhiều từ thì mỗi từ đều phải khớp. */}
+          <View style={styles.searchBox}>
+            <Text style={styles.searchIcon} aria-hidden>⌕</Text>
+            <TextInput
+              value={query}
+              onChangeText={setQuery}
+              placeholder="Tên sự kiện, địa điểm, ngày (vd 15/10)…"
+              placeholderTextColor="#6F7B72"
+              accessibilityLabel="Tìm suất diễn"
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+              style={styles.searchInput}
+            />
+            {searching ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Xoá từ khoá tìm kiếm"
+                hitSlop={10}
+                onPress={() => setQuery('')}
+                style={styles.clearButton}
+              >
+                <Text style={styles.clearText}>×</Text>
+              </Pressable>
+            ) : null}
+          </View>
+          {searching ? (
+            <Text accessibilityLiveRegion="polite" style={styles.resultCount}>
+              {visibleSessions.length} / {sessions.length} suất khớp
+            </Text>
+          ) : null}
+
+          {visibleSessions.length === 0 ? (
+            <View style={styles.state}>
+              <Text style={styles.title}>Không có suất nào khớp “{query.trim()}”</Text>
+              <Text style={styles.muted}>Thử tên ngắn hơn, tên địa điểm hoặc ngày diễn (vd 15/10).</Text>
+              <Pressable accessibilityRole="button" onPress={() => setQuery('')} style={styles.retry}>
+                <Text style={styles.retryText}>XOÁ TÌM KIẾM</Text>
+              </Pressable>
+            </View>
+          ) : null}
+
+          {visibleSessions.map((session) => (
         <Pressable
           key={`${session.organizationId}:${session.eventSessionId}`}
           accessibilityRole="button"
@@ -260,4 +311,10 @@ const styles = StyleSheet.create({
   retry: { alignSelf: 'flex-start', marginTop: 12, paddingVertical: 8 },
   retryText: { color: '#D5FF66', fontSize: 10, fontWeight: '900', letterSpacing: 1 },
   pressed: { opacity: 0.8 },
+  searchBox: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12, borderRadius: 8, borderWidth: 1, borderColor: '#344238', backgroundColor: '#121912' },
+  searchIcon: { color: '#A6B1A8', fontSize: 18 },
+  searchInput: { flex: 1, minHeight: 46, color: '#F1F5F1', fontSize: 14 },
+  clearButton: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#273228' },
+  clearText: { color: '#F1F5F1', fontSize: 18, lineHeight: 20, fontWeight: '700' },
+  resultCount: { color: '#A6B1A8', fontSize: 11 },
 });

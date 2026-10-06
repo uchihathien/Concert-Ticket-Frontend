@@ -8,6 +8,8 @@ import {
   type SessionSales,
 } from '@nexaticket/ts-sdk';
 import {
+  BarChart,
+  type BarChartRow,
   Button,
   EmptyState,
   ErrorState,
@@ -23,7 +25,7 @@ import {
   formatNumber,
   matchesText,
 } from '@nexaticket/ui';
-import { Banknote, PlugZap, Ticket } from 'lucide-react';
+import { Banknote, PlugZap, ReceiptText, Ticket } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { OrganizationGate } from '@/components/OrganizationGate';
 
@@ -97,9 +99,14 @@ function SalesBody({ organization }: { organization: OrganizationSummary }) {
 
   const filtering = Boolean(query.trim() || eventId);
   const totals = rows.reduce(
-    (sum, row) => ({ tickets: sum.tickets + row.ticketsSold, gross: sum.gross + row.grossVnd }),
-    { tickets: 0, gross: 0 },
+    (sum, row) => ({
+      tickets: sum.tickets + row.ticketsSold,
+      gross: sum.gross + row.grossVnd,
+      ordersPaid: sum.ordersPaid + row.ordersPaid,
+    }),
+    { tickets: 0, gross: 0, ordersPaid: 0 },
   );
+  const chartRows = revenueByEvent(rows, (id) => titleOf.get(id));
 
   return (
     <>
@@ -114,16 +121,22 @@ function SalesBody({ organization }: { organization: OrganizationSummary }) {
           Lý do: một ô số đứng yên trong khi bảng bên dưới đổi sẽ đọc như hai câu trả lời cho cùng
           một câu hỏi. Khi có bộ lọc, nhãn nói rõ đây là số của phần đã lọc.
         */}
-        <div className="grid gap-4 sm:grid-cols-2">
+        {/* Cùng ba con số với app Organizer; doanh thu đứng đầu vì là câu hỏi chính của trang. */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Stat
+            label={filtering ? 'Doanh thu (đã lọc)' : 'Doanh thu'}
+            value={<MoneyText amountVnd={totals.gross} strong />}
+            icon={<Banknote />}
+          />
           <Stat
             label={filtering ? 'Vé đã bán (đã lọc)' : 'Vé đã bán'}
             value={formatNumber(totals.tickets)}
             icon={<Ticket />}
           />
           <Stat
-            label={filtering ? 'Doanh thu (đã lọc)' : 'Doanh thu'}
-            value={<MoneyText amountVnd={totals.gross} strong />}
-            icon={<Banknote />}
+            label={filtering ? 'Đơn đã thanh toán (đã lọc)' : 'Đơn đã thanh toán'}
+            value={formatNumber(totals.ordersPaid)}
+            icon={<ReceiptText />}
           />
         </div>
 
@@ -162,6 +175,16 @@ function SalesBody({ organization }: { organization: OrganizationSummary }) {
             onChange={(event) => setEventId(event.target.value)}
           />
         </FilterBar>
+
+        {/*
+          Biểu đồ nằm DƯỚI bộ lọc và TRÊN bảng: nó vẽ đúng lát dữ liệu bộ lọc vừa cắt, cùng dòng
+          đọc với ba ô số và bảng. Gộp theo sự kiện (bảng bên dưới vẫn chi tiết theo suất).
+        */}
+        {chartRows.length > 0 ? (
+          <Panel>
+            <BarChart caption="Doanh thu theo sự kiện" rows={chartRows} format={formatMoneyShort} />
+          </Panel>
+        ) : null}
 
         {rows.length === 0 ? (
           // Hai câu khác nhau cho hai tình huống khác nhau: nói "chưa bán được vé nào" với người
@@ -290,4 +313,57 @@ function ServiceUnavailableNotice({ error, onRetry }: { error: unknown; onRetry:
       ) : null}
     </Panel>
   );
+}
+
+/** Số thanh tối đa; phần còn lại gộp thành "Khác" — giống biểu đồ của app Organizer. */
+const MAX_BARS = 6;
+
+/**
+ * Gộp doanh thu theo sự kiện cho biểu đồ, giảm dần; sự kiện chưa có doanh thu không vẽ (bảng bên
+ * dưới vẫn liệt kê đủ). Chú giải khi trỏ vào thanh mang số vé và số đơn — phần mà app hiện khi chạm.
+ */
+function revenueByEvent(rows: SessionSales[], titleOf: (eventId: string) => string | undefined): BarChartRow[] {
+  const groups = new Map<string, { gross: number; tickets: number; paid: number; expired: number; cancelled: number; sessions: number }>();
+  for (const row of rows) {
+    const group = groups.get(row.eventId) ?? { gross: 0, tickets: 0, paid: 0, expired: 0, cancelled: 0, sessions: 0 };
+    group.gross += row.grossVnd;
+    group.tickets += row.ticketsSold;
+    group.paid += row.ordersPaid;
+    group.expired += row.ordersExpired;
+    group.cancelled += row.ordersCancelled;
+    group.sessions += 1;
+    groups.set(row.eventId, group);
+  }
+
+  const hint = (g: { tickets: number; paid: number; expired: number; cancelled: number; sessions: number }) =>
+    `${formatNumber(g.tickets)} vé · ${formatNumber(g.paid)} đơn đã trả · ${formatNumber(g.expired)} hết hạn · ${formatNumber(g.cancelled)} huỷ · ${formatNumber(g.sessions)} suất`;
+
+  const sorted = [...groups.entries()].filter(([, g]) => g.gross > 0).sort((a, b) => b[1].gross - a[1].gross);
+  const shown = sorted.slice(0, MAX_BARS).map(([eventId, g]) => ({
+    key: eventId,
+    label: titleOf(eventId) ?? `Sự kiện ${eventId.slice(0, 8)}`,
+    value: g.gross,
+    hint: hint(g),
+  }));
+
+  const rest = sorted.slice(MAX_BARS);
+  if (rest.length > 0) {
+    const other = rest.reduce(
+      (sum, [, g]) => ({
+        gross: sum.gross + g.gross,
+        tickets: sum.tickets + g.tickets,
+        paid: sum.paid + g.paid,
+        expired: sum.expired + g.expired,
+        cancelled: sum.cancelled + g.cancelled,
+        sessions: sum.sessions + g.sessions,
+      }),
+      { gross: 0, tickets: 0, paid: 0, expired: 0, cancelled: 0, sessions: 0 },
+    );
+    shown.push({ key: '__other__', label: `Khác (${rest.length} sự kiện)`, value: other.gross, hint: hint(other) });
+  }
+  return shown;
+}
+
+function formatMoneyShort(value: number): string {
+  return `${new Intl.NumberFormat('vi-VN').format(value)} ₫`;
 }
