@@ -8,6 +8,7 @@
 export { ApiError, networkError } from './http/api-error';
 export type { ApiErrorBody } from './http/api-error';
 
+export { resolveApiBaseUrl } from './http/base-url';
 export { ApiClient, createApiClient } from './http/client';
 export type { ApiClientOptions, ApiResponse, RequestOptions } from './http/client';
 

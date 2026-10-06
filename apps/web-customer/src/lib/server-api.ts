@@ -16,7 +16,10 @@ import { createApiClient, listPublicEvents } from '@nexaticket/ts-sdk';
  */
 export const serverApi = createApiClient({
   baseUrl:
-    process.env.API_BASE_URL ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080',
+    // `||` chứ KHÔNG `??`: build-arg rỗng là chuỗi rỗng, và `??` cho nó đi qua — xem
+    // resolveApiBaseUrl. Ở đây KHÔNG dùng chế độ cùng gốc: tiến trình Node không có "gốc" nào để
+    // nối đường tương đối vào, nên phải là URL tuyệt đối. prod.yml cấp API_BASE_URL=http://api-gateway:8080.
+    process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080',
 });
 
 /**

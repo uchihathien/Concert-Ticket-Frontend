@@ -52,14 +52,24 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.app }}
           cache-to: type=gha,mode=max,scope=${{ matrix.app }}
 
-      # `NEXT_PUBLIC_*` được NHÚNG vào bundle lúc build, không đọc lúc chạy (Dockerfile đã ghi).
-      # Nên một biến quên khai không hỏng bản build — nó ra một ảnh gọi vào `undefined`, và chỗ đó
-      # chỉ lộ ra khi người dùng thật bấm nút. Chặn tại đây, lúc còn rẻ.
+      # `NEXT_PUBLIC_*` được NHÚNG vào bundle lúc build, không đọc lúc chạy (Dockerfile đã ghi). Nên
+      # một biến sai không hỏng bản build — nó ra một ảnh gọi vào chỗ khác, và chỗ đó chỉ lộ ra khi
+      # người dùng thật bấm nút. Kiểm tại đây, lúc còn rẻ.
+      #
+      # BIẾN RỖNG KHÔNG CÒN LÀ LỖI. `resolveApiBaseUrl` biến nó thành chế độ CÙNG GỐC, và nginx của hệ
+      # phục vụ `/v1/` ngay trên tên miền web — một đích hợp lệ, và tốt hơn URL tuyệt đối vì không có
+      # preflight CORS. Bản trước `exit 1` ở đây, nhưng bước này chạy SAU `build-push-action`: ảnh đã
+      # nằm trên GHCR với tag `:main` rồi, job đỏ không thu hồi được nó. Đó là cách một ảnh có
+      # `baseUrl:""` đi lên production trong khi CI báo đỏ, và không ai nối hai việc đó với nhau.
       - name: Địa chỉ API đã nhúng đúng
         run: |
-          test -n "${{ vars.PUBLIC_API_BASE_URL }}" || {
-            echo "Thiếu biến repo PUBLIC_API_BASE_URL — ảnh sẽ gọi vào undefined"; exit 1; }
-          docker run --rm --entrypoint sh \
-            "ghcr.io/${{ github.repository_owner }}/${{ matrix.app }}:${{ github.sha }}" \
-            -c 'grep -rqF "${{ vars.PUBLIC_API_BASE_URL }}" /app/apps/${{ matrix.app }}/.next' || {
-            echo "Không tìm thấy địa chỉ API trong bundle đã build"; exit 1; }
+          IMAGE="ghcr.io/${{ github.repository_owner }}/${{ matrix.app }}:${{ github.sha }}"
+          URL='${{ vars.PUBLIC_API_BASE_URL }}'
+          if [ -z "$URL" ]; then
+            echo "PUBLIC_API_BASE_URL rỗng -> ảnh dùng chế độ CÙNG GỐC (nginx proxy /v1/)."
+            echo "Khai biến repo đó nếu muốn gọi API qua một tên miền riêng."
+            exit 0
+          fi
+          docker run --rm --entrypoint sh "$IMAGE"             -c "grep -rqF '$URL' /app/apps/${{ matrix.app }}/.next" || {
+            echo "Không tìm thấy '$URL' trong bundle — build-arg không tới được Next?"; exit 1; }
+          echo "Đã nhúng $URL"

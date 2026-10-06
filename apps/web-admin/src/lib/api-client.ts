@@ -1,5 +1,5 @@
 import { createSignInRedirect, getAccessToken } from '@nexaticket/auth/client';
-import { createApiClient } from '@nexaticket/ts-sdk';
+import { createApiClient, resolveApiBaseUrl } from '@nexaticket/ts-sdk';
 
 /**
  * Client gọi api-gateway.
@@ -12,7 +12,7 @@ import { createApiClient } from '@nexaticket/ts-sdk';
  * khoá tài khoản — nên nó trả 200 mãi trong khi mọi lời gọi API trả 401.
  */
 export const apiClient = createApiClient({
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8080',
+  baseUrl: resolveApiBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL),
   getAccessToken,
   onUnauthenticated: createSignInRedirect('/login'),
 });
