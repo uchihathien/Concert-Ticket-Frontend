@@ -528,3 +528,8 @@
   outline: none;
   box-shadow: var(--nt-focus);
 }
+
+/* Mốc định vị cho nút lưu đè góc trên bên phải poster (SaveEventButton size="lg"). */
+.heroPosterFrame {
+  position: relative;
+}

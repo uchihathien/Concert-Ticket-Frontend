@@ -104,6 +104,7 @@ export function MobileMenu({ cities, organizerUrl }: MobileMenuProps) {
         <nav className={styles.drawerNav} aria-label="Tài khoản">
           <Link href="/me/tickets">Vé của tôi</Link>
           <Link href="/me/orders">Đơn hàng của tôi</Link>
+          <Link href="/me/saved">Sự kiện đã lưu</Link>
           <Link href="/account">Tài khoản</Link>
           <Link href="/support">Hỗ trợ</Link>
           <a href={organizerUrl}>Tạo sự kiện</a>

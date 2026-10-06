@@ -1,0 +1,43 @@
+/* Lưới sự kiện đã lưu (trang /me/saved và mục ở trang Tài khoản). */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--nt-space-4);
+}
+
+.gone {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--nt-space-2);
+  min-height: 120px;
+  padding: var(--nt-space-4);
+  border: 1px dashed var(--nt-border);
+  border-radius: var(--nt-radius-lg);
+  color: var(--nt-text-muted);
+  font-size: 14px;
+}
+
+.gone button {
+  border: 0;
+  padding: 0;
+  background: none;
+  font: inherit;
+  font-weight: 700;
+  color: var(--nt-danger-text);
+  cursor: pointer;
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--nt-space-4);
+  border-radius: var(--nt-radius);
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font-weight: 700;
+  text-decoration: none;
+}

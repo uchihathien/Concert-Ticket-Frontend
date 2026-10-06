@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { FilterSidebar } from '@/components/FilterSidebar';
 import { serverApi } from '@/lib/server-api';
 import styles from './events.module.css';
+import { SavableCard } from '@/components/SaveEventButton';
 
 export const metadata: Metadata = {
   title: 'Sự kiện — NexaTicket',
@@ -118,8 +119,8 @@ export default async function EventsPage({
             <>
               <div className={styles.grid}>
                 {items.map((event) => (
+                  <SavableCard key={event.slug} slug={event.slug} title={event.title}>
                   <EventCard
-                    key={event.slug}
                     href={`/events/${event.slug}`}
                     title={event.title}
                     tag={eventCategoryLabel(event.category)}
@@ -131,6 +132,7 @@ export default async function EventsPage({
                     imageUrl={event.posterUrl ?? undefined}
                     coverSeed={event.slug}
                   />
+                  </SavableCard>
                 ))}
               </div>
 

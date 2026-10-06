@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { HeroCarousel, type HeroSlide } from '@/components/HeroCarousel';
 import { serverApi } from '@/lib/server-api';
 import styles from './page.module.css';
+import { SavableCard } from '@/components/SaveEventButton';
 
 /**
  * C-HOME — bố cục theo ui-direction.md §4.
@@ -182,8 +183,8 @@ export default async function HomePage() {
 
 function toCard(event: PublicEventCard) {
   return (
+    <SavableCard key={event.slug} slug={event.slug} title={event.title}>
     <EventCard
-      key={event.slug}
       href={`/events/${event.slug}`}
       title={event.title}
       tag={eventCategoryLabel(event.category)}
@@ -193,5 +194,6 @@ function toCard(event: PublicEventCard) {
       imageUrl={event.posterUrl ?? undefined}
       coverSeed={event.slug}
     />
+    </SavableCard>
   );
 }
