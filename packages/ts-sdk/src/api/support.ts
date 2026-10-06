@@ -8,6 +8,7 @@ import type {
   HandoffThread,
   KnowledgeChunk,
   RetrievedChunk,
+  SupportIntent,
 } from '../types/support';
 
 /** Chat hỗ trợ — phía khách. */
@@ -63,6 +64,7 @@ export async function requestHumanAgent(client: ApiClient, sessionId: string): P
  * @param status bỏ trống thì trả về HÀNG ĐỢI việc phải làm — phiếu chưa xong, cũ nhất trước. Truyền
  *   `RESOLVED` hoặc `ALL` để tra lịch sử, và lúc đó thứ tự đảo lại thành mới nhất trước: một hàng
  *   việc đọc từ phiếu chờ lâu nhất, còn một bảng tra cứu đọc từ việc vừa xảy ra.
+ * @param intent chỉ lấy phiếu thuộc một ý định (REFUND, INCIDENT…). Không đổi thứ tự hàng đợi.
  * @param q tìm trong lý do chuyển tiếp và câu hỏi cuối của khách
  */
 export async function listHandoffs(
@@ -70,6 +72,7 @@ export async function listHandoffs(
   params: {
     mine?: boolean;
     status?: 'OPEN' | 'WAITING' | 'ASSIGNED' | 'RESOLVED' | 'ALL';
+    intent?: SupportIntent;
     q?: string;
     page?: number;
     size?: number;
@@ -78,6 +81,7 @@ export async function listHandoffs(
   const search = new URLSearchParams();
   if (params.mine) search.set('mine', 'true');
   if (params.status) search.set('status', params.status);
+  if (params.intent) search.set('intent', params.intent);
   // Chỉ gửi khi có chữ: `q=` rỗng vẫn là "có tham số lọc" với backend, và nó sẽ đi nhánh tra cứu
   // (mới nhất trước) thay vì nhánh hàng đợi — đổi thứ tự màn hình chính mà không ai gõ gì cả.
   if (params.q && params.q.trim() !== '') search.set('q', params.q.trim());
@@ -97,9 +101,13 @@ export async function getHandoffThread(
   return response.data;
 }
 
-/** 409 `HANDOFF_ALREADY_TAKEN` nghĩa là người khác vừa nhận — gỡ phiếu khỏi danh sách, đừng thử lại. */
-export async function claimHandoff(client: ApiClient, handoffId: string): Promise<Handoff> {
-  const response = await client.post<Handoff>(`/v1/support/handoffs/${handoffId}/claim`, {});
+/**
+ * Nhận phiếu — trả về CẢ hội thoại kèm phiếu và checklist, không chỉ một dòng.
+ *
+ * 409 `HANDOFF_ALREADY_TAKEN` nghĩa là người khác vừa nhận — gỡ phiếu khỏi danh sách, đừng thử lại.
+ */
+export async function claimHandoff(client: ApiClient, handoffId: string): Promise<HandoffThread> {
+  const response = await client.post<HandoffThread>(`/v1/support/handoffs/${handoffId}/claim`, {});
   return response.data;
 }
 
@@ -179,7 +187,13 @@ export async function getEventRules(client: ApiClient, eventId: string): Promise
 export async function saveEventRules(
   client: ApiClient,
   eventId: string,
-  body: { eventTitle: string; content: string; published: boolean },
+  body: {
+    eventTitle: string;
+    content: string;
+    refundAllowed: boolean;
+    refundWindowHours: number;
+    published: boolean;
+  },
 ): Promise<EventRules> {
   const response = await client.put<EventRules>(`/v1/support/knowledge/rules/${eventId}`, body);
   return response.data;

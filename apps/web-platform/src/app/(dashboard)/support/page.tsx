@@ -9,6 +9,7 @@ import {
   useResolveHandoff,
   type ChatMessage,
   type Handoff,
+  type SupportIntent,
 } from '@nexaticket/ts-sdk';
 import {
   Badge,
@@ -51,6 +52,22 @@ const FILTERS = [
 ] as const;
 
 type FilterKey = (typeof FILTERS)[number]['key'];
+
+/**
+ * Nhãn ý định, theo cách người trực gọi việc — không phải tên hằng của backend.
+ *
+ * REFUND và INCIDENT nổi lên vì đó là hai loại có quy trình riêng và người chuyên trách riêng;
+ * phần còn lại hiện ở giọng trung tính để không át mất trạng thái phiếu.
+ */
+const INTENT_LABELS: Record<SupportIntent, { label: string; tone: 'warn' | 'danger' | 'neutral' | 'accent' }> = {
+  GENERAL: { label: 'Chung', tone: 'neutral' },
+  ORDER_STATUS: { label: 'Đơn hàng', tone: 'accent' },
+  BOOKING: { label: 'Đặt vé', tone: 'accent' },
+  REFUND: { label: 'Hoàn vé', tone: 'warn' },
+  INCIDENT: { label: 'Sự cố', tone: 'danger' },
+  COMPLAINT: { label: 'Khiếu nại', tone: 'warn' },
+  EVENT_INFO: { label: 'Hỏi sự kiện', tone: 'neutral' },
+};
 
 export default function SupportPage() {
   const [openId, setOpenId] = useState<string | null>(null);
@@ -142,6 +159,7 @@ export default function SupportPage() {
                   >
                     <span className={styles.queueTop}>
                       <StatusBadge handoff={handoff} />
+                      <IntentBadge intent={handoff.intent} />
                       {/*
                         Thời gian chờ do backend tính. Đồng hồ máy khách lệch vài phút là chuyện
                         thường, và một phiếu chờ 12 phút hiện thành "3 phút" sẽ bị xử lý sai thứ tự.
@@ -217,7 +235,7 @@ function Conversation({ handoffId, onResolved }: { handoffId: string; onResolved
     return <ErrorState error={null} onRetry={() => void thread.refetch()} />;
   }
 
-  const { handoff, messages } = thread.data;
+  const { handoff, messages, checklist } = thread.data;
   const mine = handoff.status === 'ASSIGNED';
 
   async function send() {
@@ -237,6 +255,7 @@ function Conversation({ handoffId, onResolved }: { handoffId: string; onResolved
     <Panel className={styles.conversation}>
       <header className={styles.threadHead}>
         <StatusBadge handoff={handoff} />
+        <IntentBadge intent={handoff.intent} />
         <span className={styles.threadReason}>{handoff.reason}</span>
         {handoff.assignedAgentName ? (
           <span className={styles.threadAgent}>
@@ -245,6 +264,22 @@ function Conversation({ handoffId, onResolved }: { handoffId: string; onResolved
           </span>
         ) : null}
       </header>
+
+      {/*
+        Khung mẫu của loại sự cố: việc nên kiểm, theo thứ tự nên làm. Chỉ có ở phiếu sự cố — do
+        backend quyết từ `details`, giao diện không tự suy. Người trực lần đầu nhận loại sự cố
+        này có ngay đường đi, không phải hỏi đồng nghiệp.
+      */}
+      {checklist.length > 0 ? (
+        <aside className={styles.checklist} aria-label="Việc cần kiểm">
+          <p className={styles.checklistTitle}>Việc cần kiểm theo khung mẫu</p>
+          <ol className={styles.checklistItems}>
+            {checklist.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </aside>
+      ) : null}
 
       <ol className={styles.messages} ref={listRef}>
         {messages.map((message, index) => (
@@ -359,6 +394,15 @@ function StatusBadge({ handoff }: { handoff: Handoff }) {
       {handoff.trigger === 'CUSTOMER_REQUEST' ? 'Khách yêu cầu' : 'Trợ lý chuyển'}
     </Badge>
   );
+}
+
+/** Khách cần gì — để người trực chuyên một mảng nhận ra việc của mình từ hàng đợi. */
+function IntentBadge({ intent }: { intent: SupportIntent }) {
+  // Phiếu GENERAL không cần nhãn: nó là "không xếp được vào đâu", và một huy hiệu "Chung" trên
+  // mọi phiếu chỉ làm hai huy hiệu thật sự có nghĩa chìm đi.
+  if (intent === 'GENERAL') return null;
+  const { label, tone } = INTENT_LABELS[intent] ?? INTENT_LABELS.GENERAL;
+  return <Badge tone={tone}>{label}</Badge>;
 }
 
 function RoleIcon({ role }: { role: ChatMessage['role'] }) {

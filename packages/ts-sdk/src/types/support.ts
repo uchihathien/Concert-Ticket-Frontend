@@ -25,12 +25,34 @@ export type HandoffStatus = 'WAITING' | 'ASSIGNED' | 'RESOLVED';
 /** Để đo, không để hiển thị — người trực đọc `reason` viết bằng câu. */
 export type HandoffTrigger = 'CUSTOMER_REQUEST' | 'LOW_CONFIDENCE';
 
+/**
+ * Khách cần gì — nhãn để bàn hỗ trợ chia việc.
+ *
+ * Khác `trigger` (vì sao phải chuyển), `intent` nói chuyển để làm gì: người quen xử lý hoàn tiền
+ * lọc REFUND, người trực sự cố ngày diễn lọc INCIDENT.
+ */
+export type SupportIntent =
+  | 'GENERAL'
+  | 'ORDER_STATUS'
+  | 'BOOKING'
+  | 'REFUND'
+  | 'INCIDENT'
+  | 'COMPLAINT'
+  | 'EVENT_INFO';
+
 export interface Handoff {
   id: string;
   sessionId: string;
   status: HandoffStatus;
   trigger: HandoffTrigger;
+  intent: SupportIntent;
   reason: string;
+  /**
+   * JSON có cấu trúc đi kèm phiếu — mã đơn, loại sự cố, kết quả xét chính sách hoàn vé… `null` với
+   * phiếu chỉ có câu hỏi. Không có hình dạng cố định vì mỗi ý định mang dữ liệu khác; parse rồi hiện
+   * dạng cặp khoá–giá trị là đủ.
+   */
+  details: string | null;
   /** Câu khách đang hỏi, chụp lúc chuyển. Có mặt ngay ở danh sách để khỏi phải mở từng phiếu. */
   lastQuestion: string | null;
   assignedAgentId: string | null;
@@ -50,10 +72,17 @@ export interface Handoff {
   waitingSeconds: number;
 }
 
-/** Màn hình của người trực: phiếu kèm cả hội thoại, một request. */
+/**
+ * Màn hình của người trực: phiếu kèm cả hội thoại, một request.
+ *
+ * Cũng là thứ `claimHandoff` trả về — người vừa nhận phiếu đọc được ngay toàn bộ USER / ASSISTANT /
+ * AGENT đã nói, không phải nhận xong rồi hỏi thêm một lần.
+ */
 export interface HandoffThread {
   handoff: Handoff;
   messages: ChatMessage[];
+  /** Việc nên kiểm theo khung mẫu của loại sự cố; rỗng với phiếu không phải sự cố. */
+  checklist: string[];
 }
 
 /**
@@ -118,6 +147,10 @@ export interface EventRules {
   eventId: string;
   eventTitle: string;
   content: string;
+  /** Sự kiện có nhận yêu cầu hoàn vé không. Tool `requestTicketRefund` của trợ lý thực thi cờ này. */
+  refundAllowed: boolean;
+  /** Số giờ kể từ lúc thanh toán còn được xin hoàn; 0 là không giới hạn. */
+  refundWindowHours: number;
   /** `false` là bản nháp: khách không thấy, tool của trợ lý cũng không đọc. */
   published: boolean;
   updatedAt: string;
