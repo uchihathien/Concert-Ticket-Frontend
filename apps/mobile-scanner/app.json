@@ -8,10 +8,16 @@
     "userInterfaceStyle": "dark",
     "ios": {
       "bundleIdentifier": "com.nexaticket.scanner",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
       "supportsTablet": false
     },
     "android": {
-      "package": "com.nexaticket.scanner"
+      "package": "com.nexaticket.scanner",
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -30,6 +36,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "20e83433-4f5f-431d-bd4f-77acccde5d51"
+      }
+    },
+    "owner": "hanhphamthi"
   }
 }

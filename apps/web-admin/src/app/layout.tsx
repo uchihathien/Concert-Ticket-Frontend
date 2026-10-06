@@ -8,6 +8,8 @@ import '@nexaticket/tokens/tokens.css';
 // hơn `:root` trần của bộ token gốc.
 import '@nexaticket/tokens/admin.css';
 import '@nexaticket/tokens/reset.css';
+// Tông tối xanh lá + xanh chanh, đồng bộ app Organizer. Phải nằm SAU admin.css để ghi đè được.
+import './organizer-theme.css';
 import './tailwind.css';
 
 /**
