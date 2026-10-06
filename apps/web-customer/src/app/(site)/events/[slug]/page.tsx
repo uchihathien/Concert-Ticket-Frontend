@@ -23,6 +23,7 @@ import { notFound } from 'next/navigation';
 import { serverApi } from '@/lib/server-api';
 import { EventSeatMapPreview } from '@/components/EventSeatMapPreview';
 import styles from './detail.module.css';
+import { SaveEventButton } from '@/components/SaveEventButton';
 
 /** Backend đặt Cache-Control 2 phút; ISR khớp theo. */
 export const revalidate = 120;
@@ -211,6 +212,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
                   alt={`Áp phích ${event.title}`}
                   loading="eager"
                 />
+                <SaveEventButton slug={event.slug} title={event.title} size="lg" />
               </div>
             </div>
           </div>

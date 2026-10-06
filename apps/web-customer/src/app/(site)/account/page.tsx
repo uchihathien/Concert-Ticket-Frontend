@@ -7,6 +7,9 @@ import {
 } from '@nexaticket/ui';
 import type { Metadata } from 'next';
 import { auth, signOut } from '@/auth';
+import { AccountLinks } from '@/components/AccountLinks';
+import { SavedEventsList } from '@/components/SavedEventsList';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Tài khoản — NexaTicket',
@@ -39,6 +42,17 @@ export default async function AccountPage() {
         email={session?.user?.email}
         imageUrl={session?.user?.image}
       />
+
+      <AccountSection title="Lối tắt">
+        <AccountLinks />
+      </AccountSection>
+
+      <AccountSection title="Sự kiện đã lưu">
+        <SavedEventsList limit={4} />
+        <p>
+          <Link href="/me/saved">Xem tất cả sự kiện đã lưu →</Link>
+        </p>
+      </AccountSection>
 
       {session?.user?.id ? (
         <AccountSection title="Chi tiết">

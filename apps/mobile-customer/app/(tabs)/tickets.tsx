@@ -1,10 +1,11 @@
 import { listMyTickets, type Ticket } from '@nexaticket/ts-sdk';
 import { SymbolView } from 'expo-symbols';
 import { Link } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Image,
   Modal,
   Pressable,
   RefreshControl,
@@ -16,6 +17,8 @@ import QRCode from 'react-native-qrcode-svg';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { api } from '@/lib/api';
 import { useMobileAuth } from '@/lib/auth-context';
+import { resolveMediaUrl } from '@/lib/media-url';
+import { formatSessionTime, loadSessionIndex, type SessionIndex, type SessionInfo } from '@/lib/session-index';
 
 export default function TicketsScreen() {
   const { ready, signedIn } = useMobileAuth();
@@ -28,9 +31,23 @@ export default function TicketsScreen() {
     error: boolean;
   } | null>(null);
   const currentResult = result?.signature === requestSignature ? result : null;
-  const tickets = currentResult?.tickets ?? [];
   const loading = ready && signedIn && currentResult === null;
   const error = currentResult?.error ?? false;
+  // Vé chỉ mang mã suất diễn; tên sự kiện, giờ diễn, địa điểm tra từ danh mục công khai.
+  const [index, setIndex] = useState<SessionIndex>({});
+
+  useEffect(() => {
+    if (!ready || !signedIn) return;
+    let active = true;
+    void loadSessionIndex(reload > 0).then((value) => { if (active) setIndex(value); });
+    return () => { active = false; };
+  }, [ready, signedIn, reload]);
+
+  // Suất sắp diễn lên đầu; vé chưa tra được suất xếp cuối, giữ thứ tự gốc.
+  const sorted = useMemo(
+    () => [...(currentResult?.tickets ?? [])].sort((a, b) => (index[a.eventSessionId]?.startsAt ?? '9999').localeCompare(index[b.eventSessionId]?.startsAt ?? '9999')),
+    [currentResult, index],
+  );
 
   useEffect(() => {
     if (!ready || !signedIn) return;
@@ -52,7 +69,7 @@ export default function TicketsScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <FlatList
-        data={signedIn ? tickets : []}
+        data={signedIn ? sorted : []}
         keyExtractor={(ticket) => ticket.id}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -72,7 +89,7 @@ export default function TicketsScreen() {
             <Text style={styles.title}>Vé của tôi</Text>
           </>
         }
-        renderItem={({ item }) => <TicketCard ticket={item} onPress={() => setSelected(item)} />}
+        renderItem={({ item }) => <TicketCard ticket={item} info={index[item.eventSessionId]} onPress={() => setSelected(item)} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <View style={styles.iconWrap}>
@@ -107,8 +124,14 @@ export default function TicketsScreen() {
             {selected ? (
               <>
                 <Text style={styles.modalEyebrow}>VÉ ĐIỆN TỬ</Text>
-                <Text style={styles.modalTitle}>{selected.ticketTypeName}</Text>
-                <Text style={styles.modalMeta}>{selected.seatLabel ?? selected.seatCode ?? `Khu ${selected.zoneCode}`}</Text>
+                <Text numberOfLines={2} style={styles.modalTitle}>{index[selected.eventSessionId]?.eventTitle ?? selected.ticketTypeName}</Text>
+                {index[selected.eventSessionId] ? (
+                  <Text style={styles.modalMeta}>
+                    {formatSessionTime(index[selected.eventSessionId].startsAt)}
+                    {index[selected.eventSessionId].venueName ? ` · ${index[selected.eventSessionId].venueName}` : ''}
+                  </Text>
+                ) : null}
+                <Text style={styles.modalSeat}>{selected.ticketTypeName} · {seatText(selected)}</Text>
                 <View style={styles.qrFrame}>
                   <QRCode value={selected.qrToken} size={220} backgroundColor="#FFFFFF" color="#171211" />
                 </View>
@@ -124,23 +147,57 @@ export default function TicketsScreen() {
   );
 }
 
-function TicketCard({ ticket, onPress }: { ticket: Ticket; onPress: () => void }) {
+function TicketCard({ ticket, info, onPress }: { ticket: Ticket; info: SessionInfo | undefined; onPress: () => void }) {
+  const valid = ticket.status === 'VALID';
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={`Mở mã vé ${ticket.ticketTypeName}`} onPress={onPress} style={styles.ticketCard}>
-      <View style={styles.ticketTop}>
-        <View style={styles.ticketIcon}>
-          <SymbolView name={{ ios: 'ticket.fill', android: 'confirmation_number', web: 'confirmation_number' }} tintColor="#F2B705" size={20} />
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Mở mã vé ${info?.eventTitle ?? ''} ${ticket.ticketTypeName}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.ticketCard, pressed && styles.ticketPressed]}
+    >
+      {/* Phần sự kiện: ảnh + tên + suất + địa điểm — thứ người ta cần biết trước khi tới cửa. */}
+      <View style={styles.eventRow}>
+        <View style={styles.thumb}>
+          {info?.posterUrl ? (
+            <Image source={{ uri: resolveMediaUrl(info.posterUrl) }} resizeMode="cover" style={styles.thumbImage} />
+          ) : (
+            <SymbolView name={{ ios: 'ticket.fill', android: 'confirmation_number', web: 'confirmation_number' }} tintColor="#F2B705" size={22} />
+          )}
         </View>
-        <Text style={[styles.ticketStatus, ticket.status === 'VALID' && styles.ticketStatusValid]}>{ticketStatus(ticket.status)}</Text>
+        <View style={styles.eventText}>
+          <Text numberOfLines={2} style={styles.eventTitle}>{info?.eventTitle ?? 'Sự kiện'}</Text>
+          {info ? (
+            <>
+              <Text style={styles.eventMeta}>{formatSessionTime(info.startsAt)}</Text>
+              <Text numberOfLines={1} style={styles.eventMeta}>{[info.venueName, info.city].filter(Boolean).join(' · ') || 'Đang cập nhật địa điểm'}</Text>
+            </>
+          ) : null}
+        </View>
       </View>
-      <Text style={styles.ticketName}>{ticket.ticketTypeName}</Text>
-      <Text style={styles.ticketMeta}>{ticket.seatLabel ?? ticket.seatCode ?? `Khu ${ticket.zoneCode}`}</Text>
+
+      {/* Đường răng cưa giữa thân vé và cuống vé. */}
+      <View style={styles.perforation} />
+
       <View style={styles.ticketBottom}>
-        <Text style={styles.ticketId}>Mã {ticket.id.slice(0, 8).toUpperCase()}</Text>
-        <Text style={styles.viewQr}>Xem mã QR  ›</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.ticketName}>{ticket.ticketTypeName}</Text>
+          <Text style={styles.ticketMeta}>{seatText(ticket)} · Mã {ticket.id.slice(0, 8).toUpperCase()}</Text>
+        </View>
+        <View style={{ alignItems: 'flex-end', gap: 6 }}>
+          <Text style={[styles.ticketStatus, valid && styles.ticketStatusValid]}>{ticketStatus(ticket.status)}</Text>
+          <Text style={styles.viewQr}>Xem mã QR ›</Text>
+        </View>
       </View>
     </Pressable>
   );
+}
+
+function seatText(ticket: Ticket) {
+  // Vé đứng không có số ghế: hiện tên khu thay vì để trống (frontend.md §8).
+  if (ticket.seatLabel) return `Ghế ${ticket.seatLabel}`;
+  if (ticket.seatCode) return `Ghế ${ticket.seatCode}`;
+  return ticket.admissionType === 'STANDING' ? `Vé đứng · khu ${ticket.zoneCode}` : `Khu ${ticket.zoneCode}`;
 }
 
 function ticketStatus(status: Ticket['status']) {
@@ -160,23 +217,30 @@ const styles = StyleSheet.create({
   body: { maxWidth: 270, color: '#A89E99', fontSize: 13, lineHeight: 20, textAlign: 'center', marginTop: 8 },
   loginButton: { minHeight: 44, justifyContent: 'center', paddingHorizontal: 20, marginTop: 18, borderRadius: 9, backgroundColor: '#C02A2A' },
   loginText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
-  ticketCard: { padding: 15, marginBottom: 11, borderRadius: 13, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
-  ticketTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  ticketIcon: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 11, backgroundColor: '#2A2321' },
-  ticketStatus: { color: '#A89E99', fontSize: 9, fontWeight: '900', letterSpacing: 0.6 },
+  ticketCard: { padding: 14, marginBottom: 12, borderRadius: 14, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
+  ticketPressed: { backgroundColor: '#2A2321' },
+  eventRow: { flexDirection: 'row', gap: 12 },
+  thumb: { width: 74, height: 74, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', borderRadius: 10, backgroundColor: '#2A2321' },
+  thumbImage: { width: '100%', height: '100%' },
+  eventText: { flex: 1, minWidth: 0, justifyContent: 'center', gap: 3 },
+  eventTitle: { color: '#F5F1EF', fontSize: 16, fontWeight: '800', lineHeight: 21 },
+  eventMeta: { color: '#C9C0BB', fontSize: 12, lineHeight: 17 },
+  perforation: { height: 0, marginVertical: 13, borderTopWidth: 1, borderStyle: 'dashed', borderColor: '#4A3F3B' },
+  ticketStatus: { color: '#A89E99', fontSize: 10, fontWeight: '900', letterSpacing: 0.6 },
   ticketStatusValid: { color: '#4CB782' },
-  ticketName: { color: '#F5F1EF', fontSize: 15, fontWeight: '800', marginTop: 13 },
-  ticketMeta: { color: '#C9C0BB', fontSize: 12, marginTop: 4 },
-  ticketBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 6, paddingTop: 12, marginTop: 13, borderTopWidth: 1, borderTopColor: '#362E2B' },
-  ticketId: { color: '#817671', fontSize: 10 },
-  viewQr: { color: '#F2B705', fontSize: 11, fontWeight: '800' },
+  ticketName: { color: '#F5F1EF', fontSize: 14, fontWeight: '800' },
+  ticketMeta: { color: '#A89E99', fontSize: 12, marginTop: 3 },
+  ticketBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8 },
+  ticketId: { color: '#817671', fontSize: 11 },
+  viewQr: { color: '#F2B705', fontSize: 12, fontWeight: '800' },
   modalBackdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.72)' },
   ticketModal: { alignItems: 'center', paddingHorizontal: 22, paddingTop: 26, paddingBottom: 38, borderTopLeftRadius: 20, borderTopRightRadius: 20, backgroundColor: '#211B19' },
   closeButton: { position: 'absolute', top: 10, right: 15, width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   closeText: { color: '#C9C0BB', fontSize: 27 },
   modalEyebrow: { color: '#F4796B', fontSize: 9, fontWeight: '900', letterSpacing: 1.2 },
   modalTitle: { color: '#F5F1EF', fontSize: 18, fontWeight: '800', marginTop: 6 },
-  modalMeta: { color: '#A89E99', fontSize: 12, marginTop: 4 },
+  modalMeta: { color: '#A89E99', fontSize: 13, marginTop: 4, textAlign: 'center' },
+  modalSeat: { color: '#F5F1EF', fontSize: 14, fontWeight: '700', marginTop: 8 },
   qrFrame: { padding: 13, marginTop: 20, borderRadius: 12, backgroundColor: '#FFFFFF' },
   statusLabel: { color: '#4CB782', fontSize: 11, fontWeight: '900', marginTop: 17 },
   qrHint: { color: '#A89E99', fontSize: 11, marginTop: 8 },
