@@ -10,7 +10,40 @@
   gap: var(--nt-space-3);
   /* `auto-fit` + `minmax` tự xuống hàng theo chiều rộng THẬT của vùng nội dung, không theo chiều
      rộng màn hình — nên nó vẫn đúng khi cột điều hướng 248px còn đó. */
-  grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--nt-space-4);
+}
+
+.stat {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--nt-space-3);
+}
+
+.statBody {
+  min-width: 0;
+}
+
+.statIcon {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--nt-radius);
+  background: color-mix(in srgb, var(--nt-primary) 10%, transparent);
+  color: var(--nt-primary-text);
+}
+
+.statIcon :global(svg) {
+  width: 18px;
+  height: 18px;
+}
+
+.statIconWarn {
+  background: color-mix(in srgb, var(--nt-warn) 14%, transparent);
+  color: var(--nt-warn-text);
 }
 
 .statLabel {
@@ -21,8 +54,8 @@
 }
 
 .statValue {
-  margin: var(--nt-space-1) 0 0;
-  font-size: 24px;
+  margin: 6px 0 0;
+  font-size: 28px;
   font-weight: 700;
   line-height: 1.2;
   /* Chữ số đều bề rộng: dải ô này hay cập nhật, và số nhảy bề rộng làm cả hàng giật. */
@@ -42,31 +75,54 @@
 
 /* Thanh bộ lọc ------------------------------------------------------------- */
 
-.filterBar {
-  display: grid;
-  gap: var(--nt-space-4);
-  align-items: end;
-  /* Mobile: mỗi ô một hàng. Ô lọc bị bóp còn 90px thì không đọc nổi nhãn bên trong. */
-  grid-template-columns: 1fr;
+.filterPanel {
+  /* Bộ lọc là thanh công cụ của bảng ngay bên dưới, không phải một khối nội dung: không bóng, để
+     mắt không coi nó ngang hàng với dữ liệu. */
+  box-shadow: none;
 }
 
-@media (min-width: 720px) {
-  .filterBar {
-    /* Ô tìm kiếm rộng gấp đôi ô chọn: người ta gõ cả tên tổ chức vào đó, còn ô chọn chỉ hiện một
-       nhãn ngắn. */
-    grid-template-columns: minmax(220px, 2fr) repeat(auto-fit, minmax(150px, 1fr));
-  }
+/* Flex thay vì grid: số ô lọc mỗi trang mỗi khác (2 tới 6), và grid `auto-fit` từng đẩy nút "Xoá
+   bộ lọc" xuống một dòng riêng ở trang nhiều ô. Flex cho ô tìm kiếm (luôn là ô đầu) rộng gấp đôi,
+   các ô chọn chia phần còn lại, và nhóm nút luôn bám mép phải. Dưới ~420px mỗi ô tự rớt thành một
+   hàng nhờ `flex-basis`, nên không cần media query cho mobile. */
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nt-space-3) var(--nt-space-4);
+  align-items: flex-end;
+}
+
+.filterBar > * {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.filterBar > :first-child {
+  flex: 2 1 220px;
+}
+
+.filterFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--nt-space-3);
+  margin-top: var(--nt-space-3);
+  padding-top: var(--nt-space-3);
+  border-top: 1px dashed var(--nt-border);
 }
 
 .filterActions {
   display: flex;
   gap: var(--nt-space-2);
+  /* Nút ở hàng chân là thao tác phụ: mật độ nhỏ. */
+  --nt-control-height: 32px;
+  --nt-control-font: 13px;
 }
 
 .filterCount {
-  margin: var(--nt-space-3) 0 0;
+  margin: 0;
   color: var(--nt-text-muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 /* Phân trang --------------------------------------------------------------- */
@@ -88,7 +144,8 @@
 /* Tiêu đề khối trong trang -------------------------------------------------- */
 
 .section {
-  margin-top: var(--nt-space-8);
+  /* Lưới nội dung của AppShell đã chừa 20px giữa các khối; thêm chút nữa để tách nhóm. */
+  margin-top: var(--nt-space-3);
 }
 
 .sectionHead {
@@ -102,7 +159,7 @@
 
 .sectionTitle {
   margin: 0;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
@@ -118,7 +175,13 @@
 
 .rowActions {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--nt-space-2);
+  align-items: center;
+  gap: 6px;
   justify-content: flex-end;
+  /* Thao tác của một dòng nằm trên MỘT hàng: cho xuống dòng thì mỗi dòng bảng cao gấp đôi và mắt
+     mất cột. Nút trong đây tự về mật độ nhỏ qua biến, kể cả nút trang không truyền `size`. */
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  --nt-control-height: 32px;
+  --nt-control-font: 13px;
 }

@@ -79,3 +79,37 @@
     gap: var(--nt-space-4) var(--nt-space-3);
   }
 }
+
+/*
+ * Link "Xem tất cả".
+ *
+ * `.sectionLink` được dùng trong page.tsx nhưng trước đây chưa từng được định nghĩa, nên nó hiện
+ * dáng link mặc định (đỏ, gạch chân) — lệch với tiêu đề mục bên cạnh. Các dải cuộn ngang do
+ * `CarouselRow` (packages/ui) vẽ link riêng; nhắm đúng link đó qua `href` từ lớp bọc `.row` của
+ * trang — chỉ khớp `/events` và `/events?…`, không khớp link thẻ sự kiện (`/events/<slug>`).
+ */
+.sectionLink,
+.row a[href='/events'],
+.row a[href^='/events?'] {
+  color: var(--nt-text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--nt-motion-ui);
+}
+
+.sectionLink:hover,
+.sectionLink:focus-visible,
+.row a[href='/events']:hover,
+.row a[href^='/events?']:hover,
+.row a[href='/events']:focus-visible,
+.row a[href^='/events?']:focus-visible {
+  color: var(--nt-primary-text);
+}
+
+.sectionLink::after,
+.row a[href='/events']::after,
+.row a[href^='/events?']::after {
+  content: ' →';
+}

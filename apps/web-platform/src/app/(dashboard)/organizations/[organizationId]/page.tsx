@@ -60,11 +60,14 @@ import {
   LogOut,
   Pencil,
   Trash2,
+  UserCog,
   UserPlus,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { OrganizationBalancePanel } from '@/components/OrganizationBalancePanel';
+import { UserAccountDialog } from '@/components/UserAccountDialog';
 
 /**
  * P-ORG — một tổ chức, nhìn từ phía nền tảng.
@@ -155,6 +158,7 @@ function OrganizationDetail({ organization }: { organization: OrganizationSummar
   const organizationId = organization.id;
 
   const canManage = useHasPermission('PLATFORM_ORG_MANAGE', null);
+  const canManageUsers = useHasPermission('PLATFORM_USER_MANAGE', null);
 
   const members = useOrganizationMembers(organizationId);
   const invitations = usePendingInvitations(organizationId);
@@ -181,6 +185,7 @@ function OrganizationDetail({ organization }: { organization: OrganizationSummar
   const [grantedToken, setGrantedToken] = useState<{ email: string; token: string } | null>(null);
   const [editing, setEditing] = useState<Member | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [accountOf, setAccountOf] = useState<Member | null>(null);
   const [lifecycleOpen, setLifecycleOpen] = useState(false);
 
   const [memberQuery, setMemberQuery] = useState('');
@@ -326,6 +331,8 @@ function OrganizationDetail({ organization }: { organization: OrganizationSummar
           ]}
         />
       </Panel>
+
+      <OrganizationBalancePanel organizationId={organizationId} />
 
       <Section
         title="Thành viên"
@@ -473,6 +480,12 @@ function OrganizationDetail({ organization }: { organization: OrganizationSummar
                           <KeyRound size={16} aria-hidden="true" />
                           Đặt lại mật khẩu
                         </Button>
+                        {canManageUsers ? (
+                          <Button variant="ghost" onClick={() => setAccountOf(row)}>
+                            <UserCog size={16} aria-hidden="true" />
+                            Tài khoản
+                          </Button>
+                        ) : null}
                         <Button
                           variant="danger-soft"
                           onClick={() =>
@@ -785,6 +798,10 @@ function OrganizationDetail({ organization }: { organization: OrganizationSummar
       >
         <p className="m-0">{confirm?.body}</p>
       </Modal>
+
+      {accountOf ? (
+        <UserAccountDialog member={accountOf} onClose={() => setAccountOf(null)} />
+      ) : null}
     </>
   );
 }

@@ -33,7 +33,7 @@ import {
   matchesText,
   useDebouncedValue,
 } from '@nexaticket/ui';
-import { CalendarDays, Ticket, TriangleAlert, Users } from 'lucide-react';
+import { Banknote, CalendarDays, Ticket, TriangleAlert, Users } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { EventMasterPanel } from '@/components/EventMasterPanel';
 import { OrganizationGate } from '@/components/OrganizationGate';
@@ -184,6 +184,7 @@ function OverviewBody({ organization }: { organization: OrganizationSummary }) {
           label="Doanh thu"
           value={salesDown ? null : data.totals.grossVnd}
           hint={salesDown ? 'Chưa hỏi được' : 'Tổng khách trả'}
+          icon={<Banknote size={16} aria-hidden="true" />}
         />
       </StatGrid>
 
@@ -252,7 +253,7 @@ function OverviewBody({ organization }: { organization: OrganizationSummary }) {
             <TopEventsChart rows={filtered} sales={data.eventSales} down={salesDown} />
           </Panel>
 
-          <Panel>
+          <div>
             <Table<AdminEventRow>
               caption="Sự kiện của tổ chức"
               rows={paged}
@@ -309,7 +310,7 @@ function OverviewBody({ organization }: { organization: OrganizationSummary }) {
               pageSize={PAGE_SIZE}
               onChange={setPage}
             />
-          </Panel>
+          </div>
 
           {activeEventId === null ? null : (
             <Section

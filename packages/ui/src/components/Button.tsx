@@ -6,7 +6,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'dang
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
-  size?: 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg';
   /** Đang gửi request. Khoá nút luôn — bấm hai lần là hai hold (plan §8.2). */
   loading?: boolean;
   block?: boolean;

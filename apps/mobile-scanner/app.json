@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "NexaTicket Scanner",
+    "slug": "nexaticket-mobile-scanner",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "nexaticket-scanner",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "bundleIdentifier": "com.nexaticket.scanner",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.nexaticket.scanner"
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Cho phép NexaTicket Scanner dùng camera để quét vé QR.",
+          "recordAudioAndroid": false
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

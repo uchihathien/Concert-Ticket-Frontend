@@ -1,8 +1,9 @@
-import { BrandLogo, EVENT_CATEGORIES } from '@nexaticket/ui';
+import { BrandLogo } from '@nexaticket/ui';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { googleSignInEnabled } from '@/lib/auth-providers';
 import { AccountNav } from './AccountNav';
+import { CategoryBar } from './CategoryBar';
 import { CityPicker } from './CityPicker';
 import { MobileMenu } from './MobileMenu';
 import { SearchBox } from './SearchBox';
@@ -66,14 +67,7 @@ export function SiteHeader({ cities }: SiteHeaderProps) {
         </nav>
       </div>
 
-      <nav className={styles.categoryBar} aria-label="Danh mục sự kiện">
-        <Link href="/events">Tất cả</Link>
-        {EVENT_CATEGORIES.map((category) => (
-          <Link key={category.value} href={`/events?category=${category.value}`}>
-            {category.label}
-          </Link>
-        ))}
-      </nav>
+      <CategoryBar />
     </header>
   );
 }

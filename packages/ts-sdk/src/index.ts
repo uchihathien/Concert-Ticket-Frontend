@@ -1,9 +1,8 @@
 /**
  * `@nexaticket/ts-sdk` — client gọi api-gateway.
  *
- * Phạm vi hiện tại đúng bằng phần backend đã có REST: identity, inventory, ledger. Catalog,
- * ordering, payment, ticketing chưa expose controller nào, nên ở đây cũng chưa có gì —
- * cố tình để trống thay vì đoán hình dạng JSON rồi phải sửa lại.
+ * SDK gom các client REST đã được xác nhận từ API contract của NexaTicket; không tự suy đoán
+ * schema cho endpoint chưa có controller.
  */
 
 export { ApiError, networkError } from './http/api-error';
@@ -35,12 +34,14 @@ export * from './types/ticketing';
 
 export {
   acceptInvitation,
+  acceptMyInvitation,
   activateOrganization,
   changeMemberRole,
   createOrganization,
   getAuditLogs,
   getMembers,
   getMyOrganizations,
+  getMyPendingInvitations,
   getMyPermissions,
   getOrganization,
   getPendingInvitations,
@@ -101,7 +102,13 @@ export {
   resolveHandoff,
   saveEventRules,
 } from './api/support';
-export { listMyTickets, listOrderTickets, scanTicket } from './api/ticketing';
+export {
+  listCheckinSessions,
+  listMyTickets,
+  listOrderTickets,
+  scanTicket,
+  scanTicketForOrganization,
+} from './api/ticketing';
 export { cancelOrder, getOrder, listMyOrders, placeOrder } from './api/ordering';
 export { fetchOrganizationSales } from './api/analytics';
 export { fetchSeatMap, placeHold, releaseHold } from './api/inventory';

@@ -20,11 +20,18 @@
 /*
  * Trần chiều cao cho sơ đồ. Không có nó thì một khán phòng dọc (tỷ lệ cao) chiếm gần hết màn hình
  * và đẩy bảng hạng vé xuống dưới tầm nhìn — trong khi ở trang này sơ đồ là thông tin phụ.
+ *
+ * Trần đặt lên chính <svg>, KHÔNG phải cắt khung bọc. Bản trước đặt `max-height: 460px; overflow:
+ * hidden` lên khung này trong khi SVG cao tới 60vh: khu ở cuối khán phòng và cả thanh nút phóng
+ * to/thu nhỏ bị cắt mất. SVG dùng `viewBox` (mặc định `meet`), nên thu chiều cao lại thì cả sơ đồ
+ * co vừa khung — không khu nào bị giấu, cùng nguyên tắc `contain` của ảnh sơ đồ bên dưới.
  */
 .canvas {
-  max-height: 460px;
-  overflow: hidden;
   border-radius: var(--nt-radius-lg);
+}
+
+.canvas > div > svg {
+  height: clamp(260px, 48vh, 420px);
 }
 
 /*

@@ -71,7 +71,7 @@ export default function BookingScreen() {
       if (requesting) return;
       requesting = true;
       try {
-        const fresh = await fetchSeatMap(api, sessionId, previous);
+        const fresh = await fetchSeatMap(publicApi, sessionId, previous);
         previous = fresh;
         if (active) {
           setSnapshot(fresh);
@@ -187,6 +187,15 @@ export default function BookingScreen() {
         },
       });
     } catch (error) {
+      // Server đã trả lời dứt khoát: saga checkout đã bù trừ và hold ở trạng thái CONVERTED, dùng lại
+      // chỉ nhận HOLD_EXPIRED. Lần bấm sau phải giữ chỗ mới. Mất mạng/timeout thì giữ nguyên khoá để
+      // thử lại idempotent, vì không biết server đã xử lý hay chưa.
+      if (error instanceof ApiError && error.status > 0) {
+        pendingHold.current = null;
+        holdKey.current = null;
+        orderKey.current = null;
+        setReload((value) => value + 1);
+      }
       setFailure(errorMessage(error));
     } finally {
       setSubmitting(false);
@@ -432,9 +441,23 @@ function getKey(ref: { current: KeyForSelection | null }, signature: string) {
 
 function errorMessage(error: unknown) {
   if (error instanceof ApiError) {
+    if (error.status === 401 || error.code === 'UNAUTHENTICATED') {
+      return 'Backend từ chối phiên đăng nhập. Issuer của token Keycloak có thể chưa khớp cấu hình backend.';
+    }
+    if (error.status === 403 || error.code === 'FORBIDDEN') {
+      return 'Tài khoản hiện không được phép giữ chỗ cho suất diễn này.';
+    }
     if (error.code === 'HOLD_LIMIT_EXCEEDED' || error.code === 'CUSTOMER_LIMIT_EXCEEDED') return 'Số vé đã chọn vượt giới hạn mua.';
-    if (error.code === 'SALES_CLOSED') return 'Suất diễn đã đóng bán.';
-    if (error.code === 'INVENTORY_UNAVAILABLE' || error.status === 409) return 'Vừa có người khác chọn chỗ này. Tình trạng chỗ đã được làm mới.';
+    if (error.code === 'SALES_CLOSED') return 'Suất diễn chưa mở bán hoặc đã đóng bán.';
+    if (error.code === 'CHECKOUT_UNAVAILABLE') {
+      return 'Đã giữ được chỗ nhưng chưa mở được thanh toán. Chỗ đã được trả lại, vui lòng thử lại sau.';
+    }
+    if (error.code === 'HOLD_EXPIRED' || error.code === 'HOLD_NOT_FOUND') return 'Lượt giữ chỗ đã hết hiệu lực. Vui lòng bấm giữ chỗ lại.';
+    if (error.code === 'ZONE_SOLD_OUT') return 'Khu vực này đã hết vé.';
+    if (error.code === 'SESSION_NOT_FOUND') return 'Không tìm thấy suất diễn.';
+    if (error.code === 'INVENTORY_UNAVAILABLE') return 'Hệ thống giữ chỗ đang bận. Vui lòng thử lại sau ít phút.';
+    if (error.code === 'NETWORK_ERROR' || error.code === 'TIMEOUT') return 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.';
+    if (error.code === 'SEAT_UNAVAILABLE' || error.status === 409) return 'Vừa có người khác chọn chỗ này. Tình trạng chỗ đã được làm mới.';
   }
   return 'Không thể giữ chỗ lúc này. Vui lòng thử lại.';
 }

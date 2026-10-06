@@ -27,6 +27,8 @@ import {
   Modal,
   PageHeader,
   RowActions,
+  ActionMenu,
+  type ActionMenuItem,
   Section,
   Select,
   Table,
@@ -38,6 +40,7 @@ import {
   roleTone,
   useToast,
 } from '@nexaticket/ui';
+import { KeyRound, LogOut, UserCog, UserMinus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { OrganizationGate } from '@/components/OrganizationGate';
 
@@ -220,94 +223,81 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
             {
               key: 'actions',
               header: '',
-              cell: (row) => (
-                <RowActions>
-                  {canManage ? (
-                    <>
-                      <Button variant="ghost" onClick={() => setEditing(row)}>
-                        Đổi vai trò
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        onClick={() =>
-                          setConfirm({
-                            title: 'Gửi thư đặt lại mật khẩu?',
-                            // Nói rõ hệ thống làm gì và KHÔNG làm gì: người bấm cần biết mình
-                            // không hề nhìn thấy mật khẩu mới.
-                            body: `Keycloak sẽ gửi một liên kết dùng một lần tới ${row.email ?? 'hộp thư của họ'}. Bạn không thấy được mật khẩu mới, và mật khẩu hiện tại vẫn dùng được cho tới khi họ đổi.`,
-                            confirmLabel: 'Gửi thư',
-                            run: () =>
-                              sendPasswordReset.mutate(row.userId, {
-                                onSuccess: () => {
-                                  setConfirm(null);
-                                  toast.show({
-                                    tone: 'success',
-                                    message: 'Đã gửi thư đặt lại mật khẩu',
-                                  });
-                                },
-                                onError: fail,
-                              }),
-                          })
-                        }
-                      >
-                        Đặt lại mật khẩu
-                      </Button>
-                    </>
-                  ) : null}
+              cell: (row) => {
+                const resetPassword = () =>
+                  setConfirm({
+                    title: 'Gửi thư đặt lại mật khẩu?',
+                    // Nói rõ hệ thống làm gì và KHÔNG làm gì: người bấm cần biết mình không hề
+                    // nhìn thấy mật khẩu mới.
+                    body: `Keycloak sẽ gửi một liên kết dùng một lần tới ${row.email ?? 'hộp thư của họ'}. Bạn không thấy được mật khẩu mới, và mật khẩu hiện tại vẫn dùng được cho tới khi họ đổi.`,
+                    confirmLabel: 'Gửi thư',
+                    run: () =>
+                      sendPasswordReset.mutate(row.userId, {
+                        onSuccess: () => {
+                          setConfirm(null);
+                          toast.show({ tone: 'success', message: 'Đã gửi thư đặt lại mật khẩu' });
+                        },
+                        onError: fail,
+                      }),
+                  });
+                const revoke = () =>
+                  setConfirm({
+                    title: 'Buộc đăng xuất?',
+                    body: 'Mọi thiết bị đang đăng nhập bằng tài khoản này sẽ bị đẩy ra ngay. Họ vẫn đăng nhập lại được — đây không phải khoá tài khoản.',
+                    confirmLabel: 'Đăng xuất mọi thiết bị',
+                    run: () =>
+                      revokeSessions.mutate(
+                        { userId: row.userId },
+                        {
+                          onSuccess: () => {
+                            setConfirm(null);
+                            toast.show({ tone: 'success', message: 'Đã thu hồi phiên đăng nhập' });
+                          },
+                          onError: fail,
+                        },
+                      ),
+                  });
+                const remove = () =>
+                  setConfirm({
+                    title: 'Gỡ khỏi tổ chức?',
+                    body: `${row.email ?? row.userId} sẽ mất quyền truy cập ngay lập tức. Tài khoản của họ không bị xoá.`,
+                    confirmLabel: 'Gỡ thành viên',
+                    run: () =>
+                      removeMember.mutate(row.userId, {
+                        onSuccess: () => {
+                          setConfirm(null);
+                          toast.show({ tone: 'success', message: 'Đã gỡ thành viên' });
+                        },
+                        onError: fail,
+                      }),
+                  });
 
-                  {canRevokeSessions ? (
-                    <Button
-                      variant="ghost"
-                      onClick={() =>
-                        setConfirm({
-                          title: 'Buộc đăng xuất?',
-                          body: 'Mọi thiết bị đang đăng nhập bằng tài khoản này sẽ bị đẩy ra ngay. Họ vẫn đăng nhập lại được — đây không phải khoá tài khoản.',
-                          confirmLabel: 'Đăng xuất mọi thiết bị',
-                          run: () =>
-                            revokeSessions.mutate(
-                              { userId: row.userId },
-                              {
-                                onSuccess: () => {
-                                  setConfirm(null);
-                                  toast.show({
-                                    tone: 'success',
-                                    message: 'Đã thu hồi phiên đăng nhập',
-                                  });
-                                },
-                                onError: fail,
-                              },
-                            ),
-                        })
-                      }
-                    >
-                      Đăng xuất
-                    </Button>
-                  ) : null}
+                // Quyền quyết định mục nào xuất hiện, như các nút trước đây. Không còn mục nào thì
+                // ActionMenu không vẽ gì.
+                const items: ActionMenuItem[] = [
+                  ...(canManage
+                    ? [
+                        { label: 'Đổi vai trò', icon: <UserCog />, onSelect: () => setEditing(row) },
+                        { label: 'Đặt lại mật khẩu', icon: <KeyRound />, onSelect: resetPassword },
+                      ]
+                    : []),
+                  ...(canRevokeSessions
+                    ? [{ label: 'Đăng xuất mọi thiết bị', icon: <LogOut />, onSelect: revoke }]
+                    : []),
+                  ...(canManage
+                    ? [{ label: 'Gỡ khỏi tổ chức', icon: <UserMinus />, onSelect: remove, tone: 'danger' as const }]
+                    : []),
+                ];
 
-                  {canManage ? (
-                    <Button
-                      variant="danger-soft"
-                      onClick={() =>
-                        setConfirm({
-                          title: 'Gỡ khỏi tổ chức?',
-                          body: `${row.email ?? row.userId} sẽ mất quyền truy cập ngay lập tức. Tài khoản của họ không bị xoá.`,
-                          confirmLabel: 'Gỡ thành viên',
-                          run: () =>
-                            removeMember.mutate(row.userId, {
-                              onSuccess: () => {
-                                setConfirm(null);
-                                toast.show({ tone: 'success', message: 'Đã gỡ thành viên' });
-                              },
-                              onError: fail,
-                            }),
-                        })
-                      }
-                    >
-                      Gỡ
-                    </Button>
-                  ) : null}
-                </RowActions>
-              ),
+                return (
+                  <RowActions>
+                    <ActionMenu
+                      label={`Thao tác với ${row.fullName ?? row.email ?? 'thành viên'}`}
+                      items={items}
+                    />
+                  </RowActions>
+                );
+              },
             },
           ]}
           />

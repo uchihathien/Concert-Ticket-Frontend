@@ -2,6 +2,9 @@ import { BrandLogo } from '@nexaticket/ui';
 import Link from 'next/link';
 import styles from './site.module.css';
 
+/** Link xác nhận "Đã thông báo Bộ Công Thương" do Bộ cấp. `null` khi chưa hoàn tất đăng ký. */
+const MOIT_NOTICE_URL: string | null = null;
+
 /**
  * Footer bốn cột theo quy ước của site bán vé: giới thiệu, cho khách, cho ban tổ chức, pháp lý.
  *
@@ -85,12 +88,16 @@ export function SiteFooter() {
         {/*
           Dấu "đã thông báo Bộ Công Thương" là ô trống có chú thích, không phải logo.
           Dán logo Bộ khi chưa nộp hồ sơ thật là hành vi bị xử phạt (Nghị định 98/2020, điều 62).
-          Khi có mã đăng ký thật thì thay khối này bằng link do Bộ cấp.
+          Khi có mã đăng ký thật thì điền link do Bộ cấp vào `MOIT_NOTICE_URL`.
+
+          Trước đây ô trống kèm chú thích "Chỗ đặt dấu…" hiện thẳng cho khách: với người mua vé nó
+          đọc như một lỗi dựng hình, và ghi chú dành cho đội phát triển không nên nằm trên giao diện.
         */}
-        <p className={styles.legalBadge}>
-          <span aria-hidden="true">▢</span>
-          <span>Chỗ đặt dấu “Đã thông báo Bộ Công Thương” — gắn sau khi hoàn tất đăng ký.</span>
-        </p>
+        {MOIT_NOTICE_URL ? (
+          <a className={styles.legalBadge} href={MOIT_NOTICE_URL} target="_blank" rel="noreferrer">
+            Đã thông báo Bộ Công Thương
+          </a>
+        ) : null}
       </div>
     </footer>
   );

@@ -23,7 +23,7 @@ import {
   formatNumber,
   matchesText,
 } from '@nexaticket/ui';
-import { PlugZap } from 'lucide-react';
+import { Banknote, PlugZap, Ticket } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { OrganizationGate } from '@/components/OrganizationGate';
 
@@ -118,10 +118,12 @@ function SalesBody({ organization }: { organization: OrganizationSummary }) {
           <Stat
             label={filtering ? 'Vé đã bán (đã lọc)' : 'Vé đã bán'}
             value={formatNumber(totals.tickets)}
+            icon={<Ticket />}
           />
           <Stat
             label={filtering ? 'Doanh thu (đã lọc)' : 'Doanh thu'}
             value={<MoneyText amountVnd={totals.gross} strong />}
+            icon={<Banknote />}
           />
         </div>
 
@@ -176,7 +178,7 @@ function SalesBody({ organization }: { organization: OrganizationSummary }) {
             />
           )
         ) : (
-          <Panel>
+          <div>
             <Table<SessionSales>
               caption="Doanh thu theo suất diễn"
               rows={rows}
@@ -215,20 +217,31 @@ function SalesBody({ organization }: { organization: OrganizationSummary }) {
                 },
               ]}
             />
-          </Panel>
+          </div>
         )}
       </div>
     </>
   );
 }
 
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
+function Stat({ label, value, icon }: { label: string; value: React.ReactNode; icon?: React.ReactNode }) {
   return (
-    <Panel>
-      <p className="m-0 text-[13px] font-medium text-muted">{label}</p>
-      {/* `tabular-nums`: hai ô này đứng cạnh nhau và cùng cập nhật, chữ số lệch bề rộng làm cả
-          hàng giật mỗi lần số đổi. */}
-      <p className="m-0 mt-1 text-2xl font-bold tabular-nums">{value}</p>
+    <Panel className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <p className="m-0 text-[13px] font-medium text-muted">{label}</p>
+        {/* `tabular-nums`: hai ô này đứng cạnh nhau và cùng cập nhật, chữ số lệch bề rộng làm cả
+            hàng giật mỗi lần số đổi. */}
+        <p className="m-0 mt-1.5 text-[28px] leading-tight font-bold tracking-tight tabular-nums">{value}</p>
+      </div>
+      {/* Cùng kiểu ô biểu tượng với StatCard của packages/ui. */}
+      {icon ? (
+        <span
+          aria-hidden="true"
+          className="grid size-9 flex-none place-items-center rounded-nt bg-accent text-primary-text [&_svg]:size-[18px]"
+        >
+          {icon}
+        </span>
+      ) : null}
     </Panel>
   );
 }

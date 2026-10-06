@@ -5,38 +5,50 @@
 .shell {
   min-height: 100dvh;
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr);
   background: var(--nt-bg-subtle);
 }
+
+/* Sidebar --------------------------------------------------------------- */
 
 .sidebar {
   display: flex;
   flex-direction: column;
-  gap: var(--nt-space-6);
-  padding: var(--nt-space-6) var(--nt-space-4);
+  gap: var(--nt-space-4);
+  padding: var(--nt-space-4) var(--nt-space-3);
   background: var(--nt-surface);
   border-right: 1px solid var(--nt-border);
-  /* Cột điều hướng đứng yên khi bảng dài cuộn — bảng ở đây thường dài. */
   position: sticky;
   top: 0;
   height: 100dvh;
+  overflow-y: auto;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: var(--nt-space-2);
-  padding: 0 var(--nt-space-2);
+  min-height: 40px;
+  padding: 0 var(--nt-space-2) var(--nt-space-3);
+  border-bottom: 1px solid var(--nt-border);
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--nt-text);
   text-decoration: none;
 }
 
+/* Hậu tố "Tổ chức"/"Nền tảng" thành một nhãn nhỏ dạng chip: tách rõ khỏi logo thay vì trông như
+   chữ bị lọt cạnh logo. */
 .brandSuffix {
-  color: var(--nt-text-muted);
-  font-size: 13px;
+  margin-inline-start: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--nt-accent);
+  color: var(--nt-accent-ink);
+  font-size: 11px;
   font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .nav {
@@ -45,15 +57,25 @@
   gap: 2px;
 }
 
+.navLabel {
+  padding: var(--nt-space-2) var(--nt-space-3) var(--nt-space-1);
+  color: var(--nt-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .navItem {
+  position: relative;
   display: flex;
   align-items: center;
-  min-height: 44px;
+  min-height: 36px;
   padding: 0 var(--nt-space-3);
   border-radius: var(--nt-radius);
-  color: var(--nt-text);
+  color: var(--nt-text-muted);
   text-decoration: none;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   transition:
     background-color var(--nt-motion-ui),
@@ -62,28 +84,39 @@
 
 .navIcon {
   display: inline-flex;
-  margin-inline-end: var(--nt-space-2);
-  /* Biểu tượng lucide vẽ theo `currentColor` và cỡ 1em, nên nó tự đổi màu theo trạng thái của mục
-     mà không cần một luật riêng cho mục đang mở. */
+  margin-inline-end: 10px;
+  /* Biểu tượng theo màu chữ của mục: đổi màu khi hover/active mà không cần luật riêng. */
   color: currentColor;
-  opacity: 0.75;
 }
 
-.navItemActive .navIcon {
-  opacity: 1;
+.navIcon :global(svg) {
+  width: 17px;
+  height: 17px;
 }
 
 .navItem:hover {
   background: var(--nt-hover);
+  color: var(--nt-text);
 }
 
-/* Mục đang mở: nền đặc + chữ đậm. Không chỉ dựa vào màu — chữ đậm giữ nghĩa khi in đen trắng
-   hoặc khi người dùng bật chế độ tương phản cao. */
+/* Mục đang mở: nền nhạt + vạch chỉ báo bên trái. Vạch giữ được tín hiệu khi màu nền bị tắt
+   (chế độ tương phản cao), và đọc được ngay cả với người khó phân biệt màu. */
 .navItemActive,
 .navItemActive:hover {
-  background: color-mix(in srgb, var(--nt-primary) 10%, transparent);
+  background: color-mix(in srgb, var(--nt-primary) 9%, transparent);
   color: var(--nt-primary-text);
-  font-weight: 700;
+  font-weight: 600;
+}
+
+.navItemActive::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -12px;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--nt-primary);
 }
 
 .sidebarFoot {
@@ -91,47 +124,167 @@
   display: flex;
   flex-direction: column;
   gap: var(--nt-space-2);
-  padding-top: var(--nt-space-4);
+  padding-top: var(--nt-space-3);
   border-top: 1px solid var(--nt-border);
 }
 
+/* Link thô trong chân sidebar (app chưa dùng SidebarAccount) trông như một mục điều hướng. */
+.sidebarFoot > a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  padding: 0 var(--nt-space-3);
+  border-radius: var(--nt-radius);
+  color: var(--nt-text-muted);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.sidebarFoot > a:hover {
+  background: var(--nt-hover);
+  color: var(--nt-text);
+}
+
+/* Khối tài khoản -------------------------------------------------------- */
+
+.account {
+  display: flex;
+  align-items: center;
+  gap: var(--nt-space-1);
+}
+
+.accountLink {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border-radius: var(--nt-radius);
+  color: var(--nt-text);
+  text-decoration: none;
+  transition: background-color var(--nt-motion-ui);
+}
+
+.accountLink:hover {
+  background: var(--nt-hover);
+}
+
+.avatar {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--nt-primary), color-mix(in srgb, var(--nt-primary) 55%, #ec4899));
+  color: var(--nt-primary-ink);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.accountText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.accountName,
+.accountEmail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountName {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.accountEmail {
+  font-size: 12px;
+  color: var(--nt-text-muted);
+}
+
+.signOut {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--nt-radius);
+  background: transparent;
+  color: var(--nt-text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--nt-motion-ui),
+    color var(--nt-motion-ui);
+}
+
+.signOut:hover {
+  background: color-mix(in srgb, var(--nt-danger) 10%, transparent);
+  color: var(--nt-danger-text);
+}
+
+/* Nội dung -------------------------------------------------------------- */
+
 .content {
   min-width: 0;
-  padding: var(--nt-space-8);
+  padding: var(--nt-space-8) clamp(var(--nt-space-4), 3vw, 40px);
+}
+
+/* Mọi trang trả về fragment, nên các khối (tiêu đề, thẻ số, bộ lọc, bảng) là con trực tiếp của
+   lớp này. Lưới một cột với `gap` cho mọi trang cùng một nhịp khoảng cách, thay vì mỗi khối tự đặt
+   margin rồi có chỗ dính sát, có chỗ hở. `minmax(0, 1fr)` để bảng rộng cuộn ngang bên trong thẻ
+   của nó thay vì đẩy cả trang. */
+.contentInner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 20px;
+  max-width: 1360px;
+  margin-inline: auto;
 }
 
 .pageHead {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
   gap: var(--nt-space-4);
-  margin-bottom: var(--nt-space-6);
+  padding-bottom: var(--nt-space-1);
 }
 
 .pageTitle {
-  margin: 0 0 var(--nt-space-1);
-  font-size: clamp(22px, 2vw, 28px);
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
 }
 
 .pageDescription {
-  margin: 0;
+  margin: var(--nt-space-1) 0 0;
   color: var(--nt-text-muted);
-  max-width: 70ch;
+  font-size: 14px;
+  max-width: 72ch;
 }
 
 .panel {
   background: var(--nt-surface);
   border: 1px solid var(--nt-border);
   border-radius: var(--nt-radius-lg);
-  padding: var(--nt-space-6);
+  padding: 20px;
   box-shadow: var(--nt-shadow-panel);
 }
 
 @media (max-width: 900px) {
-  /* Dưới 900px cột điều hướng nằm ngang trên đầu: một sidebar cố định 248px trên màn hẹp ăn mất
+  /* Dưới 900px cột điều hướng chuyển thành thanh ngang ở đầu trang: giữ nó bên trái sẽ chiếm
      quá nửa chiều rộng, mà bảng thì cần chỗ. */
   .shell {
     grid-template-columns: 1fr;
@@ -148,9 +301,19 @@
     border-bottom: 1px solid var(--nt-border);
   }
 
+  .brand {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
   .nav {
     flex-direction: row;
     flex-wrap: wrap;
+  }
+
+  .navLabel,
+  .navItemActive::before {
+    display: none;
   }
 
   .sidebarFoot {
@@ -159,6 +322,10 @@
     flex-direction: row;
     padding-top: 0;
     border-top: none;
+  }
+
+  .accountText {
+    display: none;
   }
 
   .content {

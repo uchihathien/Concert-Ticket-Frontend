@@ -60,11 +60,19 @@ export function SupportLauncher() {
     return null;
   }
 
+  // Trang có thanh mua dính đáy trên mobile: nút nổi phải tránh thanh đó (CSS theo `data-placement`).
+  const placement = pathname.startsWith('/booking/')
+    ? 'checkout'
+    : /^\/events\/[^/]+$/.test(pathname)
+      ? 'cta'
+      : undefined;
+
   return (
     <>
       {open ? (
         <div
           className={styles.panel}
+          data-placement={placement}
           id={panelId}
           ref={panelRef}
           tabIndex={-1}
@@ -101,6 +109,7 @@ export function SupportLauncher() {
         type="button"
         ref={buttonRef}
         className={styles.launcher}
+        data-placement={placement}
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}

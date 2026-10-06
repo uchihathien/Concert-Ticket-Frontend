@@ -24,6 +24,8 @@ export interface AppShellProps {
   brand: ReactNode;
   nav: AppNavItem[];
   /** Cuối cột điều hướng: lối vào màn tài khoản và đăng xuất. */
+  /** Nhãn nhỏ phía trên danh sách điều hướng, ví dụ "Quản lý". */
+  navLabel?: string;
   foot?: ReactNode;
   children: ReactNode;
 }
@@ -38,7 +40,7 @@ export interface AppShellProps {
  * `web-scanner` cố ý KHÔNG dùng: nó là một công cụ một việc, chạy một tay ngoài trời, và một cột
  * điều hướng ở đó chỉ là chỗ để bấm nhầm.
  */
-export function AppShell({ brand, nav, foot, children }: AppShellProps) {
+export function AppShell({ brand, nav, navLabel, foot, children }: AppShellProps) {
   const pathname = usePathname();
 
   return (
@@ -49,6 +51,7 @@ export function AppShell({ brand, nav, foot, children }: AppShellProps) {
         </Link>
 
         <nav className={styles.nav} aria-label="Khu vực">
+          {navLabel ? <span className={styles.navLabel}>{navLabel}</span> : null}
           {nav.map((item) => {
             // So khớp theo tiền tố để trang con vẫn sáng đúng mục cha, nhưng `/` phải khớp tuyệt
             // đối — nếu không thì mục đầu tiên sáng ở mọi trang.
@@ -77,7 +80,9 @@ export function AppShell({ brand, nav, foot, children }: AppShellProps) {
         {foot ? <div className={styles.sidebarFoot}>{foot}</div> : null}
       </aside>
 
-      <main className={styles.content}>{children}</main>
+      <main className={styles.content}>
+        <div className={styles.contentInner}>{children}</div>
+      </main>
     </div>
   );
 }
@@ -88,6 +93,56 @@ export function AppShell({ brand, nav, foot, children }: AppShellProps) {
  * Là component chứ không phải để app tự đặt class: class nằm trong CSS Module của `packages/ui`,
  * app không với tới được tên đã băm.
  */
+export interface SidebarAccountProps {
+  name?: string | null;
+  email?: string | null;
+  /** Trang tài khoản. Bấm vào khối tên là tới đây. */
+  href: string;
+  /** Server action đăng xuất — truyền thẳng từ layout (server component). */
+  signOutAction: (formData: FormData) => void | Promise<void>;
+}
+
+/**
+ * Khối người dùng ở chân sidebar: ai đang đăng nhập, đi tới trang tài khoản, đăng xuất.
+ *
+ * Thay cho cặp "link Tài khoản + nút Đăng xuất" rời rạc: người dùng của khu quản trị thường có
+ * nhiều tài khoản (chủ tổ chức, nhân viên), và việc thấy ngay mình đang là ai là thứ chặn được
+ * một thao tác nhầm tài khoản.
+ */
+export function SidebarAccount({ name, email, href, signOutAction }: SidebarAccountProps) {
+  const display = name?.trim() || email || 'Tài khoản';
+  const initials =
+    display
+      .split(/[\s@.]+/)
+      .filter(Boolean)
+      .slice(-2)
+      .map((part) => part[0]?.toUpperCase())
+      .join('') || '?';
+
+  return (
+    <div className={styles.account}>
+      <Link href={href} className={styles.accountLink}>
+        <span className={styles.avatar} aria-hidden="true">
+          {initials}
+        </span>
+        <span className={styles.accountText}>
+          <span className={styles.accountName}>{display}</span>
+          {email && email !== display ? <span className={styles.accountEmail}>{email}</span> : null}
+        </span>
+      </Link>
+      <form action={signOutAction}>
+        <button type="submit" className={styles.signOut} aria-label="Đăng xuất" title="Đăng xuất">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <path d="m16 17 5-5-5-5" />
+            <path d="M21 12H9" />
+          </svg>
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export function BrandSuffix({ children }: { children: ReactNode }) {
   return <span className={styles.brandSuffix}>{children}</span>;
 }

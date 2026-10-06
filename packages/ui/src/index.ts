@@ -58,8 +58,8 @@ export type { SeatMapCanvasProps, SeatMark } from './components/SeatMapCanvas';
 export { AccountScreen, AccountSection } from './components/AccountScreen';
 export type { AccountScreenProps, AccountSectionProps } from './components/AccountScreen';
 
-export { AppShell, BrandSuffix, PageHeader, Panel } from './components/AppShell';
-export type { AppNavItem, AppShellProps, PageHeaderProps } from './components/AppShell';
+export { AppShell, BrandSuffix, PageHeader, Panel, SidebarAccount } from './components/AppShell';
+export type { AppNavItem, AppShellProps, PageHeaderProps, SidebarAccountProps } from './components/AppShell';
 
 export { AuditChange } from './components/AuditChange';
 export type { AuditChangeProps } from './components/AuditChange';
@@ -70,6 +70,8 @@ export type { AuthOptionsProps } from './components/AuthOptions';
 export { BarChart } from './components/BarChart';
 export type { BarChartProps, BarChartRow } from './components/BarChart';
 
+export { ActionMenu } from './components/ActionMenu';
+export type { ActionMenuItem, ActionMenuProps } from './components/ActionMenu';
 export { Badge } from './components/Badge';
 export type { BadgeProps, BadgeTone } from './components/Badge';
 

@@ -76,12 +76,25 @@
      Màu bóng lấy từ slate-900 pha loãng chứ không phải đen thuần: đen thuần trên nền xanh-xám
      ngả sang nâu bẩn. */
   --nt-scrim: rgba(15, 23, 42, 0.45);
-  --nt-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 12px 32px rgba(15, 23, 42, 0.16);
-  --nt-shadow-panel: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --nt-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 16px 40px -8px rgba(15, 23, 42, 0.22);
+  /* Bóng của thẻ trên canvas: rất mảnh. Viền đã tách thẻ khỏi nền; bóng đậm hơn biến một trang
+     nhiều thẻ thành một bức tường nổi khối, và đó là thứ làm giao diện quản trị trông "nghiệp dư". */
+  --nt-shadow-panel: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --nt-shadow-pop: 0 4px 6px -2px rgba(15, 23, 42, 0.06), 0 12px 24px -6px rgba(15, 23, 42, 0.16);
 
-  /* Hình khối — bo mềm hơn bản tối (10/16 → 12/16). */
-  --nt-radius: 12px;
-  --nt-radius-lg: 16px;
+  /* Hình khối — gọn hơn bản tối: giao diện dày thông tin đọc chuyên nghiệp hơn với góc bo nhỏ. */
+  --nt-radius: 8px;
+  --nt-radius-lg: 12px;
+
+  /* Mật độ điều khiển. Bản tối (khách hàng, chạm trên điện thoại) giữ vùng bấm 44px; khu quản trị
+     dùng chuột trên màn hình lớn nên 40px là chuẩn của các bảng điều khiển chuyên nghiệp, và một
+     bảng 20 dòng ngắn đi đáng kể. `primitives.module.css` đọc hai biến này với giá trị dự phòng
+     44px/15px, nên app nào không khai thì không đổi gì. */
+  --nt-control-height: 40px;
+  --nt-control-font: 14px;
+
+  /* Chữ nhỏ có tracking âm nhẹ cho tiêu đề, giống thói quen của bảng điều khiển hiện đại. */
+  --nt-heading-tracking: -0.02em;
 
   /* Vòng focus: vòng trong lấy màu THẺ (trắng) để tách phần tử khỏi vòng ngoài, vòng ngoài lấy
      primary. Bản tối phải dùng vàng kim vì đỏ trên nền tối không đủ nổi; trên nền sáng thì chính
@@ -103,4 +116,13 @@
   /* Trình duyệt vẽ thanh cuộn, `<select>` và các control mặc định theo giá trị này. Thiếu nó thì
      ô chọn và thanh cuộn vẫn tối giữa một giao diện sáng. */
   color-scheme: light;
+}
+
+/* Cỡ chữ gốc của khu quản trị: 14px như các bảng điều khiển chuyên nghiệp (Stripe, Linear). Bản
+   khách hàng giữ mặc định của reset vì đọc trên điện thoại. */
+:root[data-app='admin'] body,
+:root[data-app='platform'] body {
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
 }

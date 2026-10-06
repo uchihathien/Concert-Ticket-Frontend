@@ -1,0 +1,113 @@
+/* Menu "⋯" cho thao tác phụ của dòng bảng. Xem ActionMenu.tsx. */
+
+.trigger {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: var(--nt-radius);
+  background: transparent;
+  color: var(--nt-text-muted);
+  cursor: pointer;
+  transition:
+    background-color var(--nt-motion-ui),
+    border-color var(--nt-motion-ui),
+    color var(--nt-motion-ui);
+}
+
+.trigger:hover,
+.triggerOpen {
+  background: var(--nt-surface);
+  border-color: var(--nt-border);
+  color: var(--nt-text);
+}
+
+.trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+.menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 200px;
+  padding: 4px;
+  background: var(--nt-elevated);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  box-shadow: var(--nt-shadow-pop, var(--nt-shadow-card));
+  animation: pop 120ms ease-out;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu {
+    animation: none;
+  }
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: calc(var(--nt-radius) - 2px);
+  background: transparent;
+  color: var(--nt-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: start;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.item:hover:not(:disabled),
+.item:focus-visible {
+  outline: none;
+  background: var(--nt-hover);
+}
+
+.item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.itemIcon {
+  display: inline-flex;
+  color: var(--nt-text-muted);
+}
+
+.itemIcon :global(svg) {
+  width: 15px;
+  height: 15px;
+}
+
+.itemDanger {
+  color: var(--nt-danger-text);
+}
+
+.itemDanger .itemIcon {
+  color: currentColor;
+}
+
+.itemDanger:hover:not(:disabled),
+.itemDanger:focus-visible {
+  background: color-mix(in srgb, var(--nt-danger) 9%, transparent);
+}
+
+.separator {
+  height: 1px;
+  margin: 4px -4px;
+  background: var(--nt-border);
+}

@@ -31,11 +31,23 @@ import {
   matchesText,
   useToast,
 } from '@nexaticket/ui';
-import { CalendarPlus, Eye, EyeOff, Settings2 } from 'lucide-react';
+import {
+  CalendarClock,
+  CalendarDays,
+  CalendarPlus,
+  Eye,
+  EyeOff,
+  FilePen,
+  LayoutTemplate,
+  Radio,
+  Settings2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
+import { CreateFromTemplateDialog } from '@/components/CreateFromTemplateDialog';
 import { OrganizationGate } from '@/components/OrganizationGate';
+import { canTogglePublish, eventStatusLabel, eventStatusTone } from '@/lib/event-status';
 
 /**
  * A-EVENTS — bảng sự kiện của tổ chức, gồm cả bản nháp.
@@ -56,6 +68,8 @@ const STATUS_FILTERS = [
   { value: '', label: 'Mọi trạng thái' },
   { value: 'PUBLISHED', label: 'Đang bán' },
   { value: 'DRAFT', label: 'Nháp' },
+  { value: 'UNPUBLISHED', label: 'Đã gỡ bán' },
+  { value: 'CANCELLED', label: 'Đã huỷ' },
 ];
 
 const CATEGORY_FILTERS = [
@@ -94,6 +108,7 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
   const publish = usePublishEvent(organizationId);
 
   const [formOpen, setFormOpen] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');
   const [category, setCategory] = useState('');
@@ -176,10 +191,17 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
         title="Sự kiện"
         description={`Sự kiện của ${organization.name}, gồm cả bản nháp chưa xuất bản.`}
         actions={
-          <Button onClick={() => setFormOpen(true)} disabled={!hasVenue}>
-            <CalendarPlus size={18} aria-hidden="true" />
-            Tạo sự kiện
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {/* Dựng từ khung không cần địa điểm có sẵn — khung tự tạo địa điểm mới. */}
+            <Button variant="secondary" onClick={() => setTemplateOpen(true)}>
+              <LayoutTemplate size={18} aria-hidden="true" />
+              Từ khung mẫu
+            </Button>
+            <Button onClick={() => setFormOpen(true)} disabled={!hasVenue}>
+              <CalendarPlus size={18} aria-hidden="true" />
+              Tạo sự kiện
+            </Button>
+          </div>
         }
       />
 
@@ -194,47 +216,55 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
         // "Tạo sự kiện" mờ đi không rõ lý do.
         <EmptyState
           title="Cần một địa điểm trước"
-          description="Sự kiện phải gắn với một địa điểm. Tạo địa điểm rồi quay lại đây."
+          description="Sự kiện phải gắn với một địa điểm. Tạo địa điểm rồi quay lại đây, hoặc dựng nhanh từ khung mẫu của nền tảng — khung tự tạo địa điểm."
           action={
-            <Link href="/venues">
-              <Button>Tới trang Địa điểm</Button>
-            </Link>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Link href="/venues">
+                <Button>Tới trang Địa điểm</Button>
+              </Link>
+              <Button variant="secondary" onClick={() => setTemplateOpen(true)}>
+                Từ khung mẫu
+              </Button>
+            </div>
           }
         />
       ) : (
         <>
-          <div className="mb-5">
-            <StatGrid>
-              <StatCard label="Sự kiện" value={loading ? null : stats.total} />
-              <StatCard label="Đang bán" value={loading ? null : stats.published} />
-              <StatCard label="Nháp" value={loading ? null : stats.draft} />
-              {/*
+          <StatGrid>
+            <StatCard
+              label="Sự kiện"
+              value={loading ? null : stats.total}
+              icon={<CalendarDays />}
+            />
+            <StatCard label="Đang bán" value={loading ? null : stats.published} icon={<Radio />} />
+            <StatCard label="Nháp" value={loading ? null : stats.draft} icon={<FilePen />} />
+            {/*
                 Bấm được: ô này cảnh báo một nhóm cần xử lý, nên nó phải mở ra được chính nhóm ấy.
                 `StatCard` không nhận `onClick`, và bọc ngoài bằng <button> sẽ lồng nút trong nút —
                 nên dùng một lớp bao bấm được, có bàn phím, không phải nút.
               */}
-              <div
-                role="button"
-                tabIndex={0}
-                aria-pressed={session === 'no-session'}
-                className="cursor-pointer rounded-[var(--nt-radius)] focus-visible:shadow-[var(--nt-focus)] focus-visible:outline-none"
-                onClick={() => setSession(session === 'no-session' ? '' : 'no-session')}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault();
-                    setSession(session === 'no-session' ? '' : 'no-session');
-                  }
-                }}
-              >
-                <StatCard
-                  label="Chưa có suất"
-                  value={loading ? null : stats.noSession}
-                  tone={stats.noSession > 0 ? 'warn' : 'default'}
-                  hint={session === 'no-session' ? 'Đang lọc — bấm để bỏ' : 'Bấm để xem nhóm này'}
-                />
-              </div>
-            </StatGrid>
-          </div>
+            <div
+              role="button"
+              tabIndex={0}
+              aria-pressed={session === 'no-session'}
+              className="cursor-pointer rounded-[var(--nt-radius)] focus-visible:shadow-[var(--nt-focus)] focus-visible:outline-none"
+              onClick={() => setSession(session === 'no-session' ? '' : 'no-session')}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  setSession(session === 'no-session' ? '' : 'no-session');
+                }
+              }}
+            >
+              <StatCard
+                label="Chưa có suất"
+                icon={<CalendarClock />}
+                value={loading ? null : stats.noSession}
+                tone={stats.noSession > 0 ? 'warn' : 'default'}
+                hint={session === 'no-session' ? 'Đang lọc — bấm để bỏ' : 'Bấm để xem nhóm này'}
+              />
+            </div>
+          </StatGrid>
 
           <FilterBar
             actions={
@@ -298,7 +328,7 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
             />
           </FilterBar>
 
-          <div className="mt-5">
+          <div>
             <Table<AdminEventRow>
               caption="Danh sách sự kiện"
               loading={loading}
@@ -345,9 +375,7 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
                   key: 'status',
                   header: 'Trạng thái',
                   cell: (row) => (
-                    <Badge tone={row.status === 'PUBLISHED' ? 'success' : 'neutral'}>
-                      {row.status === 'PUBLISHED' ? 'Đang bán' : 'Nháp'}
-                    </Badge>
+                    <Badge tone={eventStatusTone(row.status)}>{eventStatusLabel(row.status)}</Badge>
                   ),
                 },
                 { key: 'venue', header: 'Địa điểm', cell: (row) => row.venueName ?? '—' },
@@ -387,24 +415,26 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
                           Suất & giá vé
                         </Button>
                       </Link>
-                      <Button
-                        variant="secondary"
-                        loading={publish.isPending && publish.variables?.eventId === row.id}
-                        disabled={publish.isPending}
-                        onClick={() =>
-                          publish.mutate(
-                            { eventId: row.id, publish: row.status !== 'PUBLISHED' },
-                            { onError: fail },
-                          )
-                        }
-                      >
-                        {row.status === 'PUBLISHED' ? (
-                          <EyeOff size={16} aria-hidden="true" />
-                        ) : (
-                          <Eye size={16} aria-hidden="true" />
-                        )}
-                        {row.status === 'PUBLISHED' ? 'Gỡ bán' : 'Xuất bản'}
-                      </Button>
+                      {canTogglePublish(row.status) ? (
+                        <Button
+                          variant="secondary"
+                          loading={publish.isPending && publish.variables?.eventId === row.id}
+                          disabled={publish.isPending}
+                          onClick={() =>
+                            publish.mutate(
+                              { eventId: row.id, publish: row.status !== 'PUBLISHED' },
+                              { onError: fail },
+                            )
+                          }
+                        >
+                          {row.status === 'PUBLISHED' ? (
+                            <EyeOff size={16} aria-hidden="true" />
+                          ) : (
+                            <Eye size={16} aria-hidden="true" />
+                          )}
+                          {row.status === 'PUBLISHED' ? 'Gỡ bán' : 'Xuất bản'}
+                        </Button>
+                      ) : null}
                     </RowActions>
                   ),
                 },
@@ -449,6 +479,13 @@ function EventsContent({ organization }: { organization: OrganizationSummary }) 
           />
         </form>
       </Modal>
+
+      {templateOpen ? (
+        <CreateFromTemplateDialog
+          organizationId={organizationId}
+          onClose={() => setTemplateOpen(false)}
+        />
+      ) : null}
     </>
   );
 }

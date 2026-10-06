@@ -7,12 +7,11 @@ import { ScaleIcon } from 'lucide-react';
 /**
  * P-LEDGER — bảng cân đối thử.
  *
- * **Chưa gọi được qua gateway.** `api-gateway/application.yml` hiện chưa có route nào trỏ tới
- * ledger-service, nên `/v1/platform/trial-balance` trả 404. Màn này dựng sẵn và sẽ chạy ngay khi
- * backend thêm route; tới lúc đó nó hiện đúng lỗi từ server thay vì một trang trắng.
+ * api-gateway route `/v1/platform/trial-balance` và `/v1/platform/organizations/{id}/balance` về
+ * ledger-service (route ledger đứng trước route identity). Khi ledger-service không chạy, màn này
+ * hiện đúng lỗi từ server kèm nút thử lại thay vì một trang trắng.
  *
- * Còn một va chạm nữa cần backend xử lý: `/v1/platform/organizations/{id}/balance` của ledger
- * trùng tiền tố `/v1/platform/organizations/**` vốn đang trỏ về identity.
+ * Số dư từng tổ chức nằm ở trang chi tiết tổ chức — xem `OrganizationBalancePanel`.
  */
 export default function LedgerPage() {
   const trialBalance = useTrialBalance();

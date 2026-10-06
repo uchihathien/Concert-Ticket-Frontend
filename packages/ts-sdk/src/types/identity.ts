@@ -137,6 +137,16 @@ export interface PendingInvitation {
   expired: boolean;
 }
 
+/** Invitation metadata visible only to its authenticated recipient. */
+export interface MyInvitation {
+  id: string;
+  organizationId: string;
+  organizationName: string;
+  role: OrganizationRole;
+  expiresAt: string;
+  expired: boolean;
+}
+
 /**
  * `GrantMembershipHandler.Result`.
  *
