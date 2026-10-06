@@ -120,7 +120,11 @@ export function useClaimHandoff() {
 
   return useMutation({
     mutationFn: (handoffId: string) => claimHandoff(client, handoffId),
-    onSuccess: () => {
+    // Phản hồi ĐÃ là cả hội thoại kèm phiếu và checklist — đặt thẳng vào cache của thread để màn
+    // hình đổi sang khung trả lời ngay, không chờ một vòng hỏi lại. Hàng đợi vẫn hỏi lại vì phiếu
+    // vừa đổi cột.
+    onSuccess: (thread, handoffId) => {
+      queryClient.setQueryData(queryKeys.support.handoff(handoffId), thread);
       void queryClient.invalidateQueries({ queryKey: ['support'] });
     },
   });
@@ -226,8 +230,13 @@ export function useSaveEventRules(eventId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (body: { eventTitle: string; content: string; published: boolean }) =>
-      saveEventRules(client, eventId, body),
+    mutationFn: (body: {
+      eventTitle: string;
+      content: string;
+      refundAllowed: boolean;
+      refundWindowHours: number;
+      published: boolean;
+    }) => saveEventRules(client, eventId, body),
     onSuccess: (rules) => {
       queryClient.setQueryData(queryKeys.support.eventRules(eventId), rules);
     },
