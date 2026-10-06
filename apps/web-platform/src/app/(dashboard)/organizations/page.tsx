@@ -451,7 +451,9 @@ function OrganizationsScreen() {
       >
         <p className="mt-0">
           <strong>{created?.name}</strong> đã được tạo ngày {formatDate(new Date())}. Gửi mã lời mời
-          dưới đây cho <strong>{created?.ownerEmail}</strong> để họ nhận quyền chủ sở hữu.
+          dưới đây cho <strong>{created?.ownerEmail}</strong> để họ nhận quyền chủ sở hữu. Người nhận
+          mở <code>/invitations/accept</code> trong khu quản lý tổ chức, đăng nhập bằng email này rồi
+          nhập mã.
         </p>
         {created ? <CopyField label="Mã lời mời" value={created.invitationToken} /> : null}
         <p className="mb-0 text-[13px] text-muted">

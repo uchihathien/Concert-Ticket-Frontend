@@ -8,7 +8,7 @@ import { nexaAuthEdge } from '@/auth.edge';
  * Kiểm lại ở middleware là tạo điểm tin cậy thứ hai, sớm muộn cũng lệch với điểm thật.
  */
 export default createAuthMiddleware(nexaAuthEdge, {
-  publicPaths: ['/login'],
+  publicPaths: ['/login', '/invitations/accept'],
   signInPath: '/login',
 });
 

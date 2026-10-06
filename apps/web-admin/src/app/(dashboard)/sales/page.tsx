@@ -236,12 +236,9 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 /**
  * Màn lỗi riêng cho trang này.
  *
- * Tách khỏi `ErrorState` chung vì ở đây lỗi gần như chắc chắn là **thiếu hạ tầng**, không phải
- * mạng chập chờn: tới thời điểm viết, `analytics-service` (cổng 8099) chưa chạy và `api-gateway`
- * chưa khai route `/v1/admin/**`. Hiện "Có lỗi xảy ra, thử lại" ở đây là để người dùng bấm Thử
- * lại mãi mãi.
- *
- * Cả hai đều là thay đổi phía backend, cần người xử lý — nên nói thẳng ra là thiếu gì.
+ * Tách khỏi `ErrorState` chung vì lỗi ở đây thường là hạ tầng. Không khẳng định gateway thiếu
+ * route: route `/v1/admin/**` đã được khai báo; hướng dẫn kiểm tra route chỉ cần thiết nếu
+ * analytics-service đã chạy mà request vẫn lỗi.
  */
 function ServiceUnavailableNotice({ error, onRetry }: { error: unknown; onRetry: () => void }) {
   const apiError = error instanceof ApiError ? error : null;
@@ -271,8 +268,8 @@ function ServiceUnavailableNotice({ error, onRetry }: { error: unknown; onRetry:
       <ul className="m-0 mb-3 list-disc ps-5 text-muted">
         <li>analytics-service (cổng 8099) cần được khởi động.</li>
         <li>
-          api-gateway cần thêm route cho <code>/v1/admin/**</code> — hiện bảng route chưa có mẫu nào
-          khớp.
+          Nếu analytics-service đã chạy mà vẫn lỗi, kiểm tra api-gateway đang chạy và route{' '}
+          <code>/v1/admin/**</code> trỏ tới đúng địa chỉ dịch vụ.
         </li>
       </ul>
       {apiError?.correlationId ? (

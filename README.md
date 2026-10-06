@@ -1,6 +1,6 @@
 # NexaTicket — Frontend
 
-4 app Next.js cho nền tảng bán vé sự kiện NexaTicket.
+4 app Next.js và 1 app Expo cho nền tảng bán vé sự kiện NexaTicket.
 
 > **Backend và toàn bộ tài liệu thiết kế nằm ở repo riêng:**
 > [uchihathien/Concert-Ticket-Platform](https://github.com/uchihathien/Concert-Ticket-Platform/tree/nexaticket-v2)
@@ -79,7 +79,7 @@ Backend cần chạy sẵn để đăng nhập và gọi API — xem hướng d�
 repo backend để khai identity provider `google` trong Keycloak — bật trước thì nút có hiện, nhưng
 bấm vào là ra trang lỗi của Keycloak.
 
-## Bốn app
+## Năm app
 
 | App            | Cổng | Persona                             | Nền     |
 | -------------- | ---- | ----------------------------------- | ------- |
@@ -87,6 +87,11 @@ bấm vào là ra trang lỗi của Keycloak.
 | `web-admin`    | 3001 | Tổ chức                             | Sáng    |
 | `web-scanner`  | 3002 | Nhân viên soát vé                   | **Tối** |
 | `web-platform` | 3003 | Superadmin                          | Sáng    |
+| `mobile-customer` | Expo | Khách mua vé (iOS/Android) | **Tối** |
+
+Chạy app native từ thư mục `frontend/`: `pnpm --filter @nexaticket/mobile-customer start`.
+App dùng Expo SDK 57 nên Node cần từ 22.13 trở lên; cấu hình API và luồng hiện tại xem
+[`apps/mobile-customer/README.md`](apps/mobile-customer/README.md).
 
 `web-platform` tách khỏi `web-admin` vì ranh giới tài chính là ranh giới bảo mật: nó gọi deployable `finance`, có client OIDC riêng, và không nên chạy chung bundle với app mà tổ chức dùng.
 
