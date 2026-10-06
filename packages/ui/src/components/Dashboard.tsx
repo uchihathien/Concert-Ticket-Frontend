@@ -34,21 +34,27 @@ export interface StatCardProps {
  */
 export function StatCard({ label, value, hint, tone = 'default', icon }: StatCardProps) {
   return (
-    <Panel>
-      <p className={styles.statLabel}>
-        {icon}
-        {label}
-      </p>
-      {value === null ? (
-        <div style={{ marginTop: 6 }}>
-          <Skeleton width="40%" height={24} />
-        </div>
-      ) : (
-        <p className={cx(styles.statValue, tone === 'warn' && styles.statValueWarn)}>
-          {formatNumber(value)}
-        </p>
-      )}
-      {hint ? <p className={styles.statHint}>{hint}</p> : null}
+    <Panel className={styles.stat}>
+      <div className={styles.statBody}>
+        <p className={styles.statLabel}>{label}</p>
+        {value === null ? (
+          <div style={{ marginTop: 6 }}>
+            <Skeleton width="40%" height={24} />
+          </div>
+        ) : (
+          <p className={cx(styles.statValue, tone === 'warn' && styles.statValueWarn)}>
+            {formatNumber(value)}
+          </p>
+        )}
+        {hint ? <p className={styles.statHint}>{hint}</p> : null}
+      </div>
+      {/* Biểu tượng tách khỏi nhãn thành một ô màu ở góc: mắt lướt hàng thẻ nhận ra từng thẻ bằng
+          hình, và nhãn không còn bị lệch khi thẻ này có biểu tượng còn thẻ kia không. */}
+      {icon ? (
+        <span className={cx(styles.statIcon, tone === 'warn' && styles.statIconWarn)} aria-hidden="true">
+          {icon}
+        </span>
+      ) : null}
     </Panel>
   );
 }
@@ -71,15 +77,21 @@ export interface FilterBarProps {
 
 export function FilterBar({ children, actions, count }: FilterBarProps) {
   return (
-    <Panel>
-      <div className={styles.filterBar}>
-        {children}
-        {actions ? <div className={styles.filterActions}>{actions}</div> : null}
-      </div>
-      {count ? (
-        <p className={styles.filterCount} aria-live="polite">
-          {count}
-        </p>
+    <Panel className={styles.filterPanel}>
+      <div className={styles.filterBar}>{children}</div>
+      {/* Hàng chân cố định: số kết quả bên trái, nút bên phải. Đặt nút cùng hàng với ô lọc thì ở
+          trang nhiều ô nó rớt dòng ở vị trí khó đoán; hàng chân cho mọi trang cùng một bố cục. */}
+      {count || actions ? (
+        <div className={styles.filterFoot}>
+          {count ? (
+            <p className={styles.filterCount} aria-live="polite">
+              {count}
+            </p>
+          ) : (
+            <span />
+          )}
+          {actions ? <div className={styles.filterActions}>{actions}</div> : null}
+        </div>
       ) : null}
     </Panel>
   );

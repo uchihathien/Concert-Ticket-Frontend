@@ -141,3 +141,32 @@
   overflow-y: auto;
   padding: var(--nt-space-3);
 }
+
+/*
+ * Tránh thanh mua dính đáy.
+ *
+ * Trang chi tiết (≤720px) có thanh "Từ … · Mua vé ngay" cao ~69px ngay trên bottom nav; nút nổi ở
+ * vị trí mặc định đè lên chính nút "Mua vé ngay". Nâng nút (và khung chat mở ra từ nó) lên trên
+ * thanh đó.
+ *
+ * Trang đặt chỗ (≤1000px) có khung tóm tắt dính đáy, cao thay đổi theo số dòng (điều khoản, lỗi,
+ * hạn mức) — không có một độ cao cố định để né. Ở đây ẩn nút: màn này cần tập trung vào việc giữ
+ * chỗ, và trang /support vẫn mở được từ menu.
+ */
+@media (max-width: 720px) {
+  .launcher[data-placement='cta'] {
+    inset-block-end: calc(56px + 69px + var(--nt-space-3));
+  }
+
+  .panel[data-placement='cta'] {
+    inset-block-end: calc(56px + 69px + 48px + 2 * var(--nt-space-3));
+    max-height: calc(100vh - 56px - 69px - 160px);
+  }
+}
+
+@media (max-width: 1000px) {
+  .launcher[data-placement='checkout'],
+  .panel[data-placement='checkout'] {
+    display: none;
+  }
+}

@@ -88,6 +88,12 @@
   border-color: var(--nt-primary);
 }
 
+/* Vòng focus vẽ ở khung bo tròn bao ngoài, không ở <select> trần nằm lọt bên trong: chỉ đổi màu
+   viền thì người dùng bàn phím gần như không thấy mình đang ở đâu (ui-direction.md §9). */
+.city:has(.citySelect:focus-visible) {
+  box-shadow: var(--nt-focus);
+}
+
 .cityIcon {
   font-size: 15px;
   line-height: 1;
@@ -106,6 +112,7 @@
 
 .citySelect:focus-visible {
   outline: none;
+  box-shadow: none;
 }
 
 .nav {
@@ -330,14 +337,20 @@
 
 .footer a {
   color: inherit;
+  /* Không gạch chân sẵn: một cột tám link gạch chân đọc thành một khối sọc. Gạch chân trở lại khi
+     rê chuột/focus để vẫn nhận ra đây là link. */
+  text-decoration: none;
   /* Vùng chạm rộng cho link footer trên mobile — chúng đứng sát nhau nên dễ bấm nhầm nhất. */
   display: inline-flex;
   align-items: center;
   min-height: 32px;
 }
 
-.footer a:hover {
+.footer a:hover,
+.footer a:focus-visible {
   color: var(--nt-primary-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 /* Mạng xã hội: ô tròn có viền, đủ lớn để bấm bằng ngón cái. */

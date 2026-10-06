@@ -2,7 +2,7 @@
 .scroll {
   overflow-x: auto;
   border: 1px solid var(--nt-border);
-  border-radius: var(--nt-radius);
+  border-radius: var(--nt-radius-lg);
   background: var(--nt-surface);
   box-shadow: var(--nt-shadow-panel);
 }
@@ -10,14 +10,16 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .caption {
   text-align: start;
-  padding: var(--nt-space-3) var(--nt-space-4);
-  font-weight: 700;
+  padding: 14px var(--nt-space-4);
+  font-size: 14px;
+  font-weight: 600;
   color: var(--nt-text);
+  border-bottom: 1px solid var(--nt-border);
 }
 
 .th {
@@ -27,19 +29,34 @@
   background: var(--nt-bg-subtle);
   text-align: start;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: var(--nt-text-muted);
-  padding: var(--nt-space-3) var(--nt-space-4);
+  padding: 10px var(--nt-space-4);
   border-bottom: 1px solid var(--nt-border);
   white-space: nowrap;
 }
 
 .td {
-  padding: var(--nt-space-3) var(--nt-space-4);
+  padding: 12px var(--nt-space-4);
   border-bottom: 1px solid var(--nt-border);
-  vertical-align: top;
+  /* Giữa theo chiều dọc: một dòng có tên + dòng phụ bên cạnh huy hiệu và nút sẽ thẳng hàng, thay
+     vì nút trôi lên đỉnh dòng. */
+  vertical-align: middle;
+}
+
+/* Link trong ô (tên sự kiện, tên tổ chức) là đường vào chi tiết: đậm, màu nhấn, không gạch chân —
+   gạch chân ở mọi dòng biến cả cột thành một mảng sọc. Gạch chân trở lại khi rê chuột. */
+.td a:not(:has(button)) {
+  color: var(--nt-primary-text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.td a:not(:has(button)):hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .numeric {
@@ -61,6 +78,16 @@
 
 .rowClickable:hover {
   background: var(--nt-hover);
+}
+
+/* Mọi dòng có phản hồi nhẹ khi rê chuột: giúp mắt bám dòng ngang qua bảng rộng. Nhạt hơn dòng
+   bấm được để không gợi ý sai rằng cả dòng là một nút. */
+.row {
+  transition: background-color var(--nt-motion-ui);
+}
+
+.row:hover {
+  background: color-mix(in srgb, var(--nt-hover) 60%, transparent);
 }
 
 .stateCell {

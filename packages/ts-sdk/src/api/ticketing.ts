@@ -1,5 +1,11 @@
 import type { ApiClient } from '../http/client';
-import type { ListMyTicketsParams, ScanRequest, ScanResponse, Ticket } from '../types/ticketing';
+import type {
+  CheckinSession,
+  ListMyTicketsParams,
+  ScanRequest,
+  ScanResponse,
+  Ticket,
+} from '../types/ticketing';
 
 /**
  * Soát vé.
@@ -17,6 +23,31 @@ export async function scanTicket(
 ): Promise<ScanResponse> {
   const response = await client.post<ScanResponse>(
     `/v1/sessions/${eventSessionId}/checkins`,
+    request,
+  );
+  return response.data;
+}
+
+/** Session list for one organization; the backend enforces CHECKIN_SCAN membership. */
+export async function listCheckinSessions(
+  client: ApiClient,
+  organizationId: string,
+): Promise<CheckinSession[]> {
+  const response = await client.get<CheckinSession[]>(
+    `/v1/organizations/${encodeURIComponent(organizationId)}/checkin-sessions`,
+  );
+  return response.data;
+}
+
+/** Check in on an explicit organization path so multi-organization staff get the correct tenant scope. */
+export async function scanTicketForOrganization(
+  client: ApiClient,
+  organizationId: string,
+  eventSessionId: string,
+  request: ScanRequest,
+): Promise<ScanResponse> {
+  const response = await client.post<ScanResponse>(
+    `/v1/organizations/${encodeURIComponent(organizationId)}/sessions/${encodeURIComponent(eventSessionId)}/checkins`,
     request,
   );
   return response.data;

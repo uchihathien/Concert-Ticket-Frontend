@@ -237,7 +237,7 @@ function OrganizationsScreen() {
         }
       />
 
-      <div className="mb-5">
+      <div>
         <StatGrid>
           <StatCard
             label="Tổ chức"
@@ -297,7 +297,7 @@ function OrganizationsScreen() {
       </FilterBar>
 
       {organizations.isError ? (
-        <div className="mt-5">
+        <div>
           <ErrorState
             error={organizations.error instanceof ApiError ? organizations.error : null}
             correlationId={
@@ -308,7 +308,7 @@ function OrganizationsScreen() {
         </div>
       ) : (
         <>
-          <div className="mt-5">
+          <div>
             <Table<OrganizationSummary>
               caption="Danh sách tổ chức"
               loading={loading}

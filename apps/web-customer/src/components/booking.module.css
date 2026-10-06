@@ -683,8 +683,28 @@
     display: none;
   }
 
+  /* Ô đồng ý điều khoản trước đây nằm chung `.action` ở cột 2 (cột co theo nội dung): đoạn chữ
+     dài tràn đè lên "Tạm tính" ở cột 1 và lên chính nút bấm. `display: contents` đưa ô điều khoản
+     và nút thành phần tử trực tiếp của lưới: điều khoản chiếm trọn một hàng, rồi tổng tiền | nút
+     cùng một hàng bên dưới — thứ tự đọc đúng với thứ tự thao tác (đồng ý → xem tổng → bấm). */
   .action {
+    display: contents;
+  }
+
+  .consent {
+    grid-column: 1 / -1;
+    order: 1;
+    margin-bottom: 0;
+  }
+
+  .total {
+    order: 2;
+  }
+
+  .action > button {
     grid-column: 2;
+    order: 3;
+    width: auto;
   }
 
   .allowance,
@@ -711,8 +731,10 @@
   .summary {
     padding: var(--nt-space-4);
     gap: var(--nt-space-3);
-    /* Nằm trên bottom nav của site, không đè lên nó. */
-    bottom: 56px;
+    /* Bottom nav đã ẩn ở màn này (BottomNav.tsx), nên khung dính sát đáy; chừa vùng an toàn của
+       máy có thanh cử chỉ để nút không nằm dưới thanh đó. */
+    bottom: 0;
+    padding-bottom: calc(var(--nt-space-4) + env(safe-area-inset-bottom));
     border-radius: var(--nt-radius-lg) var(--nt-radius-lg) 0 0;
   }
 

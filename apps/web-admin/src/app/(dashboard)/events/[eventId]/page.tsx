@@ -43,9 +43,11 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useState } from 'react';
 import { BulkPriceDialog } from '@/components/BulkPriceDialog';
+import { EventLifecyclePanel } from '@/components/EventLifecyclePanel';
 import { OrganizationGate } from '@/components/OrganizationGate';
 import { PosterUploader } from '@/components/PosterUploader';
 import { SeatMapImagePanel } from '@/components/SeatMapImagePanel';
+import { canTogglePublish, eventStatusLabel, eventStatusTone } from '@/lib/event-status';
 
 /**
  * A-EVENT — suất diễn và giá vé của một sự kiện.
@@ -144,36 +146,40 @@ function EventDetailContent({
               <CalendarPlus size={16} aria-hidden="true" />
               Thêm suất diễn
             </Button>
-            <Button
-              loading={publish.isPending}
-              onClick={() =>
-                publish.mutate({ eventId: event.id, publish: !published }, { onError })
-              }
-            >
-              {published ? (
-                <EyeOff size={16} aria-hidden="true" />
-              ) : (
-                <Eye size={16} aria-hidden="true" />
-              )}
-              {published ? 'Gỡ bán' : 'Xuất bản'}
-            </Button>
+            {canTogglePublish(event.status) ? (
+              <Button
+                loading={publish.isPending}
+                onClick={() =>
+                  publish.mutate({ eventId: event.id, publish: !published }, { onError })
+                }
+              >
+                {published ? (
+                  <EyeOff size={16} aria-hidden="true" />
+                ) : (
+                  <Eye size={16} aria-hidden="true" />
+                )}
+                {published ? 'Gỡ bán' : 'Xuất bản'}
+              </Button>
+            ) : null}
           </div>
         }
       />
 
       <Panel>
         <div className="flex flex-wrap items-center gap-3">
-          <Badge tone={published ? 'success' : 'neutral'}>{statusLabel(event.status)}</Badge>
+          <Badge tone={eventStatusTone(event.status)}>{eventStatusLabel(event.status)}</Badge>
           <span className="text-muted">
-            {published
-              ? 'Đang bán. Gỡ bán trước khi sửa suất diễn hoặc giá vé — đổi giá lúc đang bán thì khách thấy một giá, kết toán ra giá khác.'
-              : event.blockers.length === 0
-                ? 'Đủ điều kiện xuất bản.'
-                : 'Còn vướng mắc, chưa xuất bản được:'}
+            {event.status === 'CANCELLED'
+              ? 'Sự kiện đã huỷ — đây là trạng thái cuối, không xuất bản lại được.'
+              : published
+                ? 'Đang bán. Gỡ bán trước khi sửa suất diễn hoặc giá vé — đổi giá lúc đang bán thì khách thấy một giá, kết toán ra giá khác.'
+                : event.blockers.length === 0
+                  ? 'Đủ điều kiện xuất bản.'
+                  : 'Còn vướng mắc, chưa xuất bản được:'}
           </span>
         </div>
 
-        {!published && event.blockers.length > 0 ? (
+        {!published && event.status !== 'CANCELLED' && event.blockers.length > 0 ? (
           <ul className="m-0 mt-3 list-disc ps-5 text-muted">
             {event.blockers.map((blocker) => (
               <li key={blocker}>{publishBlockerLabel(blocker)}</li>
@@ -262,6 +268,8 @@ function EventDetailContent({
           </Panel>
         ) : null}
       </div>
+
+      <EventLifecyclePanel organizationId={organizationId} event={event} />
 
       {sessionForm ? (
         <SessionDialog
@@ -727,11 +735,4 @@ function optionalNumber(value: FormDataEntryValue | null): number | undefined {
   if (raw === '') return undefined;
   const parsed = Number(raw);
   return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function statusLabel(status: AdminEventDetail['status']): string {
-  if (status === 'PUBLISHED') return 'Đang bán';
-  if (status === 'UNPUBLISHED') return 'Đã gỡ bán';
-  if (status === 'CANCELLED') return 'Đã huỷ';
-  return 'Nháp';
 }

@@ -52,3 +52,16 @@
   --font-sans: var(--nt-font);
   --font-mono: var(--nt-font-mono);
 }
+
+/*
+ * Bậc khoảng cách 20px cho riêng web-customer.
+ *
+ * 14 khai báo trong app (khung tóm tắt đặt chỗ, dòng khu vực, trang thanh toán, trang vé…) dùng
+ * `var(--nt-space-5)`, nhưng `@nexaticket/tokens` chỉ có các bậc 1/2/3/4/6/8/12. Một custom
+ * property chưa định nghĩa làm CẢ khai báo vô hiệu — padding/gap về 0, chữ dính sát viền. Khai ở
+ * đây (ngoài mọi layer) thay vì sửa package dùng chung: phạm vi chỉ là app này, và mọi chỗ đang
+ * dùng tự đúng mà không phải đổi từng file.
+ */
+:root {
+  --nt-space-5: 20px;
+}

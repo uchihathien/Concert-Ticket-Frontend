@@ -9,6 +9,7 @@ import type {
   InvitationCreated,
   InviteMemberRequest,
   Member,
+  MyInvitation,
   MyPermissions,
   OrganizationRole,
   OrganizationSummary,
@@ -25,6 +26,23 @@ import type {
 
 export async function getMyOrganizations(client: ApiClient): Promise<OrganizationSummary[]> {
   const response = await client.get<OrganizationSummary[]>('/v1/me/organizations');
+  return response.data;
+}
+
+/** Pending invitations for the email attached to the authenticated account. */
+export async function getMyPendingInvitations(client: ApiClient): Promise<MyInvitation[]> {
+  const response = await client.get<MyInvitation[]>('/v1/me/invitations');
+  return response.data;
+}
+
+/** Accepts one of the current user's invitations; the server verifies the account email. */
+export async function acceptMyInvitation(
+  client: ApiClient,
+  invitationId: string,
+): Promise<OrganizationSummary> {
+  const response = await client.post<OrganizationSummary>(
+    `/v1/me/invitations/${encodeURIComponent(invitationId)}/accept`,
+  );
   return response.data;
 }
 
