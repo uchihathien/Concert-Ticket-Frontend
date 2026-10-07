@@ -6,9 +6,24 @@
     "orientation": "portrait",
     "scheme": "nexaticket-organizer",
     "userInterfaceStyle": "dark",
-    "ios": { "bundleIdentifier": "com.nexaticket.organizer", "supportsTablet": true },
-    "android": { "package": "com.nexaticket.organizer" },
-    "plugins": ["expo-router", "expo-secure-store"],
-    "experiments": { "typedRoutes": true }
+    "ios": {
+      "bundleIdentifier": "com.nexaticket.organizer",
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.nexaticket.organizer",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "icon": "./assets/icon.png"
   }
 }
