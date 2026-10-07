@@ -11,12 +11,12 @@ import { formatSessionTime, loadSessionIndex, type SessionIndex } from '@/lib/se
 type Filter = 'paid' | 'all';
 
 const STATUS: Record<OrderStatus, { label: string; color: string; background: string }> = {
-  PAID: { label: 'Đã thanh toán', color: '#4CB782', background: 'rgba(76,183,130,0.14)' },
+  PAID: { label: 'Đã thanh toán', color: '#5DD39E', background: 'rgba(93,211,158,0.14)' },
   AWAITING_PAYMENT: { label: 'Chờ thanh toán', color: '#E0A33E', background: 'rgba(224,163,62,0.14)' },
-  EXPIRED: { label: 'Quá hạn', color: '#A89E99', background: 'rgba(168,158,153,0.12)' },
-  CANCELLED: { label: 'Đã huỷ', color: '#A89E99', background: 'rgba(168,158,153,0.12)' },
+  EXPIRED: { label: 'Quá hạn', color: '#A6B1A8', background: 'rgba(166,177,168,0.12)' },
+  CANCELLED: { label: 'Đã huỷ', color: '#A6B1A8', background: 'rgba(166,177,168,0.12)' },
   REFUNDED: { label: 'Đã hoàn tiền', color: '#8AB4F8', background: 'rgba(138,180,248,0.14)' },
-  MANUAL_REVIEW: { label: 'Đang xử lý', color: '#FF7A6E', background: 'rgba(255,122,110,0.14)' },
+  MANUAL_REVIEW: { label: 'Đang xử lý', color: '#FF8C79', background: 'rgba(255,140,121,0.14)' },
 };
 
 /**
@@ -78,13 +78,13 @@ export default function OrdersScreen() {
       {!signedIn ? (
         <Empty title="Cần đăng nhập" detail="Đăng nhập để xem đơn hàng của bạn." />
       ) : orders === null ? (
-        <View style={styles.center}><ActivityIndicator color="#F2B705" /></View>
+        <View style={styles.center}><ActivityIndicator color="#D5FF66" /></View>
       ) : (
         <FlatList
           data={visible}
           keyExtractor={(order) => order.id}
           contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} tintColor="#F2B705" colors={['#F2B705']} onRefresh={() => { setRefreshing(true); void load(true).finally(() => setRefreshing(false)); }} />}
+          refreshControl={<RefreshControl refreshing={refreshing} tintColor="#D5FF66" colors={['#D5FF66']} onRefresh={() => { setRefreshing(true); void load(true).finally(() => setRefreshing(false)); }} />}
           ListHeaderComponent={
             <View style={styles.filters}>
               <Chip label={`Đã thanh toán · ${paidCount}`} active={filter === 'paid'} onPress={() => setFilter('paid')} />
@@ -157,25 +157,25 @@ function Empty({ title, detail }: { title: string; detail: string }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#171211' },
+  screen: { flex: 1, backgroundColor: '#111713' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, gap: 12, paddingBottom: 40 },
   filters: { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  chip: { minHeight: 36, paddingHorizontal: 14, justifyContent: 'center', borderRadius: 18, borderWidth: 1, borderColor: '#362E2B' },
-  chipActive: { backgroundColor: '#C02A2A', borderColor: '#C02A2A' },
-  chipText: { color: '#C9C0BB', fontSize: 13, fontWeight: '700' },
-  chipTextActive: { color: '#FFFFFF' },
-  card: { padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
-  cardPressed: { backgroundColor: '#2A2321' },
+  chip: { minHeight: 36, paddingHorizontal: 14, justifyContent: 'center', borderRadius: 18, borderWidth: 1, borderColor: '#344238' },
+  chipActive: { backgroundColor: '#D5FF66', borderColor: '#D5FF66' },
+  chipText: { color: '#C4CEC5', fontSize: 13, fontWeight: '700' },
+  chipTextActive: { color: '#17210D' },
+  card: { padding: 14, borderRadius: 14, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
+  cardPressed: { backgroundColor: '#1F2A22' },
   cardTop: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 },
-  event: { flex: 1, color: '#F5F1EF', fontSize: 16, fontWeight: '800' },
+  event: { flex: 1, color: '#F1F5F1', fontSize: 16, fontWeight: '800' },
   status: { overflow: 'hidden', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 999, fontSize: 12, fontWeight: '700' },
-  meta: { color: '#A89E99', fontSize: 13, marginTop: 6 },
-  divider: { height: 1, backgroundColor: '#362E2B', marginVertical: 12 },
+  meta: { color: '#A6B1A8', fontSize: 13, marginTop: 6 },
+  divider: { height: 1, backgroundColor: '#344238', marginVertical: 12 },
   cardBottom: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between' },
-  orderNo: { color: '#F5F1EF', fontSize: 13, fontWeight: '700', fontFamily: 'Menlo' },
-  small: { color: '#A89E99', fontSize: 12, marginTop: 3, lineHeight: 18 },
-  total: { color: '#F4796B', fontSize: 17, fontWeight: '800' },
-  empty: { padding: 20, borderRadius: 14, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19', gap: 4 },
-  emptyTitle: { color: '#F5F1EF', fontSize: 15, fontWeight: '800' },
+  orderNo: { color: '#F1F5F1', fontSize: 13, fontWeight: '700', fontFamily: 'Menlo' },
+  small: { color: '#A6B1A8', fontSize: 12, marginTop: 3, lineHeight: 18 },
+  total: { color: '#D5FF66', fontSize: 17, fontWeight: '800' },
+  empty: { padding: 20, borderRadius: 14, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B', gap: 4 },
+  emptyTitle: { color: '#F1F5F1', fontSize: 15, fontWeight: '800' },
 });

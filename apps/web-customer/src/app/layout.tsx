@@ -4,6 +4,8 @@ import { Providers } from './providers';
 import '@nexaticket/tokens/tokens.css';
 import '@nexaticket/tokens/reset.css';
 // Sau reset: tiện ích của Tailwind phải thắng được nền của reset khi hai bên cùng nhắm một thứ.
+// Tông xanh lá + xanh chanh, đồng nhất với các trang còn lại. Phải nằm SAU tokens.css.
+import './customer-theme.css';
 import './tailwind.css';
 
 export const metadata: Metadata = {

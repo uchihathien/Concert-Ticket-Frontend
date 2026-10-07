@@ -32,7 +32,7 @@ export function LoginButton() {
 }
 
 const styles = StyleSheet.create({
-  button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: '#4f46e5', paddingHorizontal: 18 },
+  button: { minHeight: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: '#D5FF66', paddingHorizontal: 18 },
   pressed: { opacity: 0.8 }, disabled: { opacity: 0.55 },
-  text: { color: '#ffffff', fontSize: 15, fontWeight: '700' },
+  text: { color: '#17210D', fontSize: 14, fontWeight: '900', letterSpacing: 0.5 },
 });
