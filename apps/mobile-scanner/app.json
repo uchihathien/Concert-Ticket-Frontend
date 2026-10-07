@@ -15,13 +15,18 @@
     },
     "android": {
       "package": "com.nexaticket.scanner",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
       "permissions": [
         "android.permission.CAMERA"
       ]
     },
     "web": {
       "bundler": "metro",
-      "output": "static"
+      "output": "static",
+      "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
@@ -43,6 +48,7 @@
         "projectId": "20e83433-4f5f-431d-bd4f-77acccde5d51"
       }
     },
-    "owner": "hanhphamthi"
+    "owner": "hanhphamthi",
+    "icon": "./assets/icon.png"
   }
 }
