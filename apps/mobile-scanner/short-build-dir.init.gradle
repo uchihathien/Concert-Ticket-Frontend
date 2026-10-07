@@ -1,0 +1,96 @@
+// Dời thư mục `build` của RIÊNG những module có đường dẫn dài, để không vượt 260 ký tự của Windows.
+//
+// ## Lỗi được sửa
+//
+// CMake của react-native-screens và react-native-worklets sinh một tệp trung gian ở đường dẫn 283 ký
+// tự, trong đó 120 ký tự là tên thư mục pnpm (toàn bộ dãy peer dependency đã băm). Tệp được TẠO thành
+// công — Java dùng NIO nên vượt được MAX_PATH — nhưng `CreateProcess` của Windows thì KHÔNG, nó vẫn
+// dừng ở 260 kể cả khi đã bật LongPathsEnabled. Gradle báo `CreateProcess error=2, The system cannot
+// find the file specified` về một tệp đang nằm sẵn ở đó: thông báo nói "không tìm thấy", nguyên nhân
+// thật là "không chạy được vì tên quá dài".
+//
+// ## Vì sao KHÔNG dời tất cả, kể cả project gốc
+//
+// Bản đầu của tệp này dời build dir của mọi project. Nó chết sau 18 giây:
+//
+//   A problem occurred evaluating project ':app'.
+//   > F:\b\root\generated\autolinking\autolinking.json (The system cannot find the path specified)
+//
+// `settings.gradle` của Expo ghi autolinking.json vào build dir của project gốc TRƯỚC khi init script
+// kịp đổi, rồi `:app` đọc lại theo đường dẫn MỚI. Dời ít nhất có thể vừa sửa được lỗi vừa không chạm
+// vào những quy ước mà phần khác của bản dựng đang dựa vào.
+//
+// ## Ngưỡng 150 ở đâu ra
+//
+// Phần đuôi sâu nhất mà bản dựng sinh ra là:
+//   \build\intermediates\cxx\RelWithDebInfo\<hash8>\logs\arm64-v8a\prefab_command.bat   = 82 ký tự
+// Nên thư mục của module phải ngắn hơn 260 - 82 = 178. Lấy 150 để còn dư cho những đuôi khác.
+// Với ngưỡng này chỉ react-native-screens (201 ký tự) và react-native-worklets bị dời; các module
+// expo-* dài khoảng 130 ký tự nên giữ nguyên chỗ cũ.
+//
+// ## Vì sao không đổi pnpm sang node-linker=hoisted
+//
+// Cách đó cũng xoá được 120 ký tự kia, nhưng nó thay bố cục node_modules của CẢ monorepo — gồm ba app
+// web đang chạy production. Đổi một thứ dùng chung để sửa một thứ riêng của Android là cái giá sai.
+def SHORT_ROOT = 'F:/b'
+def LIMIT = 150
+
+gradle.allprojects { project ->
+    def dir = project.projectDir.absolutePath
+    if (dir.length() <= LIMIT) {
+        return
+    }
+    def safe = project.path.replace(':', '_').replaceAll('^_+', '')
+    if (!safe) {
+        safe = 'root'
+    }
+    // Kèm băm của đường dẫn gốc. Không có nó thì mọi project GỐC của các included build đều mang tên
+    // 'root' và cùng trỏ vào một thư mục: lần chạy trước có HAI project gốc khác nhau (153 và 216 ký
+    // tự) cùng được dời vào F:/b/root. Hai bản dựng ghi chung một build dir là chuyện không được phép,
+    // và nếu nó hỏng thì hỏng theo kiểu rất khó lần ra nguyên nhân.
+    def hash = Integer.toHexString(dir.toLowerCase().hashCode() & 0xffffff)
+    project.layout.buildDirectory.set(new File("$SHORT_ROOT/$safe-$hash"))
+    project.logger.lifecycle("[duong-dan-ngan] $project.path: build -> $SHORT_ROOT/$safe-$hash (goc dai ${dir.length()} ky tu)")
+}
+
+// ---------------------------------------------------------------------------------------------------
+// Dời thư mục `.cxx` của MỌI module Android sang gốc ngắn.
+//
+// `.cxx` nằm CẠNH `build` trong thư mục module, nên việc dời `build` ở trên không chạm tới nó. Và đây
+// mới là chỗ đau nhất, vì CMake nhúng cả đường dẫn NGUỒN TUYỆT ĐỐI vào tên tệp object:
+//
+//   <.cxx>/RelWithDebInfo/<bam>/arm64-v8a/CMakeFiles/<dich>.dir/
+//     F_/kltnnnn/frontend/node_modules/.pnpm/<40>/node_modules/react-native-screens/cpp/X.cpp.o
+//
+// Cộng lại khoảng 310 ký tự. Khi vượt CMAKE_OBJECT_PATH_MAX, CMake không báo lỗi ngay: nó cảnh báo
+// "cannot be safely placed under this directory" rồi viết lại build.ninja mãi, và ninja chết với
+//
+//   ninja: error: manifest 'build.ninja' still dirty after 100 tries
+//
+// Một thông báo không nói gì về độ dài đường dẫn. Cắt tên thư mục pnpm xuống 40 ký tự vẫn chưa đủ, vì
+// đường dẫn nguồn bị tính HAI lần — một lần làm chỗ chứa, một lần nhúng vào tên tệp object.
+//
+// `buildStagingDirectory` là thứ AGP dùng để quyết định `.cxx` nằm đâu; mặc định là <module>/.cxx.
+// Đặt nó ở đây, trong init script, nên không phải sửa build.gradle của thư viện bên thứ ba.
+def shortenCxx = { project, hash ->
+    ['com.android.library', 'com.android.application'].each { id ->
+        // KHONG dung afterEvaluate. AGP chot buildStagingDirectory ngay khi project duoc danh gia xong,
+        // nen dat trong afterEvaluate thi nhan duoc dung mot cau: "It is too late to set
+        // buildStagingDirectory". Phai dat NGAY luc plugin vua duoc ap dung, tuc la giua luc danh gia.
+        project.pluginManager.withPlugin(id) {
+            try {
+                def android = project.extensions.getByName('android')
+                def target = new File("$SHORT_ROOT/x/$hash")
+                android.externalNativeBuild.cmake.buildStagingDirectory = target
+                project.logger.lifecycle("[duong-dan-ngan] $project.path: .cxx -> $target")
+            } catch (Exception e) {
+                project.logger.lifecycle("[duong-dan-ngan] $project.path: KHONG doi duoc .cxx — $e.message")
+            }
+        }
+    }
+}
+
+gradle.allprojects { project ->
+    def hash = Integer.toHexString(project.projectDir.absolutePath.toLowerCase().hashCode() & 0xffffff)
+    shortenCxx(project, hash)
+}
