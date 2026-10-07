@@ -1,30 +1,35 @@
 /**
- * Bảng màu của app Superadmin — đồng bộ với web Superadmin (apps/web-platform).
+ * Bảng màu của app Superadmin — CÙNG tông với app Organizer và Scanner (nền tối xanh lá, nhấn xanh
+ * chanh), và với web Superadmin/Tổ chức (organizer-theme.css, platform-theme.css).
  *
- * Giá trị chép từ `@nexaticket/tokens/admin.css` (`:root[data-app='platform']`): nền sáng
- * slate, màu chính indigo. React Native không đọc được CSS custom property, nên đây là bản sao
- * có chủ đích — sửa token web thì sửa cả ở đây.
+ * Giá trị lấy từ StyleSheet của apps/mobile-organizer. React Native không đọc được CSS custom
+ * property, nên đây là bản sao có chủ đích — đổi tông thì đổi cả các nơi trên.
  */
 export const theme = {
-  canvas: '#f1f5f9', // --nt-bg-subtle: nền khung
-  bg: '#f8fafc', // --nt-bg
-  surface: '#ffffff', // --nt-surface: thẻ, header, ô nhập
-  border: '#e2e8f0', // --nt-border
-  hover: '#f1f5f9', // --nt-hover
-  text: '#0f172a', // --nt-text — 17.85:1 trên trắng
-  muted: '#475569', // --nt-text-muted — 7.58:1 trên trắng
-  primary: '#4f46e5', // --nt-primary: nền nút
-  primaryPressed: '#4338ca', // --nt-primary-hover
-  primaryInk: '#ffffff', // chữ trên nút — 6.29:1
-  primaryText: '#4338ca', // --nt-primary-text: link, mục đang chọn — 7.90:1
-  primarySoft: '#eef0fd', // nền mục nav đang chọn (indigo 9% trên trắng, như web)
-  accent: '#e0e7ff', // --nt-accent: nền chip
-  accentInk: '#3730a3', // --nt-accent-ink
-  successText: '#047857', // --nt-success-text
-  warnText: '#b45309', // --nt-warn-text
-  danger: '#e11d48', // --nt-danger
-  dangerText: '#be123c', // --nt-danger-text
-  dangerSoft: '#fff1f2',
-  radius: 8, // --nt-radius
-  radiusLg: 12, // --nt-radius-lg
+  canvas: '#111713', // nền màn hình
+  bg: '#151d17', // header, thanh mục
+  surface: '#19221b', // thẻ
+  border: '#344238',
+  line: '#28342b', // đường kẻ header
+  hover: '#212c23',
+  text: '#f1f5f1',
+  muted: '#a6b1a8',
+  label: '#aeb9b0', // nhãn ô nhập
+  primary: '#d5ff66', // nền nút, mục đang chọn
+  primaryPressed: '#c4f04f',
+  primaryInk: '#17210d', // chữ trên nền xanh chanh — 14.6:1
+  primaryText: '#d5ff66', // link, nhấn
+  primarySoft: '#26342a', // nền mục nav đang chọn
+  accent: '#26342a',
+  accentInk: '#d5ff66',
+  inputBg: '#151d17',
+  inputBorder: '#3b493f',
+  successText: '#5dd39e',
+  warnText: '#ffd36b',
+  danger: '#c53030',
+  dangerText: '#ff8c79',
+  dangerSoft: '#2a201d',
+  dangerBorder: '#b8624c',
+  radius: 8,
+  radiusLg: 10,
 } as const;

@@ -25,13 +25,13 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#171211' },
+  screen: { flex: 1, backgroundColor: '#111713' },
   back: { width: 52, height: 52, alignItems: 'center', justifyContent: 'center', marginLeft: 8, marginTop: 4 },
-  backText: { color: '#F5F1EF', fontSize: 38, lineHeight: 42 },
+  backText: { color: '#F1F5F1', fontSize: 38, lineHeight: 42 },
   content: { flex: 1, justifyContent: 'center', paddingHorizontal: 26, paddingBottom: 60 },
-  brand: { color: '#F2B705', fontSize: 11, fontWeight: '900', letterSpacing: 2 },
-  title: { color: '#F5F1EF', fontSize: 34, lineHeight: 40, fontWeight: '800', marginTop: 16 },
-  subtitle: { color: '#A89E99', fontSize: 14, lineHeight: 21, marginTop: 12, marginBottom: 28 },
-  notice: { color: '#C9C0BB', fontSize: 13, lineHeight: 20 },
-  footnote: { color: '#817671', fontSize: 11, textAlign: 'center', marginTop: 18 },
+  brand: { color: '#D5FF66', fontSize: 11, fontWeight: '900', letterSpacing: 2 },
+  title: { color: '#F1F5F1', fontSize: 34, lineHeight: 40, fontWeight: '800', marginTop: 16 },
+  subtitle: { color: '#A6B1A8', fontSize: 14, lineHeight: 21, marginTop: 12, marginBottom: 28 },
+  notice: { color: '#C4CEC5', fontSize: 13, lineHeight: 20 },
+  footnote: { color: '#87938A', fontSize: 11, textAlign: 'center', marginTop: 18 },
 });

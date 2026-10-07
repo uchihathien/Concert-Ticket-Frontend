@@ -53,8 +53,8 @@ export function LoginButton() {
 }
 
 const styles = StyleSheet.create({
-  button: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#C02A2A', paddingHorizontal: 18 },
+  button: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#D5FF66', paddingHorizontal: 18 },
   pressed: { opacity: 0.82 },
   disabled: { opacity: 0.58 },
-  text: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  text: { color: '#17210D', fontSize: 14, fontWeight: '800' },
 });

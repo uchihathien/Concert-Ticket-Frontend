@@ -69,7 +69,7 @@ export default function CheckoutScreen() {
       </View>
 
       {loading && !order ? (
-        <View style={styles.centerState}><ActivityIndicator color="#F2B705" size="large" /></View>
+        <View style={styles.centerState}><ActivityIndicator color="#D5FF66" size="large" /></View>
       ) : failure && !order ? (
         <View style={styles.centerState}>
           <Text style={styles.title}>Chưa tải được đơn hàng</Text>
@@ -138,29 +138,29 @@ function formatPrice(value: number) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#171211' },
-  header: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: '#362E2B' },
+  screen: { flex: 1, backgroundColor: '#111713' },
+  header: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: '#344238' },
   backButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  backGlyph: { color: '#F5F1EF', fontSize: 36, lineHeight: 40 },
-  headerTitle: { color: '#F5F1EF', fontSize: 14, fontWeight: '700' },
+  backGlyph: { color: '#F1F5F1', fontSize: 36, lineHeight: 40 },
+  headerTitle: { color: '#F1F5F1', fontSize: 14, fontWeight: '700' },
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 24 },
   content: { flex: 1, justifyContent: 'center', paddingHorizontal: 22, paddingBottom: 44 },
-  statusMark: { width: 58, height: 58, alignItems: 'center', justifyContent: 'center', borderRadius: 18, backgroundColor: '#2A2321', marginBottom: 22 },
+  statusMark: { width: 58, height: 58, alignItems: 'center', justifyContent: 'center', borderRadius: 18, backgroundColor: '#1F2A22', marginBottom: 22 },
   paidMark: { backgroundColor: '#1F4C37' },
-  statusGlyph: { color: '#F2B705', fontSize: 27, fontWeight: '900' },
-  eyebrow: { color: '#F4796B', fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
-  title: { color: '#F5F1EF', fontSize: 26, fontWeight: '900', marginTop: 7 },
-  body: { color: '#A89E99', fontSize: 13, lineHeight: 20, marginTop: 8 },
-  summary: { padding: 17, marginTop: 25, marginBottom: 18, borderRadius: 13, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
+  statusGlyph: { color: '#D5FF66', fontSize: 27, fontWeight: '900' },
+  eyebrow: { color: '#D5FF66', fontSize: 10, fontWeight: '900', letterSpacing: 1.2 },
+  title: { color: '#F1F5F1', fontSize: 26, fontWeight: '900', marginTop: 7 },
+  body: { color: '#A6B1A8', fontSize: 13, lineHeight: 20, marginTop: 8 },
+  summary: { padding: 17, marginTop: 25, marginBottom: 18, borderRadius: 13, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, paddingVertical: 8 },
-  muted: { color: '#A89E99', fontSize: 12 },
-  amount: { color: '#F2B705', fontSize: 16, fontWeight: '900' },
-  summaryValue: { color: '#F5F1EF', fontSize: 12, fontWeight: '700' },
-  countdown: { color: '#F4796B', fontSize: 13, fontWeight: '900' },
-  divider: { height: 1, backgroundColor: '#362E2B', marginVertical: 7 },
-  primaryButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, borderRadius: 10, backgroundColor: '#C02A2A' },
-  buttonText: { color: '#FFFFFF', fontSize: 14, fontWeight: '900' },
+  muted: { color: '#A6B1A8', fontSize: 12 },
+  amount: { color: '#D5FF66', fontSize: 16, fontWeight: '900' },
+  summaryValue: { color: '#F1F5F1', fontSize: 12, fontWeight: '700' },
+  countdown: { color: '#D5FF66', fontSize: 13, fontWeight: '900' },
+  divider: { height: 1, backgroundColor: '#344238', marginVertical: 7 },
+  primaryButton: { minHeight: 50, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, borderRadius: 10, backgroundColor: '#D5FF66' },
+  buttonText: { color: '#17210D', fontSize: 14, fontWeight: '900' },
   secondaryButton: { minHeight: 46, alignItems: 'center', justifyContent: 'center', marginTop: 9 },
-  secondaryText: { color: '#C9C0BB', fontSize: 13, fontWeight: '700' },
-  notice: { padding: 14, borderRadius: 10, backgroundColor: '#2A2321' },
+  secondaryText: { color: '#C4CEC5', fontSize: 13, fontWeight: '700' },
+  notice: { padding: 14, borderRadius: 10, backgroundColor: '#1F2A22' },
 });

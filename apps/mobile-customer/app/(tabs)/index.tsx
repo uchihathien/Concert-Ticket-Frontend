@@ -87,8 +87,8 @@ export default function ExploreScreen() {
             onRefresh={() => {
               setReload((value) => value + 1);
             }}
-            tintColor="#F2B705"
-            colors={['#F2B705']}
+            tintColor="#D5FF66"
+            colors={['#D5FF66']}
           />
         }
         ListHeaderComponent={
@@ -110,7 +110,7 @@ export default function ExploreScreen() {
             <View style={styles.searchBox}>
               <SymbolView
                 name={{ ios: 'magnifyingglass', android: 'search', web: 'search' }}
-                tintColor="#A89E99"
+                tintColor="#A6B1A8"
                 size={20}
               />
               <TextInput
@@ -119,7 +119,7 @@ export default function ExploreScreen() {
                 onChangeText={setQuery}
                 onSubmitEditing={() => setSubmittedQuery(query.trim())}
                 placeholder="Tên sự kiện, nghệ sĩ, địa điểm"
-                placeholderTextColor="#817671"
+                placeholderTextColor="#87938A"
                 returnKeyType="search"
                 style={styles.searchInput}
               />
@@ -165,7 +165,7 @@ export default function ExploreScreen() {
 
             {loading ? (
               <View style={styles.stateBox}>
-                <ActivityIndicator color="#F2B705" size="large" />
+                <ActivityIndicator color="#D5FF66" size="large" />
                 <Text style={styles.stateText}>Đang tìm sự kiện...</Text>
               </View>
             ) : error ? (
@@ -243,28 +243,28 @@ function formatPrice(value: number) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#171211' },
+  safeArea: { flex: 1, backgroundColor: '#111713' },
   content: { paddingHorizontal: 18, paddingBottom: 24 },
   topLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
-  brand: { color: '#F2B705', fontSize: 12, fontWeight: '900', letterSpacing: 1.8 },
-  location: { color: '#A89E99', fontSize: 12, marginTop: 5 },
-  liveMark: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: '#362E2B', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7 },
-  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#F4796B' },
-  liveText: { color: '#F5F1EF', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  headline: { color: '#F5F1EF', fontSize: 32, lineHeight: 37, fontWeight: '800', marginTop: 28 },
-  subtitle: { color: '#A89E99', fontSize: 14, marginTop: 8 },
-  searchBox: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 15, marginTop: 22, borderRadius: 14, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
-  searchInput: { flex: 1, minWidth: 0, color: '#F5F1EF', fontSize: 14, paddingVertical: 12 },
-  clearSearch: { color: '#A89E99', fontSize: 23, lineHeight: 24, paddingHorizontal: 2 },
+  brand: { color: '#D5FF66', fontSize: 12, fontWeight: '900', letterSpacing: 1.8 },
+  location: { color: '#A6B1A8', fontSize: 12, marginTop: 5 },
+  liveMark: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: '#344238', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7 },
+  liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#D5FF66' },
+  liveText: { color: '#F1F5F1', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
+  headline: { color: '#F1F5F1', fontSize: 32, lineHeight: 37, fontWeight: '800', marginTop: 28 },
+  subtitle: { color: '#A6B1A8', fontSize: 14, marginTop: 8 },
+  searchBox: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 15, marginTop: 22, borderRadius: 14, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
+  searchInput: { flex: 1, minWidth: 0, color: '#F1F5F1', fontSize: 14, paddingVertical: 12 },
+  clearSearch: { color: '#A6B1A8', fontSize: 23, lineHeight: 24, paddingHorizontal: 2 },
   categoryScroller: { flexDirection: 'row', gap: 8, marginTop: 17, marginBottom: 29 },
-  categoryChip: { minHeight: 38, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
-  categoryChipSelected: { borderColor: '#F2B705', backgroundColor: '#F2B705' },
-  categoryText: { color: '#C9C0BB', fontSize: 12, fontWeight: '700' },
-  categoryTextSelected: { color: '#2A1F00' },
+  categoryChip: { minHeight: 38, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
+  categoryChipSelected: { borderColor: '#D5FF66', backgroundColor: '#D5FF66' },
+  categoryText: { color: '#C4CEC5', fontSize: 12, fontWeight: '700' },
+  categoryTextSelected: { color: '#17210D' },
   sectionHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 15 },
-  eyebrow: { color: '#F4796B', fontSize: 9, fontWeight: '800', letterSpacing: 1.2 },
-  sectionTitle: { color: '#F5F1EF', fontSize: 19, fontWeight: '800', marginTop: 5 },
-  resultCount: { color: '#A89E99', fontSize: 11, paddingBottom: 3 },
+  eyebrow: { color: '#D5FF66', fontSize: 9, fontWeight: '800', letterSpacing: 1.2 },
+  sectionTitle: { color: '#F1F5F1', fontSize: 19, fontWeight: '800', marginTop: 5 },
+  resultCount: { color: '#A6B1A8', fontSize: 11, paddingBottom: 3 },
   cardRow: { justifyContent: 'space-between', marginBottom: 18 },
   card: { width: '48.2%', paddingBottom: 2 },
   cardPressed: { opacity: 0.76 },
@@ -273,17 +273,17 @@ const styles = StyleSheet.create({
   posterRule: { position: 'absolute', top: 0, right: 16, width: 1, height: '58%', backgroundColor: 'rgba(255,255,255,0.45)' },
   posterWord: { color: '#FFF8EB', fontSize: 27, lineHeight: 27, fontWeight: '900', letterSpacing: 0.5 },
   posterCategory: { color: '#FFF8EB', fontSize: 9, textTransform: 'uppercase', marginTop: 7, opacity: 0.8 },
-  posterBadge: { position: 'absolute', top: 9, left: 9, maxWidth: '68%', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 5, backgroundColor: 'rgba(16,13,12,0.8)' },
-  posterBadgeText: { color: '#F5F1EF', fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
-  eventTitle: { color: '#F5F1EF', fontSize: 14, lineHeight: 19, fontWeight: '700', marginTop: 10, minHeight: 38 },
-  eventMeta: { color: '#A89E99', fontSize: 11, marginTop: 4 },
+  posterBadge: { position: 'absolute', top: 9, left: 9, maxWidth: '68%', paddingHorizontal: 8, paddingVertical: 5, borderRadius: 5, backgroundColor: 'rgba(13,18,15,0.8)' },
+  posterBadgeText: { color: '#F1F5F1', fontSize: 9, fontWeight: '700', textTransform: 'uppercase' },
+  eventTitle: { color: '#F1F5F1', fontSize: 14, lineHeight: 19, fontWeight: '700', marginTop: 10, minHeight: 38 },
+  eventMeta: { color: '#A6B1A8', fontSize: 11, marginTop: 4 },
   cardBottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 4, marginTop: 9 },
-  eventDate: { color: '#C9C0BB', fontSize: 10, flexShrink: 1 },
-  eventPrice: { color: '#F2B705', fontSize: 10, fontWeight: '800', flexShrink: 1, textAlign: 'right' },
-  stateBox: { minHeight: 150, alignItems: 'center', justifyContent: 'center', padding: 18, borderWidth: 1, borderColor: '#362E2B', borderRadius: 14, backgroundColor: '#211B19', marginBottom: 18 },
-  stateTitle: { color: '#F5F1EF', fontSize: 15, fontWeight: '700', textAlign: 'center' },
-  stateText: { color: '#A89E99', fontSize: 12, textAlign: 'center', marginTop: 9, lineHeight: 18 },
-  debugText: { color: '#F4796B', fontSize: 11, textAlign: 'center', marginTop: 8, lineHeight: 16 },
-  retryButton: { minHeight: 42, justifyContent: 'center', paddingHorizontal: 18, marginTop: 14, borderRadius: 9, backgroundColor: '#C02A2A' },
-  retryText: { color: '#FFFFFF', fontSize: 12, fontWeight: '800' },
+  eventDate: { color: '#C4CEC5', fontSize: 10, flexShrink: 1 },
+  eventPrice: { color: '#D5FF66', fontSize: 10, fontWeight: '800', flexShrink: 1, textAlign: 'right' },
+  stateBox: { minHeight: 150, alignItems: 'center', justifyContent: 'center', padding: 18, borderWidth: 1, borderColor: '#344238', borderRadius: 14, backgroundColor: '#19221B', marginBottom: 18 },
+  stateTitle: { color: '#F1F5F1', fontSize: 15, fontWeight: '700', textAlign: 'center' },
+  stateText: { color: '#A6B1A8', fontSize: 12, textAlign: 'center', marginTop: 9, lineHeight: 18 },
+  debugText: { color: '#D5FF66', fontSize: 11, textAlign: 'center', marginTop: 8, lineHeight: 16 },
+  retryButton: { minHeight: 42, justifyContent: 'center', paddingHorizontal: 18, marginTop: 14, borderRadius: 9, backgroundColor: '#D5FF66' },
+  retryText: { color: '#17210D', fontSize: 12, fontWeight: '800' },
 });

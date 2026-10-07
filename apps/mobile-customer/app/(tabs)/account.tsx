@@ -39,7 +39,7 @@ export default function AccountScreen() {
             {signedIn && initials ? (
               <Text style={styles.avatarText}>{initials}</Text>
             ) : (
-              <SymbolView name={{ ios: 'person.fill', android: 'person', web: 'person' }} tintColor="#F2B705" size={26} />
+              <SymbolView name={{ ios: 'person.fill', android: 'person', web: 'person' }} tintColor="#D5FF66" size={26} />
             )}
           </View>
           <View style={styles.identityText}>
@@ -108,39 +108,39 @@ function MenuRow({ icon, title, detail, href, last = false }: { icon: SymbolView
       style={({ pressed }) => [styles.row, !last && styles.rowBorder, pressed && styles.rowPressed]}
     >
       <View style={styles.rowIcon}>
-        <SymbolView name={icon} tintColor="#F2B705" size={18} />
+        <SymbolView name={icon} tintColor="#D5FF66" size={18} />
       </View>
       <View style={styles.rowText}>
         <Text style={styles.rowTitle}>{title}</Text>
         <Text style={styles.rowDetail}>{detail}</Text>
       </View>
-      <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor="#7A706B" size={16} />
+      <SymbolView name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }} tintColor="#6F7B72" size={16} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#171211' },
+  screen: { flex: 1, backgroundColor: '#111713' },
   content: { paddingHorizontal: 20, paddingTop: 24, paddingBottom: 40 },
-  eyebrow: { color: '#F4796B', fontSize: 11, fontWeight: '800', letterSpacing: 1.2 },
-  title: { color: '#F5F1EF', fontSize: 28, fontWeight: '800', marginTop: 8 },
-  identity: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 22, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
-  avatar: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center', borderRadius: 28, backgroundColor: '#2A2321', borderWidth: 1, borderColor: '#4A3F3B' },
-  avatarText: { color: '#F2B705', fontSize: 19, fontWeight: '800' },
+  eyebrow: { color: '#D5FF66', fontSize: 11, fontWeight: '800', letterSpacing: 1.2 },
+  title: { color: '#F1F5F1', fontSize: 28, fontWeight: '800', marginTop: 8 },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 22, padding: 16, borderRadius: 14, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
+  avatar: { width: 56, height: 56, alignItems: 'center', justifyContent: 'center', borderRadius: 28, backgroundColor: '#1F2A22', borderWidth: 1, borderColor: '#3B493F' },
+  avatarText: { color: '#D5FF66', fontSize: 19, fontWeight: '800' },
   identityText: { flex: 1, minWidth: 0 },
-  name: { color: '#F5F1EF', fontSize: 17, fontWeight: '800' },
-  email: { color: '#A89E99', fontSize: 13, marginTop: 4 },
-  primaryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 14, borderRadius: 10, backgroundColor: '#C02A2A' },
-  primaryText: { color: '#FFFFFF', fontSize: 15, fontWeight: '800' },
-  menu: { marginTop: 18, borderRadius: 14, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19', overflow: 'hidden' },
+  name: { color: '#F1F5F1', fontSize: 17, fontWeight: '800' },
+  email: { color: '#A6B1A8', fontSize: 13, marginTop: 4 },
+  primaryButton: { minHeight: 48, alignItems: 'center', justifyContent: 'center', marginTop: 14, borderRadius: 10, backgroundColor: '#D5FF66' },
+  primaryText: { color: '#17210D', fontSize: 15, fontWeight: '800' },
+  menu: { marginTop: 18, borderRadius: 14, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B', overflow: 'hidden' },
   row: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 14 },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: '#362E2B' },
-  rowPressed: { backgroundColor: '#2A2321' },
-  rowIcon: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#2A2321' },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: '#344238' },
+  rowPressed: { backgroundColor: '#1F2A22' },
+  rowIcon: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#1F2A22' },
   rowText: { flex: 1, minWidth: 0 },
-  rowTitle: { color: '#F5F1EF', fontSize: 15, fontWeight: '700' },
-  rowDetail: { color: '#A89E99', fontSize: 12, marginTop: 2 },
-  signOut: { minHeight: 46, alignItems: 'center', justifyContent: 'center', marginTop: 18, borderRadius: 10, borderWidth: 1, borderColor: '#4A3F3B' },
-  signOutText: { color: '#FF7A6E', fontSize: 14, fontWeight: '700' },
+  rowTitle: { color: '#F1F5F1', fontSize: 15, fontWeight: '700' },
+  rowDetail: { color: '#A6B1A8', fontSize: 12, marginTop: 2 },
+  signOut: { minHeight: 46, alignItems: 'center', justifyContent: 'center', marginTop: 18, borderRadius: 10, borderWidth: 1, borderColor: '#3B493F' },
+  signOutText: { color: '#FF8C79', fontSize: 14, fontWeight: '700' },
   pressed: { opacity: 0.8 },
 });
