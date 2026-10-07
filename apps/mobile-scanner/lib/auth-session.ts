@@ -2,12 +2,25 @@ import * as AuthSession from 'expo-auth-session';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 
-const issuer = (process.env.EXPO_PUBLIC_KEYCLOAK_ISSUER ?? 'http://localhost:8081/realms/nexaticket').replace(/\/$/, '');
-const clientId = process.env.EXPO_PUBLIC_MOBILE_OIDC_CLIENT_ID ?? 'mobile-scanner';
+import { publicEnv } from './env';
+
+const issuer = publicEnv(process.env.EXPO_PUBLIC_KEYCLOAK_ISSUER, {
+  name: 'EXPO_PUBLIC_KEYCLOAK_ISSUER',
+  devFallback: 'http://localhost:8081/realms/nexaticket',
+}).replace(/\/+$/, '');
+
+const clientId = publicEnv(process.env.EXPO_PUBLIC_MOBILE_OIDC_CLIENT_ID, {
+  name: 'EXPO_PUBLIC_MOBILE_OIDC_CLIENT_ID',
+  devFallback: 'mobile-scanner',
+});
 const refreshTokenKey = 'nexaticket.mobile-scanner.refresh-token';
 
+// Redirect URI là chỗ DUY NHẤT phải khớp từng ký tự với Keycloak, nên nó KHÔNG đi qua publicEnv:
+// khi biến trống, `makeRedirectUri` tự dựng đúng địa chỉ cho môi trường đang chạy — `exp://<IP>:<cổng>/--/auth`
+// dưới Expo Go, `nexaticket-scanner://auth` trong bản build thật. Đó là một mặc định ĐÚNG, không phải
+// mặc định của máy phát triển lọt lên production, nên ném lỗi ở đây sẽ chặn một trường hợp vốn chạy được.
 export const redirectUri =
-  process.env.EXPO_PUBLIC_OIDC_REDIRECT_URI ??
+  process.env.EXPO_PUBLIC_OIDC_REDIRECT_URI?.trim() ||
   AuthSession.makeRedirectUri({ scheme: 'nexaticket-scanner', path: 'auth' });
 
 export const discovery: AuthSession.DiscoveryDocument = {
