@@ -9,7 +9,7 @@ export default function RootLayout() {
     <MobileAuthProvider>
       <SavedEventsProvider>
       <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#171211' } }}>
+      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#111713' } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="events/[slug]" />
         <Stack.Screen name="booking/[sessionId]" />

@@ -29,7 +29,7 @@ export function SaveEventButton({ slug, title, size = 'md' }: { slug: string; ti
     >
       <SymbolView
         name={saved ? { ios: 'bookmark.fill', android: 'bookmark', web: 'bookmark' } : { ios: 'bookmark', android: 'bookmark_border', web: 'bookmark_border' }}
-        tintColor={saved ? '#2A1F00' : '#FFFFFF'}
+        tintColor={saved ? '#17210D' : '#FFFFFF'}
         size={size === 'lg' ? 20 : 17}
       />
     </Pressable>
@@ -38,8 +38,8 @@ export function SaveEventButton({ slug, title, size = 'md' }: { slug: string; ti
 
 const styles = StyleSheet.create({
   // Nền tối trong mờ: nổi trên mọi ảnh poster, sáng hay tối.
-  button: { position: 'absolute', top: 10, right: 10, zIndex: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(16, 12, 11, 0.62)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
-  // Đã lưu: vàng kim — màu nhấn của app.
-  saved: { backgroundColor: '#F2B705', borderColor: '#F2B705' },
+  button: { position: 'absolute', top: 10, right: 10, zIndex: 2, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(13, 18, 15, 0.62)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' },
+  // Đã lưu: xanh chanh — màu nhấn của app.
+  saved: { backgroundColor: '#D5FF66', borderColor: '#D5FF66' },
   pressed: { transform: [{ scale: 0.92 }] },
 });

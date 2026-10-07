@@ -12,7 +12,6 @@ import {
 } from '@nexaticket/ts-sdk';
 import { LoginButton } from '@/components/LoginButton';
 import { useMobileAuth } from '@/lib/auth-context';
-import { redirectUri } from '@/lib/auth-session';
 import { api } from '@/lib/api';
 import { theme } from '@/lib/theme';
 
@@ -89,20 +88,17 @@ export default function PlatformHome() {
   }
 
   if (!ready) return <Centered><ActivityIndicator color={theme.primary} /></Centered>;
-  if (!signedIn) return <ScrollView contentContainerStyle={styles.login}><View style={styles.brandRow}><Text style={styles.brand}>NEXATICKET</Text><Text style={styles.brandChip}>Nền tảng</Text></View><Text style={styles.title}>Điều hành nền tảng</Text><Text style={styles.muted}>Đăng nhập bằng tài khoản được cấp quyền superadmin.</Text><LoginButton /><Text selectable style={styles.small}>Callback: {redirectUri}</Text></ScrollView>;
+  if (!signedIn) return <ScrollView contentContainerStyle={styles.login}><Text style={styles.brand}>NEXATICKET / PLATFORM</Text><Text style={styles.title}>Điều hành nền tảng</Text><Text style={styles.muted}>Đăng nhập bằng tài khoản được cấp quyền superadmin.</Text><LoginButton /></ScrollView>;
 
   const activeSection = sections.find((item) => item.id === section);
   return (
     <View style={styles.screen}>
-      {/* Header + thanh mục: cùng bố cục với sidebar của web Superadmin — logo + chip "Nền tảng",
-          nhãn "QUẢN TRỊ NỀN TẢNG", mục đang chọn chữ indigo trên nền indigo nhạt kèm vạch chỉ báo. */}
+      {/* Header + thanh mục: cùng kiểu với app Organizer/Scanner — nhận diện "NEXATICKET / PLATFORM" in hoa
+          xanh chanh, tiêu đề đậm; mục đang chọn chữ xanh chanh trên nền xanh lá tối kèm vạch chỉ báo. */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <View style={styles.headerRow}>
           <View style={styles.headerText}>
-            <View style={styles.brandRow}>
-              <Text style={styles.brand}>NEXATICKET</Text>
-              <Text style={styles.brandChip}>Nền tảng</Text>
-            </View>
+            <Text style={styles.brand}>NEXATICKET / PLATFORM</Text>
             <Text numberOfLines={1} style={styles.heading}>{activeSection?.label}</Text>
           </View>
           <Pressable
@@ -198,52 +194,52 @@ export default function PlatformHome() {
 
 function Centered({ children }: { children: React.ReactNode }) { return <View style={styles.center}>{children}</View>; }
 function SectionTitle({ title, action, onAction }: { title: string; action?: string; onAction?: () => void }) { return <View style={styles.sectionHeader}><Text style={styles.sectionTitle}>{title}</Text>{action && <Pressable onPress={onAction}><Text style={styles.link}>{action}</Text></Pressable>}</View>; }
-function Field({ label, value, onChange, multiline = false }: { label: string; value: string; onChange: (value: string) => void; multiline?: boolean }) { return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} value={value} onChangeText={onChange} placeholderTextColor="#94a3b8" multiline={multiline} autoCapitalize="none" style={[styles.input, multiline && styles.textarea]} /></View>; }
+function Field({ label, value, onChange, multiline = false }: { label: string; value: string; onChange: (value: string) => void; multiline?: boolean }) { return <View style={styles.field}><Text style={styles.label}>{label}</Text><TextInput accessibilityLabel={label} value={value} onChangeText={onChange} placeholderTextColor="#6F7B72" multiline={multiline} autoCapitalize="none" style={[styles.input, multiline && styles.textarea]} /></View>; }
 function Action({ label, onPress, compact = false }: { label: string; onPress: () => void; compact?: boolean }) { return <Pressable accessibilityRole="button" onPress={onPress} style={({ pressed }) => [styles.action, compact && styles.actionCompact, pressed && styles.pressed]}><Text style={styles.actionText}>{label}</Text></Pressable>; }
 function DataRow({ title, detail }: { title: string; detail: string }) { return <View style={styles.dataRow}><Text style={styles.rowTitle}>{title}</Text><Text selectable style={styles.small}>{detail}</Text></View>; }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: theme.canvas },
-  header: { backgroundColor: theme.surface, borderBottomWidth: 1, borderBottomColor: theme.border },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 16, paddingBottom: 10 },
+  // Header: cùng số đo với app Organizer (brand 11/900, tiêu đề 20/900, đường kẻ #28342B).
+  header: { backgroundColor: theme.canvas, borderBottomWidth: 1, borderBottomColor: theme.line },
+  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 18, paddingBottom: 10 },
   headerText: { flex: 1, minWidth: 0 },
-  brandRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  brand: { color: theme.text, fontSize: 12, fontWeight: '800', letterSpacing: 1 },
-  brandChip: { overflow: 'hidden', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: theme.accent, color: theme.accentInk, fontSize: 11, fontWeight: '700' },
-  heading: { color: theme.text, fontSize: 22, fontWeight: '800', letterSpacing: -0.4, marginTop: 6 },
-  signOut: { minHeight: 36, paddingHorizontal: 12, justifyContent: 'center', borderRadius: theme.radius, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface },
-  signOutPressed: { backgroundColor: theme.dangerSoft, borderColor: '#fecdd3' },
-  signOutText: { color: theme.muted, fontSize: 13, fontWeight: '600' },
-  navLabel: { color: theme.muted, fontSize: 11, fontWeight: '600', letterSpacing: 0.7, paddingHorizontal: 16, paddingBottom: 2 },
+  brand: { color: theme.primary, fontSize: 11, fontWeight: '900', letterSpacing: 1.3 },
+  heading: { color: theme.text, fontSize: 20, fontWeight: '900', marginTop: 4 },
+  signOut: { minHeight: 36, paddingHorizontal: 12, justifyContent: 'center', borderRadius: 7, borderWidth: 1, borderColor: theme.inputBorder },
+  signOutPressed: { backgroundColor: theme.dangerSoft, borderColor: theme.dangerBorder },
+  signOutText: { color: theme.muted, fontSize: 13, fontWeight: '700' },
+  navLabel: { color: theme.primary, fontSize: 11, fontWeight: '900', letterSpacing: 1.2, paddingHorizontal: 18, paddingBottom: 2 },
   tabsScroll: { flexGrow: 0 },
-  tabs: { paddingHorizontal: 10, paddingTop: 4, gap: 2 },
-  tab: { minHeight: 42, paddingHorizontal: 12, justifyContent: 'center', borderTopLeftRadius: theme.radius, borderTopRightRadius: theme.radius },
+  tabs: { paddingHorizontal: 12, paddingTop: 4, gap: 4 },
+  tab: { minHeight: 42, paddingHorizontal: 12, justifyContent: 'center', borderTopLeftRadius: 7, borderTopRightRadius: 7 },
   tabActive: { backgroundColor: theme.primarySoft },
   tabPressed: { backgroundColor: theme.hover },
-  tabText: { color: theme.muted, fontSize: 14, fontWeight: '500' },
-  tabTextActive: { color: theme.primaryText, fontWeight: '700' },
+  tabText: { color: theme.muted, fontSize: 13, fontWeight: '700' },
+  tabTextActive: { color: theme.primary, fontWeight: '900' },
   tabIndicator: { position: 'absolute', left: 10, right: 10, bottom: 0, height: 3, borderTopLeftRadius: 3, borderTopRightRadius: 3, backgroundColor: 'transparent' },
   tabIndicatorActive: { backgroundColor: theme.primary },
-  eyebrow: { color: theme.muted, fontSize: 11, fontWeight: '700', letterSpacing: 1.1 },
+  eyebrow: { color: theme.primary, fontSize: 11, fontWeight: '900', letterSpacing: 1.3 },
   content: { padding: 16, paddingBottom: 60, gap: 12 },
   sectionHeader: { minHeight: 38, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
-  sectionTitle: { color: theme.text, fontSize: 17, fontWeight: '700', letterSpacing: -0.2 },
-  link: { color: theme.primaryText, fontSize: 14, fontWeight: '600' },
-  field: { gap: 6 }, label: { color: theme.text, fontSize: 13, fontWeight: '600' },
-  input: { minHeight: 44, borderRadius: theme.radius, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, color: theme.text, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15 },
+  sectionTitle: { color: theme.text, fontSize: 17, fontWeight: '800' },
+  link: { color: theme.primary, fontSize: 12, fontWeight: '900', letterSpacing: 0.8 },
+  field: { gap: 6 }, label: { color: theme.label, fontSize: 13, fontWeight: '700' },
+  input: { minHeight: 43, borderRadius: 7, borderWidth: 1, borderColor: theme.inputBorder, backgroundColor: theme.inputBg, color: theme.text, paddingHorizontal: 11, paddingVertical: 10, fontSize: 15 },
   textarea: { minHeight: 96, textAlignVertical: 'top' },
-  action: { minHeight: 42, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', borderRadius: theme.radius, backgroundColor: theme.primary, alignSelf: 'flex-start' },
+  // Nút hành động: nền xanh chanh, chữ in hoa đậm — như "TÌM VÉ" của app Organizer.
+  action: { minHeight: 44, paddingHorizontal: 16, justifyContent: 'center', alignItems: 'center', borderRadius: 7, backgroundColor: theme.primary, alignSelf: 'flex-start' },
   actionCompact: { minHeight: 34, paddingHorizontal: 12 },
-  actionText: { color: theme.primaryInk, fontSize: 14, fontWeight: '600' }, pressed: { backgroundColor: theme.primaryPressed },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderWidth: 1, borderColor: theme.border, borderRadius: theme.radiusLg, backgroundColor: theme.surface, gap: 10 },
-  rowMain: { flex: 1, gap: 4 }, rowTitle: { color: theme.text, fontSize: 15, fontWeight: '600' },
-  small: { color: theme.muted, fontSize: 13, lineHeight: 19 }, mono: { color: '#64748b', fontSize: 12, fontFamily: 'Menlo' },
+  actionText: { color: theme.primaryInk, fontSize: 12, fontWeight: '900', letterSpacing: 0.5, textTransform: 'uppercase' }, pressed: { backgroundColor: theme.primaryPressed },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderWidth: 1, borderColor: theme.border, borderRadius: theme.radius, backgroundColor: theme.surface, gap: 10 },
+  rowMain: { flex: 1, gap: 4 }, rowTitle: { color: theme.text, fontSize: 15, fontWeight: '800' },
+  small: { color: theme.muted, fontSize: 13, lineHeight: 19 }, mono: { color: '#87938a', fontSize: 12, fontFamily: 'Menlo' },
   inline: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  dataRow: { paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.border, gap: 4 },
-  panel: { padding: 16, borderRadius: theme.radiusLg, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, gap: 10 },
-  metric: { color: theme.text, fontSize: 20, fontWeight: '700' },
-  error: { color: theme.dangerText, fontSize: 13, lineHeight: 19, padding: 12, backgroundColor: theme.dangerSoft, borderRadius: theme.radius, borderWidth: 1, borderColor: '#fecdd3' },
-  login: { flexGrow: 1, justifyContent: 'center', gap: 16, padding: 26, backgroundColor: theme.canvas },
-  title: { color: theme.text, fontSize: 30, fontWeight: '800', letterSpacing: -0.6 }, muted: { color: theme.muted, fontSize: 15, lineHeight: 22 },
+  dataRow: { paddingVertical: 10, borderTopWidth: 1, borderTopColor: theme.border, gap: 5 },
+  panel: { padding: 14, borderRadius: theme.radius, borderWidth: 1, borderColor: theme.border, backgroundColor: theme.surface, gap: 10 },
+  metric: { color: theme.primary, fontSize: 22, fontWeight: '900' },
+  error: { color: theme.dangerText, fontSize: 13, lineHeight: 19, padding: 12, backgroundColor: theme.dangerSoft, borderRadius: theme.radius, borderWidth: 1, borderColor: theme.dangerBorder },
+  login: { flexGrow: 1, justifyContent: 'center', gap: 14, padding: 24, backgroundColor: theme.canvas },
+  title: { color: theme.text, fontSize: 30, fontWeight: '900' }, muted: { color: theme.muted, fontSize: 14, lineHeight: 21 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.canvas },
 });

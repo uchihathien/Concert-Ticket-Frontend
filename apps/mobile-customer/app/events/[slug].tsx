@@ -56,7 +56,7 @@ export default function EventDetailScreen() {
       <SafeAreaView style={styles.screen}>
         <Header />
         <View style={styles.centerState}>
-          <ActivityIndicator color="#F2B705" size="large" />
+          <ActivityIndicator color="#D5FF66" size="large" />
           <Text style={styles.muted}>Đang tải thông tin sự kiện...</Text>
         </View>
       </SafeAreaView>
@@ -87,7 +87,7 @@ export default function EventDetailScreen() {
         <Text style={styles.category}>{event.category.replaceAll('-', ' ').toUpperCase()}</Text>
         <Text style={styles.title}>{event.title}</Text>
         <View style={styles.infoRow}>
-          <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} tintColor="#F4796B" size={17} />
+          <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} tintColor="#D5FF66" size={17} />
           <Text style={styles.infoText}>{[event.venueName, event.city].filter(Boolean).join(' · ') || 'Địa điểm sẽ được cập nhật'}</Text>
         </View>
 
@@ -194,7 +194,7 @@ function Header() {
   return (
     <View style={styles.header}>
       <Pressable accessibilityRole="button" accessibilityLabel="Quay lại" onPress={() => router.back()} style={styles.backButton}>
-        <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} tintColor="#F5F1EF" size={20} />
+        <SymbolView name={{ ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' }} tintColor="#F1F5F1" size={20} />
       </Pressable>
       <Text style={styles.headerTitle}>Chi tiết sự kiện</Text>
       <View style={styles.backButton} />
@@ -207,40 +207,40 @@ function formatPrice(value: number) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#171211' },
+  screen: { flex: 1, backgroundColor: '#111713' },
   header: { height: 52, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 18 },
   backButton: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { color: '#F5F1EF', fontSize: 14, fontWeight: '700' },
+  headerTitle: { color: '#F1F5F1', fontSize: 14, fontWeight: '700' },
   content: { paddingHorizontal: 18, paddingBottom: 26 },
-  hero: { width: '100%', aspectRatio: 1.7, overflow: 'hidden', borderRadius: 16, marginTop: 5, marginBottom: 21, backgroundColor: '#211B19' },
+  hero: { width: '100%', aspectRatio: 1.7, overflow: 'hidden', borderRadius: 16, marginTop: 5, marginBottom: 21, backgroundColor: '#19221B' },
   heroImage: { width: '100%', height: '100%' },
   heroFallback: { flex: 1, justifyContent: 'flex-end', padding: 21, backgroundColor: '#44272A' },
-  heroKicker: { color: '#F2B705', fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
+  heroKicker: { color: '#D5FF66', fontSize: 11, fontWeight: '800', textTransform: 'uppercase' },
   heroFallbackTitle: { color: '#FFF8EB', fontSize: 28, fontWeight: '900', marginTop: 8 },
-  category: { color: '#F4796B', fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
-  title: { color: '#F5F1EF', fontSize: 26, lineHeight: 32, fontWeight: '800', marginTop: 7 },
+  category: { color: '#D5FF66', fontSize: 10, fontWeight: '800', letterSpacing: 1.2 },
+  title: { color: '#F1F5F1', fontSize: 26, lineHeight: 32, fontWeight: '800', marginTop: 7 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 13 },
-  infoText: { color: '#C9C0BB', fontSize: 12, flex: 1 },
-  summary: { color: '#C9C0BB', fontSize: 13, lineHeight: 21, marginTop: 17 },
+  infoText: { color: '#C4CEC5', fontSize: 12, flex: 1 },
+  summary: { color: '#C4CEC5', fontSize: 13, lineHeight: 21, marginTop: 17 },
   sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 28, marginBottom: 12 },
-  sectionTitle: { color: '#F5F1EF', fontSize: 17, fontWeight: '800', marginBottom: 12 },
-  muted: { color: '#A89E99', fontSize: 12 },
-  emptySession: { minHeight: 70, justifyContent: 'center', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#362E2B' },
-  session: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 13, padding: 12, marginBottom: 9, borderRadius: 12, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
-  sessionSelected: { borderColor: '#F2B705' },
+  sectionTitle: { color: '#F1F5F1', fontSize: 17, fontWeight: '800', marginBottom: 12 },
+  muted: { color: '#A6B1A8', fontSize: 12 },
+  emptySession: { minHeight: 70, justifyContent: 'center', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#344238' },
+  session: { minHeight: 76, flexDirection: 'row', alignItems: 'center', gap: 13, padding: 12, marginBottom: 9, borderRadius: 12, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
+  sessionSelected: { borderColor: '#D5FF66' },
   sessionDisabled: { opacity: 0.45 },
-  sessionDate: { width: 46, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: '#2A2321' },
-  sessionDay: { color: '#F5F1EF', fontSize: 17, fontWeight: '800' },
-  sessionMonth: { color: '#A89E99', fontSize: 10, textTransform: 'uppercase' },
+  sessionDate: { width: 46, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 8, backgroundColor: '#1F2A22' },
+  sessionDay: { color: '#F1F5F1', fontSize: 17, fontWeight: '800' },
+  sessionMonth: { color: '#A6B1A8', fontSize: 10, textTransform: 'uppercase' },
   sessionInfo: { flex: 1, gap: 5 },
-  sessionTime: { color: '#F5F1EF', fontSize: 14, fontWeight: '700' },
-  price: { color: '#F2B705', fontSize: 12, fontWeight: '800' },
-  description: { color: '#C9C0BB', fontSize: 13, lineHeight: 21, marginTop: 2 },
-  bottomAction: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 13, paddingBottom: 16, borderTopWidth: 1, borderTopColor: '#362E2B', backgroundColor: '#211B19' },
-  priceLarge: { color: '#F2B705', fontSize: 16, fontWeight: '800', marginTop: 3 },
-  continueButton: { minHeight: 48, minWidth: 142, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, borderRadius: 10, backgroundColor: '#C02A2A' },
-  continueDisabled: { backgroundColor: '#51433F' },
-  continueText: { color: '#FFFFFF', fontSize: 14, fontWeight: '800' },
+  sessionTime: { color: '#F1F5F1', fontSize: 14, fontWeight: '700' },
+  price: { color: '#D5FF66', fontSize: 12, fontWeight: '800' },
+  description: { color: '#C4CEC5', fontSize: 13, lineHeight: 21, marginTop: 2 },
+  bottomAction: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 13, paddingBottom: 16, borderTopWidth: 1, borderTopColor: '#344238', backgroundColor: '#19221B' },
+  priceLarge: { color: '#D5FF66', fontSize: 16, fontWeight: '800', marginTop: 3 },
+  continueButton: { minHeight: 48, minWidth: 142, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 20, borderRadius: 10, backgroundColor: '#D5FF66' },
+  continueDisabled: { backgroundColor: '#3B493F' },
+  continueText: { color: '#17210D', fontSize: 14, fontWeight: '800' },
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 10 },
-  stateTitle: { color: '#F5F1EF', fontSize: 17, fontWeight: '800' },
+  stateTitle: { color: '#F1F5F1', fontSize: 17, fontWeight: '800' },
 });

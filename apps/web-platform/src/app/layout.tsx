@@ -6,6 +6,8 @@ import '@nexaticket/tokens/tokens.css';
 // Nền sáng + primary indigo cho khu quản trị. Xem ghi chú ở `web-admin/src/app/layout.tsx`.
 import '@nexaticket/tokens/admin.css';
 import '@nexaticket/tokens/reset.css';
+// Tông tối xanh lá + xanh chanh, cùng web Tổ chức và các app. Phải nằm SAU admin.css để ghi đè.
+import './platform-theme.css';
 import './tailwind.css';
 
 /** Xem `web-admin/src/app/layout.tsx` để biết vì sao font phải nạp ở đây. */

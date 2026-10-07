@@ -17,7 +17,7 @@
   border-radius: 50%;
   border: 1px solid rgb(255 255 255 / 18%);
   /* Nền tối trong mờ: nổi trên mọi poster, sáng hay tối. */
-  background: rgb(16 12 11 / 62%);
+  background: rgb(13 18 15 / 62%);
   color: #ffffff;
   cursor: pointer;
   backdrop-filter: blur(6px);
@@ -34,14 +34,14 @@
 }
 
 .button:hover {
-  background: rgb(16 12 11 / 82%);
+  background: rgb(13 18 15 / 82%);
 }
 
 .button:active {
   transform: scale(0.92);
 }
 
-/* Đã lưu: vàng kim — màu nhấn của site. */
+/* Đã lưu: xanh chanh — màu nhấn của site. */
 .button[data-saved] {
   background: var(--nt-accent);
   border-color: var(--nt-accent);

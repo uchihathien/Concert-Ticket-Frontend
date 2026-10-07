@@ -25,13 +25,13 @@ export default function HelpScreen() {
             <ContactRow icon={{ ios: 'envelope.fill', android: 'mail', web: 'mail' }} label="Email" value={supportEmail} onPress={() => void Linking.openURL(`mailto:${supportEmail}`)} />
           ) : null}
           <View style={styles.info}>
-            <SymbolView name={{ ios: 'bubble.left.and.bubble.right.fill', android: 'forum', web: 'forum' }} tintColor="#F2B705" size={18} />
+            <SymbolView name={{ ios: 'bubble.left.and.bubble.right.fill', android: 'forum', web: 'forum' }} tintColor="#D5FF66" size={18} />
             <Text style={styles.infoText}>
               Trò chuyện với trợ lý hỗ trợ tại mục Hỗ trợ trên website NexaTicket — trợ lý trả lời ngay và chuyển sang nhân viên khi cần.
             </Text>
           </View>
           <View style={styles.info}>
-            <SymbolView name={{ ios: 'number', android: 'tag', web: 'tag' }} tintColor="#F2B705" size={18} />
+            <SymbolView name={{ ios: 'number', android: 'tag', web: 'tag' }} tintColor="#D5FF66" size={18} />
             <Text style={styles.infoText}>
               Khi báo sự cố, gửi kèm mã đơn (dạng NT-…) hoặc mã tra cứu hiện trên màn hình lỗi để được xử lý nhanh nhất.
             </Text>
@@ -53,7 +53,7 @@ export default function HelpScreen() {
                   <Text style={styles.questionText}>{item.question}</Text>
                   <SymbolView
                     name={expanded ? { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' } : { ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }}
-                    tintColor="#A89E99"
+                    tintColor="#A6B1A8"
                     size={16}
                   />
                 </Pressable>
@@ -72,7 +72,7 @@ export default function HelpScreen() {
 function ContactRow({ icon, label, value, onPress }: { icon: React.ComponentProps<typeof SymbolView>['name']; label: string; value: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={`${label}: ${value}`} onPress={onPress} style={({ pressed }) => [styles.contact, pressed && styles.pressed]}>
-      <SymbolView name={icon} tintColor="#F2B705" size={18} />
+      <SymbolView name={icon} tintColor="#D5FF66" size={18} />
       <View style={{ flex: 1 }}>
         <Text style={styles.contactLabel}>{label}</Text>
         <Text style={styles.contactValue}>{value}</Text>
@@ -82,20 +82,20 @@ function ContactRow({ icon, label, value, onPress }: { icon: React.ComponentProp
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#171211' },
+  screen: { flex: 1, backgroundColor: '#111713' },
   content: { padding: 16, paddingBottom: 40 },
-  section: { color: '#A89E99', fontSize: 11, fontWeight: '800', letterSpacing: 1.2, marginTop: 8, marginBottom: 8 },
-  card: { borderRadius: 14, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19', paddingHorizontal: 14, marginBottom: 14 },
-  contact: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: '#362E2B' },
-  contactLabel: { color: '#A89E99', fontSize: 12 },
-  contactValue: { color: '#F5F1EF', fontSize: 15, fontWeight: '700', marginTop: 2 },
+  section: { color: '#A6B1A8', fontSize: 11, fontWeight: '800', letterSpacing: 1.2, marginTop: 8, marginBottom: 8 },
+  card: { borderRadius: 14, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B', paddingHorizontal: 14, marginBottom: 14 },
+  contact: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: '#344238' },
+  contactLabel: { color: '#A6B1A8', fontSize: 12 },
+  contactValue: { color: '#F1F5F1', fontSize: 15, fontWeight: '700', marginTop: 2 },
   info: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, paddingVertical: 12 },
-  infoText: { flex: 1, color: '#C9C0BB', fontSize: 13, lineHeight: 20 },
+  infoText: { flex: 1, color: '#C4CEC5', fontSize: 13, lineHeight: 20 },
   faq: { paddingVertical: 4 },
-  faqBorder: { borderBottomWidth: 1, borderBottomColor: '#362E2B' },
+  faqBorder: { borderBottomWidth: 1, borderBottomColor: '#344238' },
   question: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  questionText: { flex: 1, color: '#F5F1EF', fontSize: 14, fontWeight: '700', lineHeight: 20 },
-  answer: { color: '#C9C0BB', fontSize: 13, lineHeight: 20, paddingBottom: 12 },
-  footnote: { color: '#7A706B', fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 4 },
+  questionText: { flex: 1, color: '#F1F5F1', fontSize: 14, fontWeight: '700', lineHeight: 20 },
+  answer: { color: '#C4CEC5', fontSize: 13, lineHeight: 20, paddingBottom: 12 },
+  footnote: { color: '#6F7B72', fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 4 },
   pressed: { opacity: 0.8 },
 });
