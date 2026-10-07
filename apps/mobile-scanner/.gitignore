@@ -2,3 +2,11 @@
 dist/
 .env*.local
 expo-env.d.ts
+# Thư mục native do `expo prebuild` sinh ra, không phải mã nguồn.
+#
+# Dự án dùng Continuous Native Generation: nguồn sự thật là app.json + danh sách plugin, còn android/
+# và ios/ được dựng lại từ đó mỗi lần cần. Commit chúng vào repo tạo ra hai bản mô tả cùng một cấu
+# hình, và bản sinh ra sẽ âm thầm cũ dần mỗi lần nâng SDK hoặc thêm plugin — đúng lớp lỗi mà CNG ra đời
+# để tránh. Ngoài ra android/app/build chứa hàng nghìn tệp build và cả APK vài chục MB.
+/android/
+/ios/
