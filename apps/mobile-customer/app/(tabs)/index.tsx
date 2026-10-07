@@ -11,12 +11,15 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { publicApi } from '@/lib/api';
 import { resolveMediaUrl } from '@/lib/media-url';
 import { SaveEventButton } from '@/components/SaveEventButton';
+import { ALL_CITIES, CityPickerSheet } from '@/components/CityPickerSheet';
+import { FeaturedBanner } from '@/components/FeaturedBanner';
 
 const categories = [
   { id: 'all', label: 'Tất cả' },
@@ -31,8 +34,15 @@ export default function ExploreScreen() {
   const [query, setQuery] = useState('');
   const [submittedQuery, setSubmittedQuery] = useState('');
   const [category, setCategory] = useState('all');
+  const [city, setCity] = useState(ALL_CITIES);
+  const [cityOpen, setCityOpen] = useState(false);
+  // Danh sách thành phố backend gửi kèm mỗi trang kết quả (EventPage.cities) — giữ lại bản đầy đủ
+  // nhất để bảng chọn không co lại khi đang lọc theo một thành phố.
+  const [cities, setCities] = useState<string[]>([]);
+  const [featured, setFeatured] = useState<PublicEventCard[]>([]);
   const [reload, setReload] = useState(0);
-  const requestSignature = JSON.stringify([submittedQuery, category, reload]);
+  const { width } = useWindowDimensions();
+  const requestSignature = JSON.stringify([submittedQuery, category, city, reload]);
   const [result, setResult] = useState<{
     signature: string;
     events: PublicEventCard[];
@@ -50,10 +60,13 @@ export default function ExploreScreen() {
     listPublicEvents(publicApi, {
       query: submittedQuery || undefined,
       category: category === 'all' ? undefined : category,
+      city: city === ALL_CITIES ? undefined : city,
       size: 24,
     })
       .then((page) => {
-        if (active) setResult({ signature: requestSignature, events: page.items, error: false, errorDetail: null });
+        if (!active) return;
+        setResult({ signature: requestSignature, events: page.items, error: false, errorDetail: null });
+        if (page.cities.length > 0) setCities((current) => (page.cities.length >= current.length ? page.cities : current));
       })
       .catch((cause: unknown) => {
         console.warn('Mobile catalog request failed', cause);
@@ -70,7 +83,24 @@ export default function ExploreScreen() {
     return () => {
       active = false;
     };
-  }, [submittedQuery, category, reload, requestSignature]);
+  }, [submittedQuery, category, city, reload, requestSignature]);
+
+  // Banner: sự kiện có ảnh, không phụ thuộc bộ lọc — banner là "nổi bật toàn trang", như hero web.
+  useEffect(() => {
+    let active = true;
+    listPublicEvents(publicApi, { size: 12 })
+      .then((page) => {
+        if (!active) return;
+        setFeatured(page.items.filter((event) => event.posterUrl).slice(0, 5));
+        if (page.cities.length > 0) setCities((current) => (page.cities.length >= current.length ? page.cities : current));
+      })
+      .catch(() => {
+        if (active) setFeatured([]);
+      });
+    return () => { active = false; };
+  }, [reload]);
+
+  const cityLabel = city === ALL_CITIES ? 'Toàn quốc' : city;
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>
@@ -96,7 +126,18 @@ export default function ExploreScreen() {
             <View style={styles.topLine}>
               <View>
                 <Text style={styles.brand}>NEXATICKET</Text>
-                <Text style={styles.location}>TP. Hồ Chí Minh  {'\u2304'}</Text>
+                {/* Trước đây là chữ tĩnh "TP. Hồ Chí Minh ⌄" không bấm được — giờ lọc thật, như ô thành phố trên web. */}
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Chọn thành phố, đang chọn ${cityLabel}`}
+                  hitSlop={8}
+                  onPress={() => setCityOpen(true)}
+                  style={({ pressed }) => [styles.locationButton, pressed && styles.locationPressed]}
+                >
+                  <SymbolView name={{ ios: 'mappin.and.ellipse', android: 'location_on', web: 'location_on' }} tintColor="#D5FF66" size={14} />
+                  <Text style={styles.location}>{cityLabel}</Text>
+                  <SymbolView name={{ ios: 'chevron.down', android: 'expand_more', web: 'expand_more' }} tintColor="#A6B1A8" size={12} />
+                </Pressable>
               </View>
               <View style={styles.liveMark}>
                 <View style={styles.liveDot} />
@@ -104,8 +145,7 @@ export default function ExploreScreen() {
               </View>
             </View>
 
-            <Text style={styles.headline}>Tối nay, bạn{ '\n' }muốn đi đâu?</Text>
-            <Text style={styles.subtitle}>Tìm khoảnh khắc đáng nhớ tiếp theo.</Text>
+            <FeaturedBanner events={featured} width={width - 36} />
 
             <View style={styles.searchBox}>
               <SymbolView
@@ -158,7 +198,7 @@ export default function ExploreScreen() {
             <View style={styles.sectionHeading}>
               <View>
                 <Text style={styles.eyebrow}>ĐƯỢC CỘNG ĐỒNG QUAN TÂM</Text>
-                <Text style={styles.sectionTitle}>Sự kiện dành cho bạn</Text>
+                <Text style={styles.sectionTitle}>{city === ALL_CITIES ? 'Sự kiện dành cho bạn' : `Sự kiện tại ${city}`}</Text>
               </View>
               <Text style={styles.resultCount}>{events.length} sự kiện</Text>
             </View>
@@ -191,6 +231,13 @@ export default function ExploreScreen() {
           </>
         }
         renderItem={({ item, index }) => <EventCard event={item} index={index} />}
+      />
+      <CityPickerSheet
+        visible={cityOpen}
+        cities={cities}
+        value={city}
+        onSelect={setCity}
+        onClose={() => setCityOpen(false)}
       />
     </SafeAreaView>
   );
@@ -247,12 +294,12 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: 18, paddingBottom: 24 },
   topLine: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 8 },
   brand: { color: '#D5FF66', fontSize: 12, fontWeight: '900', letterSpacing: 1.8 },
-  location: { color: '#A6B1A8', fontSize: 12, marginTop: 5 },
+  locationButton: { flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', minHeight: 32, paddingHorizontal: 10, marginTop: 6, borderRadius: 999, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
+  locationPressed: { borderColor: '#D5FF66' },
+  location: { color: '#F1F5F1', fontSize: 13, fontWeight: '700' },
   liveMark: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: '#344238', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 7 },
   liveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#D5FF66' },
   liveText: { color: '#F1F5F1', fontSize: 10, fontWeight: '800', letterSpacing: 1 },
-  headline: { color: '#F1F5F1', fontSize: 32, lineHeight: 37, fontWeight: '800', marginTop: 28 },
-  subtitle: { color: '#A6B1A8', fontSize: 14, marginTop: 8 },
   searchBox: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 15, marginTop: 22, borderRadius: 14, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
   searchInput: { flex: 1, minWidth: 0, color: '#F1F5F1', fontSize: 14, paddingVertical: 12 },
   clearSearch: { color: '#A6B1A8', fontSize: 23, lineHeight: 24, paddingHorizontal: 2 },
