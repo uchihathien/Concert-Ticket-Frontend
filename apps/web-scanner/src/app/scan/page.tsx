@@ -1,17 +1,11 @@
 'use client';
 
-import { EmptyState, Button } from '@nexaticket/ui';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 import { Scanner } from '@/components/Scanner';
+import styles from '@/components/scanner.module.css';
 
-/**
- * S-SCAN — màn quét.
- *
- * Suất diễn nằm trên URL chứ không trong state: nhân viên lỡ tải lại trang giữa ca vẫn quay đúng
- * về suất đang trực, và ca sau chỉ cần đổi một tham số.
- */
 export default function ScanPage() {
   return (
     <Suspense fallback={null}>
@@ -21,23 +15,30 @@ export default function ScanPage() {
 }
 
 function ScanScreen() {
-  const session = useSearchParams().get('session');
+  const params = useSearchParams();
+  const session = params.get('session');
+  const organization = params.get('org');
 
-  if (!session) {
+  // Thiếu tổ chức thì không gọi được endpoint soát theo tổ chức (kiểm quyền CHECKIN_SCAN) — như app.
+  if (!session || !organization) {
     return (
-      <main style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 24 }}>
-        <EmptyState
-          title="Chưa chọn suất diễn"
-          description="Quay lại để nhập mã suất bạn đang trực."
-          action={
-            <Link href="/">
-              <Button>Chọn suất</Button>
-            </Link>
-          }
-        />
+      <main className={styles.center}>
+        <h1 className={styles.centerTitle}>Chưa chọn suất diễn</h1>
+        <p className={styles.centerCopy}>Quay lại để chọn suất bạn được giao soát vé.</p>
+        <Link href="/" className={styles.actionButton}>
+          CHỌN SUẤT
+        </Link>
       </main>
     );
   }
 
-  return <Scanner eventSessionId={session} />;
+  return (
+    <Scanner
+      eventSessionId={session}
+      organizationId={organization}
+      eventTitle={params.get('title') ?? ''}
+      venueName={params.get('venue') ?? ''}
+      startsAt={params.get('startsAt') ?? ''}
+    />
+  );
 }

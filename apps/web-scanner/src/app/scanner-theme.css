@@ -1,0 +1,46 @@
+/*
+ * Tông màu web Soát vé — đồng bộ với app Expo Scanner (apps/mobile-scanner).
+ *
+ * `tokens.css` mặc định là tông tối đỏ/vàng của web khách hàng. Màn soát vé dùng tông tối xanh lá
+ * + xanh chanh của app: cùng một nhân viên dùng cả hai, kết quả "MỜI VÀO" phải trông giống nhau
+ * dù mở bằng điện thoại hay trình duyệt. Nền tối giữ nguyên lý do gốc: đứng cổng ngoài trời buổi
+ * tối, đỡ chói (ui-direction.md §3).
+ */
+:root[data-app='scanner'] {
+  --nt-bg: #111713;
+  --nt-bg-subtle: #0d120f;
+  --nt-surface: #19221b;
+  --nt-elevated: #1f2a22;
+  --nt-border: #344238;
+  --nt-hover: #212c23;
+  --nt-text: #f1f5f1;
+  --nt-text-muted: #a6b1a8;
+
+  --nt-primary: #d5ff66;
+  --nt-primary-hover: #c4f04f;
+  --nt-primary-ink: #17210d;
+  --nt-primary-text: #d5ff66;
+  --nt-accent: #d5ff66;
+  --nt-accent-ink: #17210d;
+  --nt-accent-text: #d5ff66;
+
+  --nt-success: #77b44a;
+  --nt-success-text: #d5ff66;
+  --nt-danger: #b8624c;
+  --nt-danger-ink: #ffffff;
+  --nt-danger-text: #ff9b84;
+  --nt-warn-text: #ffd36b;
+
+  --nt-radius: 8px;
+  --nt-radius-lg: 12px;
+  --nt-focus: 0 0 0 2px var(--nt-bg), 0 0 0 4px var(--nt-primary);
+
+  /* Màu riêng của màn soát — cùng giá trị với app. */
+  --scan-line: #26312a;
+  --scan-accepted-bg: #1d2b1e;
+  --scan-accepted-border: #77b44a;
+  --scan-rejected-bg: #2a201d;
+  --scan-rejected-border: #b8624c;
+
+  color-scheme: dark;
+}

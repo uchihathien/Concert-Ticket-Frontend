@@ -226,7 +226,7 @@ export function SessionPicker() {
           </View>
           {searching ? (
             <Text accessibilityLiveRegion="polite" style={styles.resultCount}>
-              {visibleSessions.length} / {sessions.length} suất khớp
+              {visibleSessions.length} / {sessions.length} suất khớp · {groupByEvent(visibleSessions).length} sự kiện
             </Text>
           ) : null}
 
@@ -240,37 +240,71 @@ export function SessionPicker() {
             </View>
           ) : null}
 
-          {visibleSessions.map((session) => (
-        <Pressable
-          key={`${session.organizationId}:${session.eventSessionId}`}
-          accessibilityRole="button"
-          accessibilityLabel={`Soát vé ${session.eventTitle}, ${formatSessionDate(session.startsAt)}`}
-          onPress={() =>
-            router.push({
-              pathname: '/scan',
-              params: {
-                eventSessionId: session.eventSessionId,
-                organizationId: session.organizationId,
-                eventTitle: session.eventTitle,
-                venueName: session.venueName,
-                startsAt: session.startsAt,
-              },
-            })
-          }
-          style={({ pressed }) => [styles.session, pressed && styles.pressed]}
-        >
-          <View style={styles.sessionInfo}>
-            <Text style={styles.organization}>{session.organizationName}</Text>
-            <Text style={styles.event}>{session.eventTitle}</Text>
-            <Text style={styles.muted}>{session.venueName} · {formatSessionDate(session.startsAt)}</Text>
-          </View>
-          <Text style={styles.arrow}>→</Text>
-        </Pressable>
+          {groupByEvent(visibleSessions).map((group) => (
+            <View key={group.key} style={styles.eventCard}>
+              <Text style={styles.organization}>{group.organizationName}</Text>
+              <Text style={styles.event}>{group.eventTitle}</Text>
+              <Text style={styles.muted}>{group.venueName}</Text>
+              <Text style={styles.sessionCount}>
+                {group.sessions.length > 1 ? `${group.sessions.length} SUẤT — CHỌN SUẤT BẠN TRỰC` : '1 SUẤT'}
+              </Text>
+              <View style={styles.sessionList}>
+                {group.sessions.map((session) => (
+                  <Pressable
+                    key={session.eventSessionId}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Soát vé ${session.eventTitle}, suất ${formatSessionDate(session.startsAt)}`}
+                    onPress={() =>
+                      router.push({
+                        pathname: '/scan',
+                        params: {
+                          eventSessionId: session.eventSessionId,
+                          organizationId: session.organizationId,
+                          eventTitle: session.eventTitle,
+                          venueName: session.venueName,
+                          startsAt: session.startsAt,
+                        },
+                      })
+                    }
+                    style={({ pressed }) => [styles.sessionButton, pressed && styles.sessionButtonPressed]}
+                  >
+                    <Text style={styles.sessionTime}>{formatTime(session.startsAt)}</Text>
+                    <Text style={styles.sessionDay}>{formatDay(session.startsAt)}</Text>
+                    <Text style={styles.arrow}>→</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
           ))}
         </View>
       )}
     </View>
   );
+}
+
+/**
+ * Gộp suất theo sự kiện: mỗi sự kiện một thẻ, các suất là nút bên trong — cùng cách với web Soát vé.
+ *
+ * Mỗi suất một thẻ riêng làm sự kiện có hai suất hiện thành hai thẻ cùng tên chỉ khác dòng giờ nhỏ:
+ * nhìn như dữ liệu trùng và dễ bấm nhầm suất. Giữ thứ tự theo suất sớm nhất của mỗi sự kiện.
+ */
+function groupByEvent(sessions: SelectableSession[]) {
+  const groups = new Map<string, { key: string; organizationName: string; eventTitle: string; venueName: string; sessions: SelectableSession[] }>();
+  for (const session of sessions) {
+    const key = `${session.organizationId}:${session.eventId}`;
+    const group = groups.get(key) ?? { key, organizationName: session.organizationName, eventTitle: session.eventTitle, venueName: session.venueName, sessions: [] };
+    group.sessions.push(session);
+    groups.set(key, group);
+  }
+  return [...groups.values()];
+}
+
+function formatTime(value: string) {
+  return new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+}
+
+function formatDay(value: string) {
+  return new Intl.DateTimeFormat('vi-VN', { weekday: 'short', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(value));
 }
 
 function roleLabel(role: string) {
@@ -290,7 +324,7 @@ function formatSessionDate(value: string) {
 const styles = StyleSheet.create({
   loading: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: 10 },
   content: { gap: 18 },
-  list: { gap: 9 },
+  list: { gap: 12 },
   sectionTitle: { color: '#A6B1A8', fontSize: 10, fontWeight: '800', letterSpacing: 1.4, marginBottom: 2 },
   invitations: { gap: 9 },
   invitationCard: { padding: 14, borderRadius: 8, borderWidth: 1, borderColor: '#536245', backgroundColor: '#20291C' },
@@ -299,10 +333,16 @@ const styles = StyleSheet.create({
   acceptText: { color: '#17210D', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
   disabled: { opacity: 0.5 },
   notice: { color: '#D5FF66', fontSize: 12, lineHeight: 18 },
-  session: { minHeight: 86, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 14, borderRadius: 8, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
-  sessionInfo: { flex: 1, minWidth: 0 },
-  organization: { color: '#D5FF66', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  event: { color: '#F1F5F1', fontSize: 14, fontWeight: '800', marginTop: 5 },
+  eventCard: { padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
+  organization: { color: '#D5FF66', fontSize: 11, fontWeight: '900', letterSpacing: 0.8 },
+  event: { color: '#F1F5F1', fontSize: 17, fontWeight: '800', lineHeight: 22, marginTop: 6 },
+  sessionCount: { color: '#95A298', fontSize: 11, fontWeight: '800', letterSpacing: 0.8, marginTop: 12, marginBottom: 8 },
+  sessionList: { gap: 8 },
+  // Mỗi suất một nút: giờ to (thứ nhân viên đối chiếu với lịch trực), ngày nhỏ bên cạnh.
+  sessionButton: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14, borderRadius: 8, borderWidth: 1, borderColor: '#3B493F', backgroundColor: '#121912' },
+  sessionButtonPressed: { borderColor: '#D5FF66', backgroundColor: '#212C23' },
+  sessionTime: { color: '#D5FF66', fontSize: 18, fontWeight: '900', fontVariant: ['tabular-nums'] },
+  sessionDay: { flex: 1, color: '#A6B1A8', fontSize: 13 },
   arrow: { color: '#D5FF66', fontSize: 22, fontWeight: '700' },
   state: { padding: 16, borderRadius: 8, backgroundColor: '#19221B', borderWidth: 1, borderColor: '#344238' },
   title: { color: '#F1F5F1', fontSize: 14, fontWeight: '800' },
