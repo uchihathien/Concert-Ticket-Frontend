@@ -12,7 +12,6 @@ import {
 } from '@nexaticket/ts-sdk';
 import { LoginButton } from '@/components/LoginButton';
 import { useMobileAuth } from '@/lib/auth-context';
-import { redirectUri } from '@/lib/auth-session';
 import { api } from '@/lib/api';
 import { theme } from '@/lib/theme';
 
@@ -89,7 +88,7 @@ export default function PlatformHome() {
   }
 
   if (!ready) return <Centered><ActivityIndicator color={theme.primary} /></Centered>;
-  if (!signedIn) return <ScrollView contentContainerStyle={styles.login}><Text style={styles.brand}>NEXATICKET / PLATFORM</Text><Text style={styles.title}>Điều hành nền tảng</Text><Text style={styles.muted}>Đăng nhập bằng tài khoản được cấp quyền superadmin.</Text><LoginButton /><Text selectable style={styles.small}>Callback: {redirectUri}</Text></ScrollView>;
+  if (!signedIn) return <ScrollView contentContainerStyle={styles.login}><Text style={styles.brand}>NEXATICKET / PLATFORM</Text><Text style={styles.title}>Điều hành nền tảng</Text><Text style={styles.muted}>Đăng nhập bằng tài khoản được cấp quyền superadmin.</Text><LoginButton /></ScrollView>;
 
   const activeSection = sections.find((item) => item.id === section);
   return (
