@@ -1,4 +1,9 @@
-const apiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL ?? 'http://localhost:8080';
+import { publicEnv } from './env';
+
+const apiBaseUrl = publicEnv(process.env.EXPO_PUBLIC_API_BASE_URL, {
+  name: 'EXPO_PUBLIC_API_BASE_URL',
+  devFallback: 'http://localhost:8080',
+});
 
 /**
  * Gốc địa chỉ mà điện thoại tới được kho ảnh (MinIO, cổng 9000 trên máy chạy backend).
