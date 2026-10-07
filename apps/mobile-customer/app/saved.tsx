@@ -42,7 +42,7 @@ export default function SavedScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScreenHeader title="Sự kiện đã lưu" />
       {!ready ? (
-        <View style={styles.center}><ActivityIndicator color="#F2B705" /></View>
+        <View style={styles.center}><ActivityIndicator color="#D5FF66" /></View>
       ) : (
         <FlatList
           data={rows}
@@ -109,24 +109,24 @@ function SavedCard({ event, now }: { event: PublicEventDetail; now: number }) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#171211' },
+  screen: { flex: 1, backgroundColor: '#111713' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { padding: 16, gap: 12, paddingBottom: 40 },
-  note: { color: '#A89E99', fontSize: 12 },
-  card: { flexDirection: 'row', gap: 12, padding: 10, borderRadius: 14, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
-  cardPressed: { backgroundColor: '#2A2321' },
+  note: { color: '#A6B1A8', fontSize: 12 },
+  card: { flexDirection: 'row', gap: 12, padding: 10, borderRadius: 14, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
+  cardPressed: { backgroundColor: '#1F2A22' },
   skeleton: { height: 110, opacity: 0.6 },
-  thumb: { width: 120, aspectRatio: 1.1, overflow: 'hidden', borderRadius: 10, backgroundColor: '#2A2321' },
+  thumb: { width: 120, aspectRatio: 1.1, overflow: 'hidden', borderRadius: 10, backgroundColor: '#1F2A22' },
   thumbImage: { width: '100%', height: '100%' },
   body: { flex: 1, minWidth: 0, gap: 3, justifyContent: 'center' },
-  title: { color: '#F5F1EF', fontSize: 15, fontWeight: '800', marginBottom: 2 },
-  small: { color: '#A89E99', fontSize: 12, lineHeight: 18 },
-  price: { color: '#F4796B', fontSize: 14, fontWeight: '800', marginTop: 2 },
-  gone: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: '#4A3F3B' },
-  goneText: { color: '#A89E99', fontSize: 13 },
-  goneAction: { color: '#FF7A6E', fontSize: 13, fontWeight: '700' },
-  empty: { padding: 20, borderRadius: 14, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19', gap: 6 },
-  emptyTitle: { color: '#F5F1EF', fontSize: 15, fontWeight: '800' },
-  cta: { alignSelf: 'flex-start', minHeight: 40, justifyContent: 'center', paddingHorizontal: 14, marginTop: 8, borderRadius: 10, backgroundColor: '#C02A2A' },
-  ctaText: { color: '#FFFFFF', fontSize: 13, fontWeight: '800' },
+  title: { color: '#F1F5F1', fontSize: 15, fontWeight: '800', marginBottom: 2 },
+  small: { color: '#A6B1A8', fontSize: 12, lineHeight: 18 },
+  price: { color: '#D5FF66', fontSize: 14, fontWeight: '800', marginTop: 2 },
+  gone: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderRadius: 14, borderWidth: 1, borderStyle: 'dashed', borderColor: '#3B493F' },
+  goneText: { color: '#A6B1A8', fontSize: 13 },
+  goneAction: { color: '#FF8C79', fontSize: 13, fontWeight: '700' },
+  empty: { padding: 20, borderRadius: 14, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B', gap: 6 },
+  emptyTitle: { color: '#F1F5F1', fontSize: 15, fontWeight: '800' },
+  cta: { alignSelf: 'flex-start', minHeight: 40, justifyContent: 'center', paddingHorizontal: 14, marginTop: 8, borderRadius: 10, backgroundColor: '#D5FF66' },
+  ctaText: { color: '#17210D', fontSize: 13, fontWeight: '800' },
 });

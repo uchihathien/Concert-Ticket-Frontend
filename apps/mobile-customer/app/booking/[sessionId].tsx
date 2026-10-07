@@ -207,7 +207,7 @@ export default function BookingScreen() {
       <SafeAreaView style={styles.screen}>
         <Header title={eventTitle} />
         <View style={styles.centerState}>
-          <ActivityIndicator color="#F2B705" size="large" />
+          <ActivityIndicator color="#D5FF66" size="large" />
           <Text style={styles.muted}>Đang tải tình trạng chỗ...</Text>
         </View>
       </SafeAreaView>
@@ -263,8 +263,8 @@ export default function BookingScreen() {
             )}
             <View style={styles.legend}>
               <Legend color="#3FAE74" label="Còn chỗ" />
-              <Legend color="#6B615D" label="Đã giữ" />
-              <Legend color="#3A322F" label="Đã bán" />
+              <Legend color="#5E6B62" label="Đã giữ" />
+              <Legend color="#2B352E" label="Đã bán" />
             </View>
             <View style={styles.zoneHeading}>
               <Text style={styles.sectionTitle}>Chọn khu và số vé</Text>
@@ -336,35 +336,35 @@ function FloorPlanPreview({ plan, seats }: { plan: FloorPlan; seats: SeatMap['se
   const viewBox = `${bounds.minX - inset} ${bounds.minY - inset} ${bounds.maxX - bounds.minX + inset * 2} ${bounds.maxY - bounds.minY + inset * 2}`;
   const colors: Record<string, string> = {
     AVAILABLE: '#3FAE74',
-    HELD: '#6B615D',
+    HELD: '#5E6B62',
     RESERVED: '#D99A00',
-    SOLD: '#3A322F',
-    BLOCKED: '#241E1C',
+    SOLD: '#2B352E',
+    BLOCKED: '#1B231E',
   };
 
   return (
     <View style={styles.planFrame}>
       <Svg width="100%" height={230} viewBox={viewBox} preserveAspectRatio="xMidYMid meet">
         {stage.shape === 'CIRCLE' ? (
-          <Ellipse cx={stage.x + stage.width / 2} cy={stage.y + stage.height / 2} rx={stage.width / 2} ry={stage.height / 2} fill="#51433F" />
+          <Ellipse cx={stage.x + stage.width / 2} cy={stage.y + stage.height / 2} rx={stage.width / 2} ry={stage.height / 2} fill="#3B493F" />
         ) : stage.shape === 'THRUST' ? (
-          <Path d={`M ${stage.x} ${stage.y} L ${stage.x + stage.width} ${stage.y} L ${stage.x + stage.width * 0.78} ${stage.y + stage.height} L ${stage.x + stage.width * 0.22} ${stage.y + stage.height} Z`} fill="#51433F" />
+          <Path d={`M ${stage.x} ${stage.y} L ${stage.x + stage.width} ${stage.y} L ${stage.x + stage.width * 0.78} ${stage.y + stage.height} L ${stage.x + stage.width * 0.22} ${stage.y + stage.height} Z`} fill="#3B493F" />
         ) : (
-          <Rect x={stage.x} y={stage.y} width={stage.width} height={stage.height} rx={0.5} fill="#51433F" />
+          <Rect x={stage.x} y={stage.y} width={stage.width} height={stage.height} rx={0.5} fill="#3B493F" />
         )}
-        <SvgText x={stage.x + stage.width / 2} y={stage.y + stage.height / 2} textAnchor="middle" alignmentBaseline="middle" fill="#F5F1EF" fontSize={1.1} fontWeight="700">SÂN KHẤU</SvgText>
+        <SvgText x={stage.x + stage.width / 2} y={stage.y + stage.height / 2} textAnchor="middle" alignmentBaseline="middle" fill="#F1F5F1" fontSize={1.1} fontWeight="700">SÂN KHẤU</SvgText>
         {zones.map((zone) => (
           <Polygon
             key={zone.zoneCode}
             points={zone.outline.map((point) => `${point.x},${point.y}`).join(' ')}
-            fill="#2A2321"
+            fill="#1F2A22"
             fillOpacity={0.82}
-            stroke="#817671"
+            stroke="#87938A"
             strokeWidth={0.18}
           />
         ))}
         {seats.map((seat) => seat.posX !== null && seat.posY !== null ? (
-          <Circle key={seat.id} cx={seat.posX} cy={seat.posY} r={0.22} fill={colors[seat.status] ?? '#6B615D'} />
+          <Circle key={seat.id} cx={seat.posX} cy={seat.posY} r={0.22} fill={colors[seat.status] ?? '#5E6B62'} />
         ) : null)}
       </Svg>
       <Text style={styles.planCaption}>{plan.venueName}</Text>
@@ -467,51 +467,51 @@ function formatPrice(value: number) {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: '#171211' },
-  header: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: '#362E2B' },
+  screen: { flex: 1, backgroundColor: '#111713' },
+  header: { minHeight: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: '#344238' },
   backButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  backGlyph: { color: '#F5F1EF', fontSize: 36, lineHeight: 40 },
-  headerTitle: { maxWidth: '72%', color: '#F5F1EF', fontSize: 13, fontWeight: '700' },
+  backGlyph: { color: '#F1F5F1', fontSize: 36, lineHeight: 40 },
+  headerTitle: { maxWidth: '72%', color: '#F1F5F1', fontSize: 13, fontWeight: '700' },
   listContent: { paddingHorizontal: 16, paddingBottom: 20 },
-  signInNotice: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: 13, marginTop: 14, borderRadius: 10, backgroundColor: '#2A2321' },
-  noticeText: { flex: 1, color: '#C9C0BB', fontSize: 12 },
-  noticeLink: { color: '#F2B705', fontSize: 12, fontWeight: '800' },
+  signInNotice: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, padding: 13, marginTop: 14, borderRadius: 10, backgroundColor: '#1F2A22' },
+  noticeText: { flex: 1, color: '#C4CEC5', fontSize: 12 },
+  noticeLink: { color: '#D5FF66', fontSize: 12, fontWeight: '800' },
   intro: { marginTop: 23, marginBottom: 13 },
-  eyebrow: { color: '#F4796B', fontSize: 9, fontWeight: '900', letterSpacing: 1.2, marginBottom: 5 },
-  sectionTitle: { color: '#F5F1EF', fontSize: 17, fontWeight: '800' },
-  muted: { color: '#A89E99', fontSize: 11, lineHeight: 17, marginTop: 4 },
-  mapImage: { width: '100%', height: 220, borderRadius: 13, backgroundColor: '#211B19' },
-  planFrame: { padding: 9, borderRadius: 13, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
-  planCaption: { color: '#A89E99', fontSize: 10, textAlign: 'center', marginTop: 5 },
-  mapFallback: { minHeight: 104, alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 13, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
-  fallbackTitle: { color: '#F5F1EF', fontSize: 13, fontWeight: '700' },
+  eyebrow: { color: '#D5FF66', fontSize: 9, fontWeight: '900', letterSpacing: 1.2, marginBottom: 5 },
+  sectionTitle: { color: '#F1F5F1', fontSize: 17, fontWeight: '800' },
+  muted: { color: '#A6B1A8', fontSize: 11, lineHeight: 17, marginTop: 4 },
+  mapImage: { width: '100%', height: 220, borderRadius: 13, backgroundColor: '#19221B' },
+  planFrame: { padding: 9, borderRadius: 13, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
+  planCaption: { color: '#A6B1A8', fontSize: 10, textAlign: 'center', marginTop: 5 },
+  mapFallback: { minHeight: 104, alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 13, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
+  fallbackTitle: { color: '#F1F5F1', fontSize: 13, fontWeight: '700' },
   legend: { flexDirection: 'row', gap: 14, marginTop: 12, marginBottom: 22 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 9, height: 9, borderRadius: 5 },
-  legendText: { color: '#A89E99', fontSize: 10 },
+  legendText: { color: '#A6B1A8', fontSize: 10 },
   zoneHeading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 10 },
-  zoneCard: { minHeight: 90, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 9, padding: 13, marginBottom: 9, borderRadius: 12, borderWidth: 1, borderColor: '#362E2B', backgroundColor: '#211B19' },
-  zoneCardSelected: { borderColor: '#F2B705' },
+  zoneCard: { minHeight: 90, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 9, padding: 13, marginBottom: 9, borderRadius: 12, borderWidth: 1, borderColor: '#344238', backgroundColor: '#19221B' },
+  zoneCardSelected: { borderColor: '#D5FF66' },
   zoneInfo: { flex: 1, minWidth: 0 },
-  zoneName: { color: '#F5F1EF', fontSize: 13, fontWeight: '800' },
-  zoneMeta: { color: '#A89E99', fontSize: 10, marginTop: 4 },
-  zonePrice: { color: '#F2B705', fontSize: 12, fontWeight: '800', marginTop: 7 },
+  zoneName: { color: '#F1F5F1', fontSize: 13, fontWeight: '800' },
+  zoneMeta: { color: '#A6B1A8', fontSize: 10, marginTop: 4 },
+  zonePrice: { color: '#D5FF66', fontSize: 12, fontWeight: '800', marginTop: 7 },
   quantityControl: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  stepper: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: '#51433F', backgroundColor: '#2A2321' },
+  stepper: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 10, borderWidth: 1, borderColor: '#3B493F', backgroundColor: '#1F2A22' },
   stepperDisabled: { opacity: 0.4 },
-  stepperText: { color: '#F5F1EF', fontSize: 21, lineHeight: 24 },
-  quantity: { width: 19, color: '#F5F1EF', fontSize: 14, fontWeight: '700', textAlign: 'center' },
-  allowance: { color: '#A89E99', fontSize: 11, marginTop: 3 },
-  failure: { color: '#FF7A6E', fontSize: 12, lineHeight: 18, marginTop: 10 },
+  stepperText: { color: '#F1F5F1', fontSize: 21, lineHeight: 24 },
+  quantity: { width: 19, color: '#F1F5F1', fontSize: 14, fontWeight: '700', textAlign: 'center' },
+  allowance: { color: '#A6B1A8', fontSize: 11, marginTop: 3 },
+  failure: { color: '#FF8C79', fontSize: 12, lineHeight: 18, marginTop: 10 },
   terms: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 18 },
-  checkbox: { width: 21, height: 21, alignItems: 'center', justifyContent: 'center', borderRadius: 5, borderWidth: 1, borderColor: '#817671' },
-  checkboxChecked: { borderColor: '#F2B705', backgroundColor: '#F2B705' },
-  checkmark: { color: '#2A1F00', fontSize: 14, fontWeight: '900' },
-  termsText: { flex: 1, color: '#A89E99', fontSize: 11, lineHeight: 17 },
-  bottomBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 16, paddingTop: 11, paddingBottom: 12, borderTopWidth: 1, borderTopColor: '#362E2B', backgroundColor: '#211B19' },
-  total: { color: '#F2B705', fontSize: 15, fontWeight: '900', marginTop: 3 },
-  primaryButton: { minHeight: 47, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 15, borderRadius: 10, backgroundColor: '#C02A2A' },
+  checkbox: { width: 21, height: 21, alignItems: 'center', justifyContent: 'center', borderRadius: 5, borderWidth: 1, borderColor: '#87938A' },
+  checkboxChecked: { borderColor: '#D5FF66', backgroundColor: '#D5FF66' },
+  checkmark: { color: '#17210D', fontSize: 14, fontWeight: '900' },
+  termsText: { flex: 1, color: '#A6B1A8', fontSize: 11, lineHeight: 17 },
+  bottomBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 16, paddingTop: 11, paddingBottom: 12, borderTopWidth: 1, borderTopColor: '#344238', backgroundColor: '#19221B' },
+  total: { color: '#D5FF66', fontSize: 15, fontWeight: '900', marginTop: 3 },
+  primaryButton: { minHeight: 47, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 15, borderRadius: 10, backgroundColor: '#D5FF66' },
   buttonDisabled: { opacity: 0.48 },
-  primaryButtonText: { color: '#FFFFFF', fontSize: 12, fontWeight: '900' },
+  primaryButtonText: { color: '#17210D', fontSize: 12, fontWeight: '900' },
   centerState: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 13, padding: 24 },
 });

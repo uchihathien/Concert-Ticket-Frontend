@@ -1,12 +1,7 @@
-import {
-  AccountScreen,
-  AccountSection,
-  DetailRows,
-  IdentityCard,
-  SignOutForm,
-} from '@nexaticket/ui';
+import { AccountScreen, AccountSection, DetailRows, IdentityCard } from '@nexaticket/ui';
 import type { Metadata } from 'next';
-import { auth, signOut } from '@/auth';
+import { auth } from '@/auth';
+import { TopBar } from '@/components/TopBar';
 
 export const metadata: Metadata = {
   title: 'Tài khoản — NexaTicket',
@@ -24,37 +19,32 @@ export const metadata: Metadata = {
 export default async function AccountPage() {
   const session = await auth();
 
-  async function doSignOut() {
-    'use server';
-    await signOut({ redirectTo: '/login' });
-  }
-
   return (
-    <AccountScreen
-      title="Tài khoản"
-      description="Tài khoản nhân viên soát vé, lấy từ phiên đăng nhập hiện tại."
-    >
-      <IdentityCard
-        name={session?.user?.name}
-        email={session?.user?.email}
-        imageUrl={session?.user?.image}
-      />
+    <>
+      <TopBar />
+      <AccountScreen
+        title="Tài khoản"
+        description="Tài khoản nhân viên soát vé, lấy từ phiên đăng nhập hiện tại."
+      >
+        <IdentityCard
+          name={session?.user?.name}
+          email={session?.user?.email}
+          imageUrl={session?.user?.image}
+        />
 
-      {session?.user?.id ? (
-        <AccountSection title="Chi tiết">
-          <DetailRows rows={[{ label: 'Mã người dùng', value: session.user.id, mono: true }]} />
+        {session?.user?.id ? (
+          <AccountSection title="Chi tiết">
+            <DetailRows rows={[{ label: 'Mã người dùng', value: session.user.id, mono: true }]} />
+          </AccountSection>
+        ) : null}
+
+        <AccountSection title="Hồ sơ">
+          <p>
+            Tài khoản nhân viên do tổ chức cấp. Hết ca thì bấm Đăng xuất ở góc trên bên phải để máy
+            không giữ phiên của bạn.
+          </p>
         </AccountSection>
-      ) : null}
-
-      <AccountSection title="Hồ sơ">
-        <p>
-          Tài khoản nhân viên do tổ chức cấp. Hết ca thì đăng xuất để máy không giữ phiên của bạn.
-        </p>
-      </AccountSection>
-
-      <AccountSection title="Phiên đăng nhập">
-        <SignOutForm action={doSignOut} />
-      </AccountSection>
-    </AccountScreen>
+      </AccountScreen>
+    </>
   );
 }

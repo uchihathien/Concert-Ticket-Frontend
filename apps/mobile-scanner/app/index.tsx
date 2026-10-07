@@ -27,9 +27,17 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.screen}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {/* Cùng bố cục với TopBar của web Soát vé: nhận diện bên trái, Đăng xuất ở góc trên bên phải. */}
         <View style={styles.topline}>
-          <Text style={styles.brand}>NEXATICKET / GATE</Text>
-          <View style={styles.status}><View style={styles.statusDot} /><Text style={styles.statusText}>SOÁT VÉ</Text></View>
+          <View>
+            <Text style={styles.brand}>NEXATICKET / GATE</Text>
+            <View style={styles.status}><View style={styles.statusDot} /><Text style={styles.statusText}>SOÁT VÉ</Text></View>
+          </View>
+          {signedIn ? (
+            <Pressable accessibilityRole="button" accessibilityLabel="Đăng xuất nhân viên" onPress={() => void signOut()} style={({ pressed }) => [styles.signOut, pressed && styles.signOutPressed]}>
+              <Text style={styles.signOutText}>Đăng xuất</Text>
+            </Pressable>
+          ) : null}
         </View>
 
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
@@ -37,16 +45,13 @@ export default function HomeScreen() {
           <Text style={styles.title}>{signedIn ? 'Bắt đầu ca\nsoát vé.' : 'Vào cổng,\nkhông chờ đợi.'}</Text>
           <Text style={styles.subtitle}>
             {signedIn
-              ? 'Đăng nhập nhân viên đã sẵn sàng. Nhập mã suất được ban tổ chức giao để mở camera.'
+              ? 'Chọn suất bạn được giao để mở camera soát vé.'
               : 'Đăng nhập bằng tài khoản nhân viên được cấp quyền soát vé.'}
           </Text>
 
           {signedIn ? (
             <View style={styles.form}>
               <SessionPicker />
-              <Pressable accessibilityRole="button" onPress={() => void signOut()} style={styles.secondary}>
-                <Text style={styles.secondaryText}>Đăng xuất nhân viên</Text>
-              </Pressable>
             </View>
           ) : (
             <View style={styles.loginBlock}>
@@ -71,10 +76,13 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#111713' },
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   topline: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22, borderBottomWidth: 1, borderBottomColor: '#26312A' },
-  brand: { color: '#E6EEE8', fontSize: 11, fontWeight: '900', letterSpacing: 1.4 },
-  status: { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  brand: { color: '#E6EEE8', fontSize: 12, fontWeight: '900', letterSpacing: 1.4 },
+  status: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 },
+  signOut: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 7, borderWidth: 1, borderColor: '#3B493F' },
+  signOutPressed: { borderColor: '#B8624C', backgroundColor: '#2A201D' },
+  signOutText: { color: '#A6B1A8', fontSize: 13, fontWeight: '700' },
   statusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#D5FF66' },
-  statusText: { color: '#A8B4AA', fontSize: 9, fontWeight: '800' },
+  statusText: { color: '#A8B4AA', fontSize: 10, fontWeight: '800' },
   content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingBottom: 24 },
   kicker: { color: '#D5FF66', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
   title: { color: '#F1F5F1', fontSize: 38, lineHeight: 43, fontWeight: '900', marginTop: 14 },
@@ -87,8 +95,6 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.8 },
   primaryText: { color: '#17210D', fontSize: 12, fontWeight: '900', letterSpacing: 0.6 },
   arrow: { color: '#17210D', fontSize: 22, fontWeight: '700' },
-  secondary: { minHeight: 46, alignItems: 'center', justifyContent: 'center', marginTop: 8 },
-  secondaryText: { color: '#A6B1A8', fontSize: 12, fontWeight: '700' },
   loginBlock: { marginTop: 34 },
   helper: { color: '#819087', fontSize: 11, lineHeight: 17, textAlign: 'center', marginTop: 12 },
   footer: { borderTopWidth: 1, borderTopColor: '#26312A', paddingHorizontal: 22, paddingVertical: 18 },

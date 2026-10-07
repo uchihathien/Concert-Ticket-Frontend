@@ -1,48 +1,104 @@
-/* Máy soát vé chạy ở điều kiện tệ nhất: điện thoại nhân viên, ngoài trời buổi tối, một tay.
-   Mọi quyết định ở đây phục vụ điều đó — chữ to, vùng chạm rộng, không có gì để bấm nhầm. */
+/* Màn soát vé — cùng số đo và màu với apps/mobile-scanner/app/scan.tsx. */
+
+.page {
+  min-height: 100dvh;
+  background: var(--nt-bg);
+}
 
 .screen {
-  min-height: 100dvh;
+  width: min(560px, 100%);
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   background: var(--nt-bg);
-  color: var(--nt-text);
 }
 
-.bar {
+.header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--nt-space-3);
-  padding: var(--nt-space-3) var(--nt-space-4);
-  border-bottom: 1px solid var(--nt-border);
+  gap: 8px;
+  min-height: 66px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--scan-line);
 }
 
-.session {
+.headerButton {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 44px;
+  color: var(--nt-text);
+  font-size: 34px;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.sessionInfo {
+  flex: 1;
   min-width: 0;
-  font-size: 13px;
-  color: var(--nt-text-muted);
+}
+
+.eyebrow {
+  margin: 0;
+  color: #95a298;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+}
+
+.session,
+.sessionMeta {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Mất mạng thì dừng hẳn việc gửi. Quét tiếp khi không gửi được chỉ tạo cảm giác đã soát xong
-   trong khi cửa vẫn chưa ghi nhận ai. */
+.session {
+  margin: 4px 0 0;
+  color: #eaf0eb;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sessionMeta {
+  margin: 3px 0 0;
+  color: #95a298;
+  font-size: 12px;
+}
+
+.torchButton {
+  min-width: 70px;
+  min-height: 40px;
+  padding: 0 8px;
+  border-radius: 7px;
+  border: 1px solid #3b493f;
+  background: none;
+  color: var(--nt-primary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 .offline {
-  padding: var(--nt-space-3) var(--nt-space-4);
-  background: var(--nt-danger);
-  color: #fff;
+  margin: 12px 12px 0;
+  padding: 10px 12px;
+  border-radius: var(--nt-radius);
+  background: var(--scan-rejected-bg);
+  border: 1px solid var(--scan-rejected-border);
+  color: var(--nt-danger-text);
+  font-size: 13px;
   font-weight: 700;
   text-align: center;
 }
 
-.viewport {
+.cameraShell {
   position: relative;
-  flex: 1;
-  min-height: 40vh;
-  background: #000;
+  height: 360px;
+  margin: 12px 12px 0;
   overflow: hidden;
+  border-radius: 12px;
+  background: var(--nt-surface);
 }
 
 .video {
@@ -51,103 +107,241 @@
   object-fit: cover;
 }
 
-/* Khung ngắm: chỉ là gợi ý thị giác, không cắt vùng nhận diện. */
-.reticle {
+.permission {
   position: absolute;
-  inset: 50% auto auto 50%;
-  translate: -50% -50%;
-  width: min(64vw, 280px);
-  aspect-ratio: 1;
-  border: 3px solid rgba(255, 255, 255, 0.85);
-  border-radius: var(--nt-radius-lg);
-  box-shadow: 0 0 0 100vmax rgba(0, 0, 0, 0.45);
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--nt-surface);
+  text-align: center;
 }
 
-.hint {
+.cameraSymbol {
+  color: var(--nt-primary);
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.permissionTitle {
+  margin: 0;
+  color: var(--nt-text);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.permissionCopy {
+  margin: 8px 0 0;
+  color: var(--nt-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.reticleWrap {
   position: absolute;
-  inset: auto 0 var(--nt-space-6) 0;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 15px;
-  padding: 0 var(--nt-space-4);
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.reticle {
+  width: 236px;
+  aspect-ratio: 1;
+  border: 2px solid var(--nt-primary);
+  border-radius: 22px;
+}
+
+.cameraHint {
+  margin: 22px 0 0;
+  color: var(--nt-text);
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 8px #000;
+}
+
+.busyRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 52px;
+  color: #c2ccc4;
+  font-size: 14px;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--nt-primary);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.resultPanel {
+  margin: 12px;
+  padding: 18px;
+  border-radius: 10px;
+  border: 1px solid;
+}
+
+.accepted {
+  background: var(--scan-accepted-bg);
+  border-color: var(--scan-accepted-border);
+}
+
+.rejected {
+  background: var(--scan-rejected-bg);
+  border-color: var(--scan-rejected-border);
+}
+
+.verdict {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.acceptedText {
+  color: var(--nt-primary);
+}
+
+.rejectedText {
+  color: var(--nt-danger-text);
+}
+
+.ticketInfo {
+  margin: 9px 0 0;
+  color: var(--nt-text);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.resultHint {
+  margin: 7px 0 14px;
+  color: #c1cbc3;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.actionButton:hover {
+  background: var(--nt-primary-hover);
 }
 
 .manual {
   display: flex;
-  gap: var(--nt-space-2);
-  padding: var(--nt-space-4);
-  border-top: 1px solid var(--nt-border);
+  gap: 8px;
+  margin: 12px 12px 0;
 }
 
 .manualInput {
   flex: 1;
   min-width: 0;
-  min-height: 52px;
-  padding: 0 var(--nt-space-4);
-  font-family: var(--nt-font-mono);
-  font-size: 16px;
-  color: var(--nt-text);
-  background: var(--nt-bg-subtle);
-  border: 1px solid var(--nt-border);
+  min-height: 48px;
+  padding: 0 14px;
   border-radius: var(--nt-radius);
+  border: 1px solid #3b493f;
+  background: var(--nt-surface);
+  color: var(--nt-text);
+  font: inherit;
+  font-size: 15px;
 }
 
-/* Kết quả ------------------------------------------------------------------
-   Chớp toàn màn rồi ổn định (ui-direction.md §7.3). Không chỉ dựa vào màu: chữ cực lớn nói rõ
-   kết quả, vì ngoài trời buổi tối màu đọc kém và có người không phân biệt được màu. */
+.manualInput:focus,
+.manualInput:focus-visible {
+  outline: none;
+  border-color: var(--nt-primary);
+  /* Thay vòng focus chung của reset.css (vẽ chồng lên viền) bằng một quầng mờ cùng màu viền. */
+  box-shadow: 0 0 0 3px rgb(213 255 102 / 18%);
+}
 
-.result {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
+.manualButton {
+  min-width: 84px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.manualButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.footer {
+  padding: 18px 22px;
+}
+
+.footerTitle {
+  margin: 0;
+  color: var(--nt-primary);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+}
+
+.footerCopy {
+  margin: 6px 0 0;
+  color: #89958c;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.center {
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: var(--nt-space-4);
-  padding: var(--nt-space-6);
-  text-align: center;
-  color: #fff;
+  width: min(420px, 100%);
+  margin: 0 auto;
+  padding: 24px;
 }
 
-.resultAccepted {
-  background: #12653f;
-}
-
-.resultRejected {
-  background: #8c1d18;
-}
-
-.resultVerdict {
+.centerTitle {
   margin: 0;
-  font-size: clamp(32px, 9vw, 56px);
-  font-weight: 800;
-  line-height: 1.1;
-  letter-spacing: -0.02em;
+  color: var(--nt-text);
+  font-size: 26px;
+  font-weight: 900;
 }
 
-.resultSeat {
-  margin: 0;
-  font-size: clamp(20px, 5vw, 28px);
-  font-weight: 700;
-}
-
-.resultNote {
-  margin: 0;
-  font-size: 16px;
-  opacity: 0.92;
-  max-width: 34ch;
-}
-
-.resultDismiss {
-  margin-top: var(--nt-space-4);
-  min-height: 52px;
-  padding: 0 var(--nt-space-8);
-  font-size: 17px;
-  font-weight: 700;
-  color: #fff;
-  background: rgba(255, 255, 255, 0.16);
-  border: 2px solid rgba(255, 255, 255, 0.7);
-  border-radius: var(--nt-radius);
-  cursor: pointer;
+.centerCopy {
+  margin: 12px 0 20px;
+  color: var(--nt-text-muted);
+  font-size: 15px;
+  line-height: 1.5;
 }

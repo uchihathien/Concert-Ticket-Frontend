@@ -1,0 +1,295 @@
+/* Chọn suất — cùng bố cục và màu với SessionPicker của app Scanner. */
+
+.content {
+  display: grid;
+  gap: 18px;
+}
+
+.group {
+  display: grid;
+  gap: 9px;
+}
+
+.sectionTitle {
+  margin: 0 0 2px;
+  color: var(--nt-text-muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 72px;
+  color: var(--nt-text-muted);
+  font-size: 14px;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--nt-primary);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 700ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.state {
+  padding: 16px;
+  border-radius: var(--nt-radius);
+  border: 1px solid var(--nt-border);
+  background: var(--nt-surface);
+}
+
+.title {
+  margin: 0;
+  color: var(--nt-text);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.muted {
+  margin: 5px 0 0;
+  color: var(--nt-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.error {
+  margin: 0;
+  color: var(--nt-danger-text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notice {
+  margin: 0;
+  color: var(--nt-primary);
+  font-size: 13px;
+}
+
+.link {
+  margin-top: 12px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  color: var(--nt-primary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.invitation {
+  padding: 14px;
+  border-radius: var(--nt-radius);
+  border: 1px solid #536245;
+  background: #20291c;
+}
+
+.invitationRole {
+  margin: 6px 0 0;
+  color: var(--nt-text);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.accept {
+  min-height: 44px;
+  width: 100%;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--nt-primary);
+  color: var(--nt-primary-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.accept:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.searchBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: var(--nt-radius);
+  border: 1px solid var(--nt-border);
+  background: #121912;
+}
+
+.searchBox:focus-within {
+  border-color: var(--nt-primary);
+  box-shadow: 0 0 0 3px rgb(213 255 102 / 18%);
+}
+
+.searchIcon {
+  color: var(--nt-text-muted);
+  font-size: 18px;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  min-height: 46px;
+  border: 0;
+  background: transparent;
+  color: var(--nt-text);
+  font: inherit;
+  font-size: 15px;
+  outline: none;
+}
+
+/* Ô nhập nằm LỌT trong khung: vòng focus chung của reset.css (box-shadow + bo góc) vẽ thêm một
+   đường viền thứ hai bên trong khung đang sáng viền — hai viền chồng nhau. Chỉ báo focus duy nhất
+   là viền của khung bao (`:focus-within` ở trên). */
+.searchInput:focus,
+.searchInput:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.searchInput::placeholder {
+  color: #6f7b72;
+}
+
+/* Bỏ nút xoá mặc định của <input type="search"> — đã có nút × riêng. */
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+.clear {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 50%;
+  background: #273228;
+  color: var(--nt-text);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.resultCount {
+  margin: 0;
+  color: var(--nt-text-muted);
+  font-size: 12px;
+}
+
+.organization {
+  margin: 0;
+  color: var(--nt-primary);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.arrow {
+  color: var(--nt-primary);
+  font-size: 22px;
+  font-weight: 700;
+}
+
+/* Lưới thẻ sự kiện ------------------------------------------------------ */
+
+/* Ô tìm kiếm và dòng đếm không giãn theo cả lưới rộng: một ô nhập dài 1100px khó đọc. */
+.searchBox,
+.resultCount {
+  max-width: 560px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+.eventCard {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 16px;
+  border-radius: var(--nt-radius-lg);
+  border: 1px solid var(--nt-border);
+  background: var(--nt-surface);
+}
+
+.event {
+  margin: 6px 0 0;
+  color: var(--nt-text);
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+.sessionCount {
+  margin: 12px 0 8px;
+  color: #95a298;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sessionList {
+  display: grid;
+  gap: 8px;
+}
+
+/* Mỗi suất là một nút: giờ to (thứ nhân viên đối chiếu với lịch trực), ngày nhỏ bên cạnh. */
+.sessionButton {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 14px;
+  border-radius: var(--nt-radius);
+  border: 1px solid #3b493f;
+  background: #121912;
+  color: inherit;
+  text-decoration: none;
+  transition:
+    border-color var(--nt-motion-ui),
+    background-color var(--nt-motion-ui);
+}
+
+.sessionButton:hover {
+  border-color: var(--nt-primary);
+  background: var(--nt-hover);
+}
+
+.sessionButton:focus-visible {
+  outline: none;
+  border-color: var(--nt-primary);
+  box-shadow: 0 0 0 3px rgb(213 255 102 / 18%);
+}
+
+.sessionTime {
+  color: var(--nt-primary);
+  font-size: 18px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.sessionDay {
+  flex: 1;
+  color: var(--nt-text-muted);
+  font-size: 13px;
+}
