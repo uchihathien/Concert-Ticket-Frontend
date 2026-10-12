@@ -15,6 +15,8 @@ export const queryKeys = {
       ['identity', 'platform', 'organizations', params] as const,
     invitations: (organizationId: string) =>
       ['identity', 'organizations', organizationId, 'invitations'] as const,
+    staff: (organizationId: string) =>
+      ['identity', 'organizations', organizationId, 'staff'] as const,
     // Ma trận vai trò là hằng số của hệ thống: một khoá duy nhất, không tham số.
     roles: () => ['identity', 'roles'] as const,
     myPermissions: () => ['identity', 'me', 'permissions'] as const,

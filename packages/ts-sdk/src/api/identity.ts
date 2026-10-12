@@ -8,13 +8,17 @@ import type {
   GrantMemberResult,
   InvitationCreated,
   InviteMemberRequest,
+  InviteStaffRequest,
+  InviteStaffResult,
   Member,
+  MyCheckinEvents,
   MyInvitation,
   MyPermissions,
   OrganizationRole,
   OrganizationSummary,
   PendingInvitation,
   RoleView,
+  StaffMember,
 } from '../types/identity';
 
 /**
@@ -292,4 +296,76 @@ function auditQuery(params: AuditLogParams): string {
   if (params.from) query.set('from', params.from);
   if (params.to) query.set('to', params.to);
   return query.toString();
+}
+
+/* ---------------------------------------------------------------------------
+ * Nhân sự soát vé — `/v1/organizations/{id}/staff`
+ * ------------------------------------------------------------------------- */
+
+function staffPath(organizationId: string): string {
+  return `/v1/organizations/${encodeURIComponent(organizationId)}/staff`;
+}
+
+/** Bảng Nhân sự: chỉ nhân viên soát vé, kèm trạng thái lời mời và sự kiện được gán. */
+export async function getStaff(client: ApiClient, organizationId: string): Promise<StaffMember[]> {
+  const response = await client.get<StaffMember[]>(staffPath(organizationId));
+  return response.data;
+}
+
+/**
+ * Mời một nhân viên soát vé.
+ *
+ * Email không mời được (đã là khách, thuộc tổ chức khác, đang giữ vai trò khác) trả `ApiError` 409
+ * `EMAIL_NOT_INVITABLE` — một lỗi chung, cố ý không nói lý do.
+ */
+export async function inviteStaff(
+  client: ApiClient,
+  organizationId: string,
+  request: InviteStaffRequest,
+): Promise<InviteStaffResult> {
+  const response = await client.post<InviteStaffResult>(staffPath(organizationId), request);
+  return response.data;
+}
+
+/** Đặt lại danh sách sự kiện của một nhân viên. Rỗng là gỡ khỏi mọi sự kiện, giữ tài khoản. */
+export async function setStaffEvents(
+  client: ApiClient,
+  organizationId: string,
+  userId: string,
+  eventIds: string[],
+): Promise<StaffMember[]> {
+  const response = await client.put<StaffMember[]>(
+    `${staffPath(organizationId)}/${encodeURIComponent(userId)}/events`,
+    { eventIds },
+  );
+  return response.data;
+}
+
+/** Gửi lại thư mời. Liên kết trong thư cũ hết dùng được. */
+export async function resendStaffInvitation(
+  client: ApiClient,
+  organizationId: string,
+  userId: string,
+): Promise<void> {
+  await client.post<void>(
+    `${staffPath(organizationId)}/${encodeURIComponent(userId)}/invitation/resend`,
+  );
+}
+
+/** Huỷ lời mời chưa kích hoạt: xoá tài khoản và mọi sự kiện đã gán. */
+export async function cancelStaffInvitation(
+  client: ApiClient,
+  organizationId: string,
+  userId: string,
+): Promise<void> {
+  await client.delete<void>(`${staffPath(organizationId)}/${encodeURIComponent(userId)}/invitation`);
+}
+
+/** Sự kiện mà chính người gọi được soát — app soát vé dùng để chỉ hiện đúng những suất đó. */
+export async function getMyCheckinEvents(
+  client: ApiClient,
+  organizationId: string,
+): Promise<MyCheckinEvents> {
+  const response = await client.get<MyCheckinEvents>(`${staffPath(organizationId)}/me/events`);
+  return response.data;
 }

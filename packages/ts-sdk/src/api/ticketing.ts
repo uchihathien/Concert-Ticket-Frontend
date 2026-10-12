@@ -1,6 +1,9 @@
 import type { ApiClient } from '../http/client';
 import type {
+  CheckinHistory,
   CheckinSession,
+  GateScanRequest,
+  GateScanResponse,
   ListMyTicketsParams,
   ScanRequest,
   ScanResponse,
@@ -49,6 +52,47 @@ export async function scanTicketForOrganization(
   const response = await client.post<ScanResponse>(
     `/v1/organizations/${encodeURIComponent(organizationId)}/sessions/${encodeURIComponent(eventSessionId)}/checkins`,
     request,
+  );
+  return response.data;
+}
+
+function checkinsPath(organizationId: string, eventSessionId: string): string {
+  return `/v1/organizations/${encodeURIComponent(organizationId)}/sessions/${encodeURIComponent(eventSessionId)}/checkins`;
+}
+
+/**
+ * Một lượt quét ở cửa có hướng Vào / Ra.
+ *
+ * Như `scanTicket`: backend luôn trả 200 và nơi gọi rẽ nhánh theo `result`. Ngoại lệ duy nhất là
+ * cho vào thủ công (`override`) mà thiếu quyền hoặc thiếu lý do — khi đó là `ApiError` 403 / 400.
+ */
+export async function scanAtGate(
+  client: ApiClient,
+  organizationId: string,
+  eventSessionId: string,
+  request: GateScanRequest,
+): Promise<GateScanResponse> {
+  const response = await client.post<GateScanResponse>(
+    checkinsPath(organizationId, eventSessionId),
+    request,
+  );
+  return response.data;
+}
+
+/** Lịch sử quét của suất đang soát, kèm số khách đang ở trong và tổng đã check-in. */
+export async function getCheckinHistory(
+  client: ApiClient,
+  organizationId: string,
+  eventSessionId: string,
+  params: { query?: string; page?: number; size?: number } = {},
+): Promise<CheckinHistory> {
+  const search = new URLSearchParams();
+  if (params.query?.trim()) search.set('query', params.query.trim());
+  if (params.page !== undefined) search.set('page', String(params.page));
+  if (params.size !== undefined) search.set('size', String(params.size));
+  const suffix = search.toString();
+  const response = await client.get<CheckinHistory>(
+    `${checkinsPath(organizationId, eventSessionId)}${suffix ? `?${suffix}` : ''}`,
   );
   return response.data;
 }

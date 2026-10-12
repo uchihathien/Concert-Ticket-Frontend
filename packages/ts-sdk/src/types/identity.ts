@@ -201,3 +201,61 @@ export interface AuditLogParams {
   limit?: number;
   offset?: number;
 }
+
+/* ---------------------------------------------------------------------------
+ * Nhân sự soát vé
+ *
+ * Nguồn: `StaffController`, `StaffQueries`, `StaffInvitationHandler`.
+ *
+ * Nhân viên soát vé không tự đăng ký và không nhận vai trò qua mã lời mời: tài khoản của họ do ban
+ * tổ chức tạo ở đây, và thư mời mang liên kết để chính họ đặt mật khẩu.
+ * ------------------------------------------------------------------------- */
+
+/**
+ * `INVITED` đã gửi thư, chờ đặt mật khẩu · `ACTIVE` đã kích hoạt · `EXPIRED` liên kết hết hạn ·
+ * `SEND_FAILED` thư chưa đi (gửi lại được).
+ */
+export type StaffStatus = 'INVITED' | 'ACTIVE' | 'EXPIRED' | 'SEND_FAILED';
+
+export interface StaffMember {
+  userId: string;
+  email: string;
+  fullName: string | null;
+  status: StaffStatus;
+  /** `null` với nhân viên có từ trước khi có mục Nhân sự. */
+  invitedAt: string | null;
+  /** Tên người mời, để hiển thị. */
+  invitedBy: string | null;
+  /** Hạn của liên kết trong thư gửi gần nhất. */
+  expiresAt: string | null;
+  activatedAt: string | null;
+  /** Sự kiện người này được soát. Rỗng là chưa soát được sự kiện nào. */
+  eventIds: string[];
+}
+
+export interface InviteStaffRequest {
+  fullName: string;
+  email: string;
+  eventIds: string[];
+}
+
+/**
+ * `INVITED` tài khoản mới, đã gửi thư · `SEND_FAILED` tài khoản mới nhưng thư chưa đi ·
+ * `PENDING` đã mời từ trước, chưa kích hoạt — chỉ gán thêm sự kiện, không gửi thư trùng ·
+ * `ALREADY_STAFF` đã là nhân viên soát vé của tổ chức này — chỉ gán thêm sự kiện.
+ */
+export interface InviteStaffResult {
+  outcome: 'INVITED' | 'SEND_FAILED' | 'PENDING' | 'ALREADY_STAFF';
+  userId: string;
+}
+
+/**
+ * Sự kiện mà chính người gọi được soát trong một tổ chức.
+ *
+ * `restricted: false` nghĩa là người gọi quản lý được sự kiện của tổ chức nên soát mọi sự kiện của
+ * tổ chức; khi đó `eventIds` rỗng và không mang nghĩa gì.
+ */
+export interface MyCheckinEvents {
+  restricted: boolean;
+  eventIds: string[];
+}
