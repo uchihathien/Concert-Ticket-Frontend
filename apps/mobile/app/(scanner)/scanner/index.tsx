@@ -1,0 +1,131 @@
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LoginButton } from '@/components/LoginButton';
+import { SwitchRoleButton } from '@/components/SwitchRoleButton';
+import { SessionPicker } from '@/components/SessionPicker';
+import { loadScannerContext, pickSession, scanParams } from '@/lib/scanner-sessions';
+import { useMobileAuth } from '@/lib/auth-context';
+
+export default function HomeScreen() {
+  const { ready, signedIn, signOut } = useMobileAuth();
+  const { pick } = useLocalSearchParams<{ pick?: string }>();
+  // Vào thẳng máy quét của suất đang diễn (hoặc sắp diễn gần nhất). Danh sách suất chỉ hiện khi
+  // nhân viên chủ động bấm "Đổi suất" (`pick`), hoặc khi không có suất nào để mở sẵn — lúc đó màn
+  // này còn là nơi chấp nhận lời mời đang chờ.
+  const [opening, setOpening] = useState(!pick);
+
+  useEffect(() => {
+    if (!ready || !signedIn || pick) return;
+    let active = true;
+    loadScannerContext()
+      .then(({ sessions }) => {
+        if (!active) return;
+        // Nhân viên được mời đã được gán sự kiện: mở thẳng suất của họ, không qua màn chọn.
+        const session = pickSession(sessions);
+        if (session) router.replace({ pathname: '/scanner/scan', params: scanParams(session) });
+        else setOpening(false);
+      })
+      // Lỗi mạng thì để SessionPicker bên dưới tự báo và cho thử lại.
+      .catch(() => { if (active) setOpening(false); });
+    return () => { active = false; };
+  }, [ready, signedIn, pick]);
+
+  if (!ready || (signedIn && opening)) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <View style={styles.loading}><ActivityIndicator color="#D5FF66" size="large" /></View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.screen}>
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        {/* Cùng bố cục với TopBar của web Soát vé: nhận diện bên trái, Đăng xuất ở góc trên bên phải. */}
+        <View style={styles.topline}>
+          <View>
+            <Text style={styles.brand}>NEXATICKET / GATE</Text>
+            <View style={styles.status}><View style={styles.statusDot} /><Text style={styles.statusText}>SOÁT VÉ</Text></View>
+          </View>
+          {signedIn ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <SwitchRoleButton />
+              <Pressable accessibilityRole="button" accessibilityLabel="Đăng xuất nhân viên" onPress={() => void signOut()} style={({ pressed }) => [styles.signOut, pressed && styles.signOutPressed]}>
+                <Text style={styles.signOutText}>Đăng xuất</Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </View>
+
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+          <Text style={styles.kicker}>STAFF SCANNER</Text>
+          <Text style={styles.title}>{signedIn ? 'Bắt đầu ca\nsoát vé.' : 'Vào cổng,\nkhông chờ đợi.'}</Text>
+          <Text style={styles.subtitle}>
+            {signedIn
+              ? 'Chọn suất bạn được giao để mở camera soát vé.'
+              : 'Đăng nhập bằng tài khoản nhân viên được cấp quyền soát vé.'}
+          </Text>
+
+          {signedIn ? (
+            <View style={styles.form}>
+              <SessionPicker />
+            </View>
+          ) : (
+            <View style={styles.loginBlock}>
+              <LoginButton />
+              <Text style={styles.helper}>Tài khoản cần được gán quyền check-in cho tổ chức.</Text>
+            </View>
+          )}
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerLabel}>CHECK-IN PROTOCOL</Text>
+          <Text style={styles.footerText}>Mỗi vé chỉ được chấp nhận một lần. Kết quả được xác thực trực tiếp với máy chủ.</Text>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  scrollView: { flex: 1 },
+  screen: { flex: 1, backgroundColor: '#111713' },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  topline: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22, borderBottomWidth: 1, borderBottomColor: '#26312A' },
+  brand: { color: '#E6EEE8', fontSize: 12, fontWeight: '900', letterSpacing: 1.4 },
+  status: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 5 },
+  signOut: { minHeight: 36, justifyContent: 'center', paddingHorizontal: 12, borderRadius: 7, borderWidth: 1, borderColor: '#3B493F' },
+  signOutPressed: { borderColor: '#B8624C', backgroundColor: '#2A201D' },
+  signOutText: { color: '#A6B1A8', fontSize: 13, fontWeight: '700' },
+  statusDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#D5FF66' },
+  statusText: { color: '#A8B4AA', fontSize: 10, fontWeight: '800' },
+  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 24, paddingBottom: 24 },
+  kicker: { color: '#D5FF66', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
+  title: { color: '#F1F5F1', fontSize: 38, lineHeight: 43, fontWeight: '900', marginTop: 14 },
+  subtitle: { color: '#A6B1A8', fontSize: 14, lineHeight: 21, marginTop: 14, maxWidth: 380 },
+  form: { marginTop: 34 },
+  label: { color: '#A6B1A8', fontSize: 10, fontWeight: '800', letterSpacing: 1.4, marginBottom: 9 },
+  input: { minHeight: 54, borderRadius: 8, borderWidth: 1, borderColor: '#3B493F', backgroundColor: '#19221B', paddingHorizontal: 14, color: '#F1F5F1', fontSize: 13 },
+  error: { color: '#FF8C79', fontSize: 12, lineHeight: 18, marginTop: 8 },
+  primary: { minHeight: 56, marginTop: 14, paddingHorizontal: 16, borderRadius: 8, backgroundColor: '#D5FF66', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pressed: { opacity: 0.8 },
+  primaryText: { color: '#17210D', fontSize: 12, fontWeight: '900', letterSpacing: 0.6 },
+  arrow: { color: '#17210D', fontSize: 22, fontWeight: '700' },
+  loginBlock: { marginTop: 34 },
+  helper: { color: '#819087', fontSize: 11, lineHeight: 17, textAlign: 'center', marginTop: 12 },
+  footer: { borderTopWidth: 1, borderTopColor: '#26312A', paddingHorizontal: 22, paddingVertical: 18 },
+  footerLabel: { color: '#D5FF66', fontSize: 9, fontWeight: '900', letterSpacing: 1.5 },
+  footerText: { color: '#87938A', fontSize: 10, lineHeight: 16, marginTop: 6 },
+});
