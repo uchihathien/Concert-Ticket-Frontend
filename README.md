@@ -87,11 +87,16 @@ bấm vào là ra trang lỗi của Keycloak.
 | `web-admin`    | 3001 | Tổ chức                             | Sáng    |
 | `web-scanner`  | 3002 | Nhân viên soát vé                   | **Tối** |
 | `web-platform` | 3003 | Superadmin                          | Sáng    |
-| `mobile-customer` | Expo | Khách mua vé (iOS/Android) | **Tối** |
+| `mobile` | Expo 8082 | Một app cho mọi vai: khách, tổ chức, soát vé, superadmin (iOS/Android) | **Tối** |
 
-Chạy app native từ thư mục `frontend/`: `pnpm --filter @nexaticket/mobile-customer start`.
-App dùng Expo SDK 57 nên Node cần từ 22.13 trở lên; cấu hình API và luồng hiện tại xem
-[`apps/mobile-customer/README.md`](apps/mobile-customer/README.md).
+Chạy app native từ thư mục `frontend/`: `pnpm --filter @nexaticket/mobile start`, rồi quét một mã QR
+bằng Expo Go. App dùng Expo SDK 57 nên Node cần từ 22.13 trở lên; biến môi trường xem
+[`apps/mobile/.env.example`](apps/mobile/.env.example).
+
+`mobile` gộp bốn app `mobile-customer`, `mobile-organizer`, `mobile-platform`, `mobile-scanner`: mỗi vai
+là một nhóm route trong `app/`, và root layout chỉ mở nhóm của vai đang đăng nhập. Vai suy từ
+`/v1/me/permissions` (xem `apps/mobile/lib/roles.ts`), không đọc tên role trong JWT. Khách chưa đăng
+nhập vẫn xem được sự kiện trong nhóm `(customer)`.
 
 `web-platform` tách khỏi `web-admin` vì ranh giới tài chính là ranh giới bảo mật: nó gọi deployable `finance`, có client OIDC riêng, và không nên chạy chung bundle với app mà tổ chức dùng.
 

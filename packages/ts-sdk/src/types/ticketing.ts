@@ -44,6 +44,101 @@ export interface ScanResponse {
   note: string | null;
 }
 
+/* ---------------------------------------------------------------------------
+ * Soát vé có vào / ra / vào lại
+ *
+ * Kiểu RIÊNG, không mở rộng `CheckinResult` ở trên: web-scanner rẽ nhánh giao diện bằng một
+ * `Record<CheckinResult, …>`, và thêm giá trị vào union đó là buộc nó phải sửa theo. Máy soát vé
+ * nào gửi `direction` thì nhận về bộ kết quả đầy đủ này; không gửi thì backend quy về sáu giá trị cũ.
+ * ------------------------------------------------------------------------- */
+
+export type ScanDirection = 'IN' | 'OUT';
+
+/**
+ * Kết quả một lượt quét ở cửa.
+ *
+ * `ACCEPTED` là cho vào (lần đầu hoặc vào lại — xem `entryCount`), `EXITED` là ghi nhận ra. Mọi giá
+ * trị còn lại là từ chối, và lý do quyết định nhân viên nói gì với khách.
+ */
+export type GateScanResult =
+  | 'ACCEPTED'
+  | 'EXITED'
+  /** Quét Vào một vé đang ở trong — dấu hiệu dùng chung mã QR. */
+  | 'ALREADY_CHECKED_IN'
+  /** Quét Ra một vé chưa vào hoặc đã ra. */
+  | 'NOT_INSIDE'
+  | 'REVOKED'
+  | 'WRONG_SESSION'
+  | 'NOT_OPEN_YET'
+  | 'SESSION_ENDED'
+  | 'REENTRY_NOT_ALLOWED'
+  | 'INVALID_TOKEN'
+  | 'NOT_FOUND';
+
+export interface GateScanRequest {
+  /** Bắt buộc phải gửi: thiếu nó backend coi đây là máy soát vé đời đầu. */
+  direction: ScanDirection;
+  /** Mã QR vừa quét. Bỏ trống khi gõ `ticketCode`. */
+  qrToken?: string;
+  /** Mã vé gõ tay vì QR hỏng — tối thiểu 8 ký tự in trên vé. */
+  ticketCode?: string;
+  deviceId?: string;
+  /** Cổng đang soát, nếu sự kiện có nhiều cổng. */
+  gate?: string;
+  /** Cho vào thủ công dù vé đang được ghi nhận là ở trong. Cần quyền `CATALOG_MANAGE` và `reason`. */
+  override?: boolean;
+  reason?: string;
+}
+
+export interface GateScanResponse {
+  result: GateScanResult;
+  direction: ScanDirection;
+  /** Mọi nhãn dưới đây do SERVER trả về sau khi đã kiểm quyền — mã QR cố ý không chứa gì. */
+  seatCode: string | null;
+  seatLabel: string | null;
+  ticketTypeName: string | null;
+  note: string | null;
+  /** 8 ký tự đầu của id vé — đúng mã in trên vé của khách. */
+  ticketCode: string | null;
+  holderName: string | null;
+  zoneCode: string | null;
+  /** Số lần vé đã vào cửa, tính cả lần này nếu được cho vào. */
+  entryCount: number;
+  /** Lần vào gần nhất — thứ đọc cho khách khi vé "đang ở trong". */
+  lastEntryAt: string | null;
+  lastEntryGate: string | null;
+  /** Suất của vé; khác suất đang soát khi `result` là `WRONG_SESSION`. */
+  ticketSessionId: string | null;
+}
+
+export interface CheckinHistoryRow {
+  id: string;
+  /** `null` khi lần quét không dẫn tới vé nào (mã giả, mã gõ sai). */
+  ticketCode: string | null;
+  scannedAt: string;
+  direction: ScanDirection;
+  result: GateScanResult;
+  /** `QR` quét mã · `CODE` gõ mã vé · `OVERRIDE` cho vào thủ công. */
+  method: 'QR' | 'CODE' | 'OVERRIDE';
+  gate: string | null;
+  note: string | null;
+  holderName: string | null;
+  seatCode: string | null;
+  seatLabel: string | null;
+  ticketTypeName: string | null;
+}
+
+/** Lịch sử quét của một suất, mới nhất trước, kèm số khách hiện tại. */
+export interface CheckinHistory {
+  /** Số khách đang ở trong khu vực. */
+  inside: number;
+  /** Số vé đã vào ít nhất một lần. */
+  checkedIn: number;
+  rows: CheckinHistoryRow[];
+  page: number;
+  size: number;
+}
+
 /** Vòng đời một vé. `REVOKED` không quay lại `VALID` được. */
 export type TicketStatus = 'VALID' | 'CHECKED_IN' | 'REVOKED';
 

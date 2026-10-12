@@ -91,6 +91,24 @@ const CATALOG: Record<string, ErrorCopy> = {
   INVITATION_ALREADY_USED: { message: 'Lời mời đã được dùng', display: 'banner' },
   EMAIL_MISMATCH: { message: 'Lời mời được gửi cho email khác', display: 'banner' },
   ORGANIZATION_SUSPENDED: { message: 'Tổ chức đang bị khoá', display: 'banner' },
+  // Cố ý KHÔNG nói vì sao: lý do thật là thông tin về một tài khoản không thuộc người đang mời.
+  EMAIL_NOT_INVITABLE: {
+    message: 'Email này không thể mời làm nhân viên soát vé. Hãy dùng một email khác.',
+    display: 'inline',
+  },
+  STAFF_INVITE_REQUIRED: {
+    message: 'Nhân viên soát vé được mời ở mục Nhân sự soát vé',
+    display: 'inline',
+  },
+  STAFF_INVITATION_NOT_FOUND: { message: 'Không có lời mời nào cho người này', display: 'banner' },
+  STAFF_ALREADY_ACTIVATED: {
+    message: 'Nhân viên đã kích hoạt tài khoản. Muốn thu quyền, hãy gỡ họ khỏi sự kiện hoặc khỏi tổ chức.',
+    display: 'banner',
+  },
+  STAFF_INVITE_UNAVAILABLE: {
+    message: 'Chưa xử lý được lúc này. Thử lại sau ít phút.',
+    display: 'banner',
+  },
   SCANNER_CODE_INVALID: { message: 'Mã soát vé không hợp lệ', display: 'inline' },
   SCANNER_CODE_EXHAUSTED: { message: 'Mã soát vé đã hết lượt dùng', display: 'inline' },
 

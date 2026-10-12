@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   acceptInvitation,
   activateOrganization,
+  cancelStaffInvitation,
   changeMemberRole,
   createOrganization,
   getAuditLogs,
@@ -14,14 +15,18 @@ import {
   getPendingInvitations,
   getPlatformAuditLogs,
   getRoles,
+  getStaff,
   grantMember,
   inviteMember,
+  inviteStaff,
   listPlatformOrganizations,
   removeMember,
   renameOrganization,
+  resendStaffInvitation,
   revokeInvitation,
   revokeMemberSessions,
   sendMemberPasswordReset,
+  setStaffEvents,
   suspendOrganization,
 } from '../api/identity';
 import { useApiClient } from '../query/provider';
@@ -31,6 +36,7 @@ import type {
   CreateOrganizationRequest,
   GrantMemberRequest,
   InviteMemberRequest,
+  InviteStaffRequest,
   OrganizationRole,
   OrganizationSummary,
   Permission,
@@ -355,4 +361,61 @@ export function useOrganizationLifecycle() {
       void queryClient.invalidateQueries({ queryKey: ['identity', 'platform', 'organizations'] });
     },
   });
+}
+
+/* ---------------------------------------------------------------------------
+ * Nhân sự soát vé
+ * ------------------------------------------------------------------------- */
+
+export function useStaff(organizationId: string | null | undefined) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: queryKeys.identity.staff(organizationId ?? ''),
+    queryFn: () => getStaff(client, organizationId as string),
+    enabled: Boolean(organizationId),
+    staleTime: staleTime.ADMIN_TABLE,
+  });
+}
+
+/**
+ * Mọi thao tác ở mục Nhân sự đều làm mới CẢ bảng nhân sự lẫn bảng thành viên: mời tạo ra một thành
+ * viên mới, huỷ lời mời xoá một thành viên, và hai màn hình đó cùng nhìn vào một tổ chức.
+ */
+function useStaffMutation<TInput, TResult>(
+  organizationId: string,
+  mutationFn: (client: ReturnType<typeof useApiClient>, input: TInput) => Promise<TResult>,
+) {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: TInput) => mutationFn(client, input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.identity.staff(organizationId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.identity.members(organizationId) });
+    },
+  });
+}
+
+export function useInviteStaff(organizationId: string) {
+  return useStaffMutation(organizationId, (client, input: InviteStaffRequest) =>
+    inviteStaff(client, organizationId, input),
+  );
+}
+
+export function useSetStaffEvents(organizationId: string) {
+  return useStaffMutation(organizationId, (client, input: { userId: string; eventIds: string[] }) =>
+    setStaffEvents(client, organizationId, input.userId, input.eventIds),
+  );
+}
+
+export function useResendStaffInvitation(organizationId: string) {
+  return useStaffMutation(organizationId, (client, userId: string) =>
+    resendStaffInvitation(client, organizationId, userId),
+  );
+}
+
+export function useCancelStaffInvitation(organizationId: string) {
+  return useStaffMutation(organizationId, (client, userId: string) =>
+    cancelStaffInvitation(client, organizationId, userId),
+  );
 }
