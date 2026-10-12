@@ -46,6 +46,15 @@ import { OrganizationGate } from '@/components/OrganizationGate';
 
 const ROLE_OPTIONS = ORGANIZATION_ROLES.map((role) => ({ value: role, label: roleLabel(role) }));
 
+/**
+ * Vai trò mời được bằng mã ở trang này.
+ *
+ * Nhân viên soát vé KHÔNG nằm trong đó: họ không tự đăng ký, tài khoản được tạo sẵn ở mục Nhân sự
+ * soát vé. Backend từ chối vai trò này trên đường lời mời bằng mã, nên để nó trong danh sách là
+ * mời người dùng bấm vào một cánh cửa khoá.
+ */
+const INVITE_ROLE_OPTIONS = ROLE_OPTIONS.filter((option) => option.value !== 'CHECKIN_STAFF');
+
 /** Cùng danh sách vai trò với form mời, dùng lại thay vì gõ lại — hai bản sao sẽ lệch. */
 const MEMBER_ROLE_FILTERS = ROLE_OPTIONS;
 
@@ -370,7 +379,10 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
       >
         <form id="invite-member" action={submitInvite} className="grid gap-4">
           <Input name="email" type="email" label="Email" required />
-          <Select name="role" label="Vai trò" required options={ROLE_OPTIONS} />
+          <Select name="role" label="Vai trò" required options={INVITE_ROLE_OPTIONS} />
+          <p className="m-0 text-[13px] text-muted">
+            Nhân viên soát vé được mời ở mục <a href="/staff">Nhân sự soát vé</a>.
+          </p>
         </form>
       </Modal>
 

@@ -4,6 +4,7 @@ import {
   CalendarDays,
   LayoutDashboard,
   MapPin,
+  ScanLine,
   ScrollText,
   Settings,
   TicketCheck,
@@ -44,6 +45,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         { href: '/sales', label: 'Doanh thu', icon: <BarChart3 size={18} /> },
         { href: '/venues', label: 'Địa điểm', icon: <MapPin size={18} /> },
         { href: '/members', label: 'Thành viên', icon: <Users size={18} /> },
+        { href: '/staff', label: 'Nhân sự soát vé', icon: <ScanLine size={18} /> },
         { href: '/audit', label: 'Nhật ký', icon: <ScrollText size={18} /> },
         { href: '/settings', label: 'Cài đặt', icon: <Settings size={18} /> },
       ]}
