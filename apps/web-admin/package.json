@@ -21,7 +21,8 @@
     "next": "^15.1.3",
     "next-auth": "^5.0.0-beta.25",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "recharts": "2.15.4"
   },
   "devDependencies": {
     "@nexaticket/config": "workspace:*",

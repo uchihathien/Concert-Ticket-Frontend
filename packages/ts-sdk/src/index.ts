@@ -22,6 +22,7 @@ export { queryKeys, staleTime } from './query/keys';
 export * from './types/catalog';
 export * from './types/identity';
 export * from './types/analytics';
+export * from './types/stats';
 export * from './types/inventory';
 export * from './types/ledger';
 export * from './types/ordering';
@@ -120,6 +121,22 @@ export {
 } from './api/ticketing';
 export { cancelOrder, getOrder, listMyOrders, placeOrder } from './api/ordering';
 export { fetchOrganizationSales } from './api/analytics';
+export {
+  exportBuyers,
+  getGateNoShows,
+  getSalesCustomers,
+  getGateActivity,
+  getOrderBuyers,
+  getSalesDistribution,
+  getStatsOrders,
+  getStatsSessions,
+  getGatePresence,
+  getInventoryStock,
+  getSalesBreakdown,
+  getSalesHeatmap,
+  getSalesSeries,
+  getSalesSummary,
+} from './api/stats';
 export { fetchSeatMap, placeHold, releaseHold } from './api/inventory';
 export type { SeatMapSnapshot } from './api/inventory';
 export { getOrganizationBalance, getTrialBalance } from './api/ledger';
@@ -200,6 +217,22 @@ export {
 export { useMyTickets, useOrderTickets, useScanTicket } from './hooks/ticketing';
 export { useCancelOrder, useMyOrders, useOrder } from './hooks/ordering';
 export { useOrganizationSales } from './hooks/analytics';
+export {
+  useExportBuyers,
+  useGateNoShows,
+  useSalesCustomers,
+  useGateActivity,
+  useOrderBuyers,
+  useSalesDistribution,
+  useStatsOrders,
+  useStatsSessions,
+  useGatePresence,
+  useInventoryStock,
+  useSalesBreakdown,
+  useSalesHeatmap,
+  useSalesSeries,
+  useSalesSummary,
+} from './hooks/stats';
 export { usePlaceHold, useReleaseHold, useSeatMap } from './hooks/inventory';
 export type { PlaceHoldInput, UseSeatMapOptions } from './hooks/inventory';
 export { useOrganizationBalance, useTrialBalance } from './hooks/ledger';

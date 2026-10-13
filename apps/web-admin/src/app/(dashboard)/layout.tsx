@@ -2,12 +2,14 @@ import { AppShell, BrandLogo, BrandSuffix, SidebarAccount } from '@nexaticket/ui
 import {
   BarChart3,
   CalendarDays,
+  DoorOpen,
   LayoutDashboard,
   MapPin,
   ScanLine,
   ScrollText,
   Settings,
   TicketCheck,
+  UserRound,
   Users,
 } from 'lucide-react';
 import { Suspense, type ReactNode } from 'react';
@@ -43,6 +45,8 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         { href: '/overview', label: 'Tổng quan', icon: <LayoutDashboard size={18} /> },
         { href: '/tickets', label: 'Vé đã bán', icon: <TicketCheck size={18} /> },
         { href: '/sales', label: 'Doanh thu', icon: <BarChart3 size={18} /> },
+        { href: '/checkins', label: 'Soát vé', icon: <DoorOpen size={18} /> },
+        { href: '/customers', label: 'Khách hàng', icon: <UserRound size={18} /> },
         { href: '/venues', label: 'Địa điểm', icon: <MapPin size={18} /> },
         { href: '/members', label: 'Thành viên', icon: <Users size={18} /> },
         { href: '/staff', label: 'Nhân sự soát vé', icon: <ScanLine size={18} /> },
