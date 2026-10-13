@@ -2,6 +2,7 @@
 
 import { useMyOrganizations, type OrganizationSummary } from '@nexaticket/ts-sdk';
 import { useSearchParams } from 'next/navigation';
+import { useSyncExternalStore } from 'react';
 
 export interface CurrentOrganization {
   organization: OrganizationSummary | null;
@@ -25,7 +26,11 @@ export function useCurrentOrganization(): CurrentOrganization {
   const query = useMyOrganizations();
 
   const organizations = query.data ?? [];
-  const requested = searchParams.get('org');
+  // Sidebar và phần lớn liên kết trong app không mang `?org=`. Nếu chỉ tin vào URL thì mỗi lần
+  // bấm một mục menu là tổ chức rơi về cái đầu danh sách. Lựa chọn gần nhất được nhớ lại ở đây;
+  // URL vẫn thắng khi có, để một đường dẫn được chia sẻ mở đúng tổ chức của nó.
+  const remembered = useSyncExternalStore(subscribe, readRemembered, () => null);
+  const requested = searchParams.get('org') ?? remembered;
 
   const organization =
     organizations.find((item) => item.id === requested) ?? organizations[0] ?? null;
@@ -36,4 +41,31 @@ export function useCurrentOrganization(): CurrentOrganization {
     isPending: query.isPending,
     error: query.error,
   };
+}
+
+/*
+ * Lưu trong cookie chứ không phải localStorage: dự án cấm localStorage toàn cục (để access token
+ * không bao giờ lọt vào đó), và một ngoại lệ cho "chỉ là mã tổ chức" là kẽ hở đầu tiên của luật ấy.
+ * Cookie này chỉ mang một mã tổ chức — không phải bí mật, và server vẫn kiểm quyền ở mỗi request.
+ */
+const COOKIE = 'nt_admin_org';
+const ONE_YEAR_SECONDS = 31_536_000;
+const listeners = new Set<() => void>();
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+function readRemembered(): string | null {
+  const match = document.cookie.split('; ').find((item) => item.startsWith(`${COOKIE}=`));
+  return match ? decodeURIComponent(match.slice(COOKIE.length + 1)) : null;
+}
+
+/** Ghi nhớ tổ chức đang xem để việc chuyển trang không làm rơi lựa chọn. */
+export function rememberOrganization(organizationId: string) {
+  document.cookie = `${COOKIE}=${encodeURIComponent(organizationId)}; path=/; max-age=${ONE_YEAR_SECONDS}; samesite=lax`;
+  listeners.forEach((listener) => listener());
 }

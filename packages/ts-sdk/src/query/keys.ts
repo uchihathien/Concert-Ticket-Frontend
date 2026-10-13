@@ -100,6 +100,31 @@ export const queryKeys = {
     organizationSales: (organizationId: string) =>
       ['analytics', 'organizations', organizationId, 'sales'] as const,
   },
+  stats: {
+    // Bộ lọc nằm trong khoá: mỗi bộ lọc là một câu hỏi khác, không phải cùng một kết quả vừa cũ đi.
+    salesSummary: (organizationId: string, params: object, compare: boolean) =>
+      ['stats', organizationId, 'orders', 'summary', params, compare] as const,
+    salesSeries: (organizationId: string, params: object, bucket: string, compare: boolean) =>
+      ['stats', organizationId, 'orders', 'timeseries', params, bucket, compare] as const,
+    salesBreakdown: (organizationId: string, params: object) =>
+      ['stats', organizationId, 'orders', 'breakdown', params] as const,
+    salesHeatmap: (organizationId: string, params: object) =>
+      ['stats', organizationId, 'orders', 'heatmap', params] as const,
+    salesDistribution: (organizationId: string, params: object) =>
+      ['stats', organizationId, 'orders', 'distribution', params] as const,
+    orders: (organizationId: string, params: object) => ['stats', organizationId, 'orders', 'list', params] as const,
+    sessions: (organizationId: string) => ['stats', organizationId, 'catalog', 'sessions'] as const,
+    gateActivity: (organizationId: string, params: object) =>
+      ['stats', organizationId, 'checkins', 'activity', params] as const,
+    buyers: (organizationId: string, orderIds: string[]) =>
+      ['stats', organizationId, 'checkins', 'buyers', orderIds] as const,
+    customers: (organizationId: string, params: object) =>
+      ['stats', organizationId, 'orders', 'customers', params] as const,
+    noShows: (organizationId: string, sessionIds: string[]) =>
+      ['stats', organizationId, 'checkins', 'no-shows', sessionIds] as const,
+    inventoryStock: (organizationId: string) => ['stats', organizationId, 'inventory', 'stock'] as const,
+    gatePresence: (organizationId: string) => ['stats', organizationId, 'checkins', 'presence'] as const,
+  },
   ledger: {
     trialBalance: () => ['ledger', 'trial-balance'] as const,
     organizationBalance: (organizationId: string) =>
