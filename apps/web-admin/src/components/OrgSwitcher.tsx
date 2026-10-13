@@ -1,8 +1,8 @@
 'use client';
 
 import { Select } from '@nexaticket/ui';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useCurrentOrganization } from '@/lib/use-current-organization';
+import { usePathname, useRouter } from 'next/navigation';
+import { rememberOrganization, useCurrentOrganization } from '@/lib/use-current-organization';
 
 /**
  * Chọn tổ chức đang làm việc.
@@ -16,7 +16,6 @@ import { useCurrentOrganization } from '@/lib/use-current-organization';
 export function OrgSwitcher() {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { organization, organizations } = useCurrentOrganization();
 
   if (organizations.length < 2 || !organization) return null;
@@ -26,9 +25,10 @@ export function OrgSwitcher() {
       label="Tổ chức"
       value={organization.id}
       onChange={(event) => {
-        const next = new URLSearchParams(searchParams.toString());
-        next.set('org', event.target.value);
-        router.push(`${pathname}?${next.toString()}`);
+        rememberOrganization(event.target.value);
+        // Bộ lọc trên URL (sự kiện, suất, loại vé…) là của tổ chức cũ; mang chúng sang tổ chức mới
+        // chỉ cho ra một trang trống. Bỏ cả `org` khỏi URL: lựa chọn đã được ghi nhớ.
+        router.push(pathname);
       }}
       options={organizations.map((item) => ({ value: item.id, label: item.name }))}
     />
