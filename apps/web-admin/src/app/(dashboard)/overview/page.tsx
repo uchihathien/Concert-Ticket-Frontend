@@ -1,455 +1,372 @@
 'use client';
 
 import {
-  useEventMasterData,
+  useGatePresence,
+  useInventoryStock,
   useOrganizationDashboard,
-  type AdminEventRow,
-  type EventSales,
-  type OrganizationDashboard,
+  useSalesSeries,
+  useSalesSummary,
   type OrganizationSummary,
+  type SalesTotals,
 } from '@nexaticket/ts-sdk';
-import {
-  Badge,
-  BarChart,
-  Button,
-  EmptyState,
-  ErrorState,
-  EVENT_CATEGORY_FILTERS,
-  FilterBar,
-  Input,
-  PageHeader,
-  Pagination,
-  Panel,
-  Section,
-  Select,
-  Skeleton,
-  StatCard,
-  StatGrid,
-  Table,
-  eventCategoryLabel,
-  foldText,
-  formatDate,
-  formatNumber,
-  matchesText,
-  useDebouncedValue,
-} from '@nexaticket/ui';
-import { Banknote, CalendarDays, Ticket, TriangleAlert, Users } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { EventMasterPanel } from '@/components/EventMasterPanel';
+import { ErrorState, PageHeader, Panel, Section, Skeleton, formatDateTime, formatNumber } from '@nexaticket/ui';
+import { Banknote, CalendarClock, DoorOpen, Hourglass, Percent, ReceiptText, ShoppingCart, Ticket, Users } from 'lucide-react';
+import Link from 'next/link';
+import { Suspense, useMemo } from 'react';
 import { OrganizationGate } from '@/components/OrganizationGate';
-import styles from './overview.module.css';
-
-/** Đủ để quét, không đủ để phải cuộn hai lần. Khớp con số dùng ở trang Vé đã bán. */
-const PAGE_SIZE = 10;
+import { KpiCard } from '@/components/stats/KpiCard';
+import { RatioBars, type RatioRow } from '@/components/stats/SimpleCharts';
+import { StatsFilterBar } from '@/components/stats/StatsFilterBar';
+import { RevenueTrendChart } from '@/components/stats/lazy-charts';
+import { fillBars, sessionLabel, startOf } from '@/components/stats/session-helpers';
+import { useSessionDirectory } from '@/components/stats/useSessionDirectory';
+import { METRIC_HELP } from '@/lib/stats-definitions';
+import { useStatsFilters } from '@/lib/stats-filters';
+import { delta, formatDay, formatMoney, formatPercent, ratio } from '@/lib/stats-math';
+import { EventExplorer } from './event-explorer';
 
 /**
  * A-OVERVIEW — bảng điều khiển của ban tổ chức.
  *
- * <h3>Một hàng bộ lọc, một bảng chọn, một khối master data</h3>
+ * <h3>Hai loại con số, và trang nói rõ loại nào là loại nào</h3>
  *
- * Chọn một sự kiện là nạp **toàn bộ** master data của nó trong một request: chi tiết, khu vực,
- * trạng thái từng chỗ theo khu, hạng vé và giá, trần mua, số bán và doanh thu theo từng suất. Việc
- * ghép ba service nằm ở backend (`OrganizationDashboardQuery`) chứ không ở đây — bốn app frontend
- * tự ghép là bốn bản sao của cùng quy tắc, và bản lệch là bản ban tổ chức dùng để ra quyết định.
+ * - **Theo kỳ** (doanh thu, vé bán, đơn, tỉ lệ thanh toán): đổi theo khoảng thời gian đang chọn và có
+ *   mũi tên so với kỳ trước. Nguồn: ordering-service.
+ * - **Hiện tại** (lấp đầy, đang giữ chỗ, tỉ lệ đến): là trạng thái lúc mở trang. Chúng theo bộ lọc
+ *   sự kiện và suất, nhưng KHÔNG theo khoảng thời gian — "đang giữ chỗ tuần trước" không có nghĩa.
+ *   Nguồn: inventory-service và ticketing-service.
  *
- * <h3>Vì sao bảng chọn thay cho ô dropdown</h3>
- *
- * Bản trước dùng một `Select`. Nó đủ cho ba sự kiện và sai hẳn ở ba mươi: không tìm được theo tên,
- * không thấy được trạng thái hay ngày công bố trước khi chọn, và chọn sai thì phải mở lại danh sách
- * để đoán tiếp. Bảng có lọc và phân trang trả lời được "sự kiện nào đang có vấn đề" **trước** khi
- * người dùng phải chọn một cái.
- *
- * <h3>Bộ lọc chạy ở client, và đó là quyết định có giới hạn</h3>
- *
- * `useOrganizationDashboard` trả về **toàn bộ** sự kiện của tổ chức trong một payload, nên lọc và
- * phân trang ở đây chỉ là cắt một mảng đã có — không thêm request nào, và đổi bộ lọc là tức thì.
- * Đúng ở quy mô một ban tổ chức (hàng chục sự kiện). Khi nào một tổ chức có hàng nghìn sự kiện thì
- * phải đẩy cả ba thứ xuống backend; lúc đó `Pagination` ở đây đã nhận đúng hình dạng
- * `page`/`received`/`pageSize` mà một endpoint phân trang thật sẽ trả về.
- *
- * <h3>"0" và "chưa biết" không được trông giống nhau</h3>
- *
- * Backend trả 200 kèm `degraded` khi một service phía sau im lặng, thay vì 500 cho cả trang. Nên
- * `grossVnd: 0` có hai nghĩa: "chưa bán được đồng nào" và "không hỏi được doanh thu". Trang này
- * hiện "—" cho nghĩa thứ hai. Hiện "0đ" là báo sai cho ban tổ chức về chính tiền của họ.
+ * Trộn hai loại vào một hàng thẻ không nhãn là cách chắc chắn để ban tổ chức so một con số 7 ngày
+ * với một con số từ trước tới nay.
  */
 export default function OverviewPage() {
   return (
     <OrganizationGate title="Tổng quan">
-      {(organization) => <OverviewBody organization={organization} />}
+      {(organization) => (
+        <Suspense
+          fallback={
+            <>
+              <PageHeader title="Tổng quan" description={organization.name} />
+              <Panel>
+                <Skeleton lines={4} />
+              </Panel>
+            </>
+          }
+        >
+          <OverviewBody organization={organization} />
+        </Suspense>
+      )}
     </OrganizationGate>
   );
 }
 
+const MAX_SESSION_BARS = 8;
+
 function OverviewBody({ organization }: { organization: OrganizationSummary }) {
+  const { filters, resolved, update, reset, queryString } = useStatsFilters();
+
+  const summary = useSalesSummary(organization.id, resolved.params, resolved.compare);
+  const series = useSalesSeries(organization.id, resolved.params, resolved.bucket, resolved.compare);
+  const stock = useInventoryStock(organization.id);
+  const presence = useGatePresence(organization.id);
   const dashboard = useOrganizationDashboard(organization.id);
 
-  const [query, setQuery] = useState('');
-  const [status, setStatus] = useState('');
-  const [category, setCategory] = useState('all');
-  const [page, setPage] = useState(0);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-
-  // Gõ tới ký tự thứ ba rồi lọc: 350ms giống trang Vé đã bán, để hai màn hình phản ứng cùng một
-  // nhịp. Ở đây lọc không gọi mạng, nhưng nhịp trễ vẫn giữ cho bảng không nhảy theo từng phím.
-  const debouncedQuery = useDebouncedValue(query, 350);
-  const needle = foldText(debouncedQuery.trim());
-
-  const events = useMemo(() => dashboard.data?.events ?? [], [dashboard.data]);
-
-  const filtered = useMemo(
+  // Số liệu "hiện tại" về cả tổ chức trong một lượt; lọc theo sự kiện, suất, loại vé ở đây.
+  const stockRows = useMemo(
     () =>
-      events.filter((row) => {
-        if (status && row.status !== status) return false;
-        if (category !== 'all' && row.category !== category) return false;
-        // Tìm cả theo tên địa điểm: ban tổ chức nhớ "sự kiện ở Nhà hát Lớn" thường xuyên hơn nhớ
-        // đúng tên chương trình. `matchesText` bỏ dấu nên "nha hat lon" cũng khớp.
-        return matchesText(needle, [row.title, row.venueName, row.slug]);
+      (stock.data?.ticketTypes ?? []).filter(
+        (row) =>
+          (filters.eventIds.length === 0 || filters.eventIds.includes(row.eventId)) &&
+          (!filters.sessionId || row.eventSessionId === filters.sessionId) &&
+          (!filters.ticketTypeId || row.ticketTypeId === filters.ticketTypeId),
+      ),
+    [stock.data, filters.eventIds, filters.sessionId, filters.ticketTypeId],
+  );
+  const sessionEvent = useMemo(
+    () => new Map((stock.data?.ticketTypes ?? []).map((row) => [row.eventSessionId, row.eventId])),
+    [stock.data],
+  );
+  const inScope = useMemo(() => new Set(stockRows.map((row) => row.eventSessionId)), [stockRows]);
+
+  const directory = useSessionDirectory(organization.id);
+
+  const capacity = sum(stockRows, (row) => row.capacity - row.blocked);
+  const sold = sum(stockRows, (row) => row.sold);
+  const held = sum(stockRows, (row) => row.held);
+  const expiring = sum(
+    (stock.data?.expiringHolds ?? []).filter((row) => inScope.has(row.eventSessionId)),
+    (row) => row.seats,
+  );
+
+  // Hiện diện không mang mã sự kiện; nối qua suất của tồn kho. Loại vé không áp dụng ở đây.
+  const presenceRows = useMemo(
+    () =>
+      (presence.data?.sessions ?? []).filter((row) => {
+        const eventId = sessionEvent.get(row.eventSessionId);
+        return (
+          (filters.eventIds.length === 0 || (eventId !== undefined && filters.eventIds.includes(eventId))) &&
+          (!filters.sessionId || row.eventSessionId === filters.sessionId)
+        );
       }),
-    [events, status, category, needle],
+    [presence.data, sessionEvent, filters.eventIds, filters.sessionId],
   );
+  // Tỉ lệ đến chỉ tính trên những suất ĐÃ có người vào: gộp cả suất tháng sau vào mẫu số sẽ kéo tỉ
+  // lệ về gần 0 và không nói lên điều gì.
+  const opened = presenceRows.filter((row) => row.arrived > 0);
+  const arrived = sum(opened, (row) => row.arrived);
+  const issued = sum(opened, (row) => row.ticketsIssued);
 
-  const paged = useMemo(
-    () => filtered.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
-    [filtered, page],
-  );
+  const nextShow = useMemo(() => {
+    const now = Date.now();
+    const upcoming = (dashboard.data?.events ?? [])
+      .filter((event) => filters.eventIds.length === 0 || filters.eventIds.includes(event.id))
+      .flatMap((event) => (event.nextSessionAt && Date.parse(event.nextSessionAt) > now ? [event] : []))
+      .sort((a, b) => Date.parse(a.nextSessionAt as string) - Date.parse(b.nextSessionAt as string));
+    return upcoming[0] ?? null;
+  }, [dashboard.data, filters.eventIds]);
 
-  // Sự kiện đang xem: lựa chọn của người dùng nếu nó còn trong kết quả lọc, ngược lại là dòng đầu
-  // trang hiện tại. Giữ nguyên một lựa chọn đã bị bộ lọc cắt đi sẽ hiện master data của một sự kiện
-  // không còn nằm trong bảng bên trên — người đọc không có cách nào biết mình đang xem cái gì.
-  const activeEventId = paged.some((row) => row.id === selectedEventId)
-    ? selectedEventId
-    : (paged[0]?.id ?? null);
-  const masterData = useEventMasterData(organization.id, activeEventId);
+  const now = summary.data?.current ?? null;
+  const before = summary.data?.previous ?? null;
+  const loading = summary.isPending;
+  const empty = now !== null && now.ordersTotal === 0;
+  const compareLabel = summary.data?.previousPeriod
+    ? `so với ${formatDay(summary.data.previousPeriod.from)} – ${formatDay(summary.data.previousPeriod.to)}`
+    : undefined;
 
-  function changeFilter<T>(set: (value: T) => void) {
-    return (value: T) => {
-      set(value);
-      // Đổi bộ lọc luôn về trang 1: ở lại trang 4 của một kết quả chỉ còn hai dòng là một bảng
-      // trống, và người dùng đọc nó thành "không có gì khớp".
-      setPage(0);
-    };
-  }
-
-  if (dashboard.isPending) {
-    return (
-      <>
-        <PageHeader title="Tổng quan" description={organization.name} />
-        <Panel>
-          <Skeleton lines={4} />
-        </Panel>
-      </>
-    );
-  }
-
-  if (dashboard.isError) {
-    return (
-      <>
-        <PageHeader title="Tổng quan" description={organization.name} />
-        <ErrorState error={null} onRetry={() => void dashboard.refetch()} />
-      </>
-    );
-  }
-
-  const data = dashboard.data as OrganizationDashboard;
-  const salesDown = data.degraded.length > 0;
+  const fillRows = fillBars(stockRows, directory.sessions, MAX_SESSION_BARS);
+  const arrivalBars: RatioRow[] = [...opened]
+    .sort((a, b) => startOf(directory.sessions, b.eventSessionId) - startOf(directory.sessions, a.eventSessionId))
+    .slice(0, MAX_SESSION_BARS)
+    .map((row) => ({
+      key: row.eventSessionId,
+      ...sessionLabel(directory.sessions, row.eventSessionId),
+      part: row.arrived,
+      whole: row.ticketsIssued,
+    }));
 
   return (
     <>
       <PageHeader title="Tổng quan" description={organization.name} />
 
-      {salesDown ? <DegradedNotice services={data.degraded} /> : null}
+      <div className="grid gap-4">
+        <StatsFilterBar organizationId={organization.id} filters={filters} resolved={resolved} onChange={update} onReset={reset} />
 
-      <StatGrid>
-        <StatCard
-          label="Sự kiện"
-          value={data.totals.eventCount}
-          hint={`${data.totals.publishedCount} đang bán · ${data.totals.draftCount} nháp`}
-          icon={<CalendarDays size={16} aria-hidden="true" />}
-        />
-        <StatCard
-          label="Sức chứa đã khai"
-          value={data.totals.capacity}
-          hint="Gồm cả sự kiện còn nháp"
-          icon={<Users size={16} aria-hidden="true" />}
-        />
-        {/* `null` khi analytics im lặng: StatCard vẽ khối chờ thay vì con số 0 sai sự thật. */}
-        <StatCard
-          label="Vé đã bán"
-          value={salesDown ? null : data.totals.ticketsSold}
-          hint={salesDown ? 'Chưa hỏi được' : 'Toàn tổ chức'}
-          icon={<Ticket size={16} aria-hidden="true" />}
-        />
-        <StatCard
-          label="Doanh thu"
-          value={salesDown ? null : data.totals.grossVnd}
-          hint={salesDown ? 'Chưa hỏi được' : 'Tổng khách trả'}
-          icon={<Banknote size={16} aria-hidden="true" />}
-        />
-      </StatGrid>
-
-      {events.length === 0 ? (
-        <EmptyState
-          title="Chưa có sự kiện nào"
-          description="Dựng sự kiện đầu tiên ở mục Sự kiện, hoặc chọn một khung concert của Tổng công ty."
-        />
-      ) : (
-        <>
-          {/*
-            MỘT hàng bộ lọc, đặt trên mọi thứ nó chi phối. Bộ lọc nằm trong từng thẻ sẽ khiến hai
-            khối cạnh nhau hiển thị hai lát dữ liệu khác nhau mà không có gì nói ra điều đó.
-          */}
-          <FilterBar
-            count={`${formatNumber(filtered.length)}/${formatNumber(events.length)} sự kiện khớp bộ lọc`}
-            actions={
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setQuery('');
-                  setStatus('');
-                  setCategory('all');
-                  setPage(0);
-                }}
-              >
-                Xoá bộ lọc
-              </Button>
-            }
+        {summary.isError ? (
+          <ErrorState error={null} onRetry={() => void summary.refetch()} />
+        ) : (
+          <Section
+            title="Trong kỳ"
+            description={`${formatDay(resolved.params.from)} – ${formatDay(resolved.params.to)}. Đơn được tính theo thời điểm đặt.`}
           >
-            <Input
-              label="Tìm kiếm"
-              placeholder="Tên sự kiện hoặc địa điểm"
-              value={query}
-              onChange={(event) => changeFilter(setQuery)(event.target.value)}
-            />
-            <Select
-              label="Trạng thái"
-              value={status}
-              onChange={(event) => changeFilter(setStatus)(event.target.value)}
-              options={[
-                { value: '', label: 'Mọi trạng thái' },
-                { value: 'PUBLISHED', label: 'Đang bán' },
-                { value: 'DRAFT', label: 'Nháp' },
-                { value: 'UNPUBLISHED', label: 'Đã rút xuống' },
-                { value: 'CANCELLED', label: 'Đã huỷ' },
-              ]}
-            />
-            <Select
-              label="Phân loại"
-              value={category}
-              onChange={(event) => changeFilter(setCategory)(event.target.value)}
-              options={EVENT_CATEGORY_FILTERS.map((item) => ({
-                value: item.value,
-                label: item.label,
-              }))}
-            />
-          </FilterBar>
+            {empty ? (
+              <p className="m-0 mb-3 rounded-nt border border-dashed border-border px-3 py-2 text-[13px] text-muted">
+                Chưa có dữ liệu: không có đơn hàng nào được tạo trong khoảng thời gian và bộ lọc này.
+              </p>
+            ) : null}
+            <div className={`grid gap-4 sm:grid-cols-2 xl:grid-cols-3 ${summary.isPlaceholderData ? 'opacity-60' : ''}`}>
+              <KpiCard
+                label="Doanh thu"
+                help={METRIC_HELP.revenue}
+                loading={loading}
+                value={empty || !now ? null : formatMoney(now.grossVnd)}
+                delta={empty ? null : delta(now?.grossVnd ?? null, before?.grossVnd)}
+                deltaLabel={compareLabel}
+                icon={<Banknote />}
+              />
+              <KpiCard
+                label="Vé đã bán"
+                help={METRIC_HELP.ticketsSold}
+                loading={loading}
+                value={empty || !now ? null : formatNumber(now.ticketsSold)}
+                delta={empty ? null : delta(now?.ticketsSold ?? null, before?.ticketsSold)}
+                deltaLabel={compareLabel}
+                icon={<Ticket />}
+              />
+              <KpiCard
+                label="Số đơn"
+                help={METRIC_HELP.orders}
+                loading={loading}
+                value={empty || !now ? null : formatNumber(now.ordersTotal)}
+                delta={empty ? null : delta(now?.ordersTotal ?? null, before?.ordersTotal)}
+                deltaLabel={compareLabel}
+                hint={now && !empty ? `${formatNumber(now.ordersPaid)} đã thanh toán` : undefined}
+                icon={<ReceiptText />}
+              />
+              <KpiCard
+                label="Giá trị đơn trung bình"
+                help={METRIC_HELP.averageOrderValue}
+                loading={loading}
+                value={perPaidOrder(now, 'grossVnd', formatMoney)}
+                delta={delta(perPaid(now, 'grossVnd'), perPaid(before, 'grossVnd'))}
+                deltaLabel={compareLabel}
+                icon={<ShoppingCart />}
+              />
+              <KpiCard
+                label="Số vé mỗi đơn"
+                help={METRIC_HELP.ticketsPerOrder}
+                loading={loading}
+                value={perPaidOrder(now, 'ticketsSold', (value) => value.toLocaleString('vi-VN', { maximumFractionDigits: 2 }))}
+                delta={delta(perPaid(now, 'ticketsSold'), perPaid(before, 'ticketsSold'))}
+                deltaLabel={compareLabel}
+                icon={<Ticket />}
+              />
+              <KpiCard
+                label="Tỉ lệ thanh toán"
+                help={METRIC_HELP.paymentRate}
+                loading={loading}
+                value={now && now.ordersTotal > 0 ? formatPercent(ratio(now.ordersPaid, now.ordersTotal), 1) : null}
+                delta={delta(paymentRate(now), paymentRate(before))}
+                deltaLabel={compareLabel}
+                icon={<Percent />}
+              />
+            </div>
+          </Section>
+        )}
 
-          {/*
-            Biểu đồ đặt DƯỚI hàng bộ lọc và TRÊN bảng: nó vẽ đúng lát dữ liệu mà bộ lọc vừa cắt, nên
-            nó phải nằm trong cùng dòng đọc ấy. Đặt nó trong một thẻ có bộ lọc riêng sẽ cho hai khối
-            cạnh nhau hiển thị hai lát khác nhau mà không có gì nói ra điều đó.
-          */}
-          <Panel>
-            <TopEventsChart rows={filtered} sales={data.eventSales} down={salesDown} />
-          </Panel>
-
-          <div>
-            <Table<AdminEventRow>
-              caption="Sự kiện của tổ chức"
-              rows={paged}
-              rowKey={(row) => row.id}
-              emptyTitle="Không có sự kiện nào khớp bộ lọc"
-              emptyDescription="Thử xoá bộ lọc, hoặc tìm bằng tên địa điểm."
-              onRowClick={(row) => setSelectedEventId(row.id)}
-              columns={[
-                {
-                  key: 'title',
-                  header: 'Sự kiện',
-                  cell: (row) => (
-                    <span className={row.id === activeEventId ? styles.activeRow : undefined}>
-                      {row.title}
-                    </span>
-                  ),
-                },
-                { key: 'venue', header: 'Địa điểm', cell: (row) => row.venueName ?? '—' },
-                {
-                  key: 'category',
-                  header: 'Phân loại',
-                  cell: (row) => eventCategoryLabel(row.category),
-                },
-                {
-                  key: 'status',
-                  header: 'Trạng thái',
-                  cell: (row) => <EventStatusBadge status={row.status} />,
-                },
-                {
-                  key: 'published',
-                  header: 'Công bố',
-                  cell: (row) => (row.publishedAt ? formatDate(row.publishedAt) : '—'),
-                },
-                {
-                  key: 'pick',
-                  header: '',
-                  cell: (row) => (
-                    // `<tr>` không nhận focus bàn phím, nên mỗi dòng vẫn phải có một nút thật —
-                    // bấm cả dòng chỉ là tiện ích cho chuột.
-                    <Button
-                      variant="ghost"
-                      aria-label={`Xem số liệu của ${row.title}`}
-                      onClick={() => setSelectedEventId(row.id)}
-                    >
-                      {row.id === activeEventId ? 'Đang xem' : 'Xem'}
-                    </Button>
-                  ),
-                },
-              ]}
+        <Section
+          title="Hiện tại"
+          description="Trạng thái lúc mở trang, theo sự kiện và suất đang chọn. Không phụ thuộc khoảng thời gian."
+        >
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <KpiCard
+              label="Lấp đầy"
+              help={METRIC_HELP.occupancy}
+              loading={stock.isPending}
+              value={stock.isError || capacity === 0 ? null : `${formatNumber(sold)} / ${formatNumber(capacity)}`}
+              progress={stock.isError ? undefined : ratio(sold, capacity)}
+              hint={
+                stock.isError
+                  ? 'Chưa hỏi được tồn kho'
+                  : capacity === 0
+                    ? 'Chưa có suất nào mở bán'
+                    : `${formatPercent(ratio(sold, capacity), 1)} số chỗ đã bán`
+              }
+              icon={<Users />}
             />
-            <Pagination
-              page={page}
-              received={paged.length}
-              pageSize={PAGE_SIZE}
-              onChange={setPage}
+            <KpiCard
+              label="Đang giữ chỗ"
+              help={METRIC_HELP.held}
+              loading={stock.isPending}
+              value={stock.isError ? null : formatNumber(held)}
+              hint={
+                stock.isError
+                  ? 'Chưa hỏi được tồn kho'
+                  : `${formatNumber(expiring)} chỗ hết hạn trong ${stock.data?.expiringWithinMinutes ?? 5} phút tới`
+              }
+              icon={<Hourglass />}
+            />
+            <KpiCard
+              label="Tỉ lệ đến"
+              help={METRIC_HELP.arrivalRate}
+              loading={presence.isPending}
+              value={presence.isError || issued === 0 ? null : formatPercent(ratio(arrived, issued), 1)}
+              hint={
+                presence.isError
+                  ? 'Chưa hỏi được số liệu soát vé'
+                  : issued === 0
+                    ? 'Chưa có suất nào mở cổng'
+                    : `${formatNumber(arrived)}/${formatNumber(issued)} vé · ${formatNumber(opened.length)} suất đã mở cổng`
+              }
+              icon={<DoorOpen />}
+            />
+            <KpiCard
+              label="Suất diễn gần nhất"
+              help={METRIC_HELP.daysToShow}
+              loading={dashboard.isPending}
+              value={nextShow ? daysUntil(nextShow.nextSessionAt as string) : null}
+              hint={
+                nextShow
+                  ? `${nextShow.title} · ${formatDateTime(nextShow.nextSessionAt as string)}`
+                  : 'Không có suất nào sắp diễn'
+              }
+              icon={<CalendarClock />}
             />
           </div>
+        </Section>
 
-          {activeEventId === null ? null : (
-            <Section
-              title="Master data của sự kiện"
-              description="Toàn bộ số liệu và cấu hình của sự kiện đang chọn."
-            >
-              <EventMaster
-                query={masterData}
-                organization={organization}
-                onRetry={() => void masterData.refetch()}
-              />
-            </Section>
+        <Panel>
+          <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="m-0 text-[15px] font-semibold">
+              Doanh thu theo {BUCKET_NAME[resolved.bucket]}
+              {resolved.compare ? <span className="font-normal text-muted"> · nét đứt là kỳ trước</span> : null}
+            </h2>
+            <Link href={queryString ? `/sales?${queryString}` : '/sales'} className="text-[13px] font-semibold text-primary-text">
+              Xem chi tiết doanh thu →
+            </Link>
+          </div>
+          {series.isError ? (
+            <ErrorState error={null} onRetry={() => void series.refetch()} />
+          ) : series.isPending ? (
+            <Skeleton lines={6} />
+          ) : empty ? (
+            <p className="m-0 py-8 text-center text-[13px] text-muted">Chưa có dữ liệu trong khoảng thời gian này.</p>
+          ) : (
+            <div className={series.isPlaceholderData ? 'opacity-60' : undefined}>
+              <RevenueTrendChart points={series.data.current} previous={series.data.previous} bucket={series.data.bucket} height={260} />
+            </div>
           )}
-        </>
-      )}
+        </Panel>
+
+        <div className="grid gap-4 xl:grid-cols-2">
+          <Panel>
+            {stock.isPending ? (
+              <Skeleton lines={6} />
+            ) : fillRows.length === 0 ? (
+              <ChartEmpty title="Lấp đầy từng suất" text="Chưa có suất nào mở bán trong phạm vi bộ lọc." />
+            ) : (
+              <RatioBars caption={captionOf('Lấp đầy từng suất', fillRows.length, inScope.size, 'sắp diễn')} rows={fillRows} unit="chỗ" />
+            )}
+          </Panel>
+          <Panel>
+            {presence.isPending ? (
+              <Skeleton lines={6} />
+            ) : arrivalBars.length === 0 ? (
+              <ChartEmpty title="Tỉ lệ đến theo suất" text="Chưa có suất nào mở cổng soát vé trong phạm vi bộ lọc." />
+            ) : (
+              <RatioBars caption={captionOf('Tỉ lệ đến theo suất', arrivalBars.length, opened.length, 'gần nhất')} rows={arrivalBars} unit="vé" />
+            )}
+          </Panel>
+        </div>
+
+        <EventExplorer organization={organization} />
+      </div>
     </>
   );
 }
 
-function EventStatusBadge({ status }: { status: AdminEventRow['status'] }) {
-  if (status === 'PUBLISHED') return <Badge tone="success">Đang bán</Badge>;
-  if (status === 'CANCELLED') return <Badge tone="danger">Đã huỷ</Badge>;
-  if (status === 'UNPUBLISHED') return <Badge tone="warn">Đã rút xuống</Badge>;
-  return <Badge tone="neutral">Nháp</Badge>;
+const BUCKET_NAME = { hour: 'giờ', day: 'ngày', week: 'tuần' } as const;
+
+function sum<T>(rows: T[], pick: (row: T) => number): number {
+  return rows.reduce((total, row) => total + pick(row), 0);
 }
 
-/**
- * Nói rõ service nào im lặng, không nói chung chung "có lỗi".
- *
- * Ban tổ chức không sửa được sự cố, nhưng họ cần biết con số nào đang thiếu để không ra quyết định
- * dựa vào nó — và để nói đúng chuyện khi gọi hỗ trợ.
- */
-function DegradedNotice({ services }: { services: string[] }) {
-  return (
-    <Panel className={styles.degraded}>
-      <TriangleAlert size={18} aria-hidden="true" />
-      <div>
-        <p className={styles.degradedTitle}>Một phần số liệu chưa hỏi được</p>
-        <p className={styles.degradedBody}>
-          Không kết nối được: {services.join(', ')}. Những ô hiện dấu “—” chưa có số, không phải
-          bằng 0.
-        </p>
-      </div>
-    </Panel>
-  );
+function perPaid(totals: SalesTotals | null, key: 'grossVnd' | 'ticketsSold'): number | null {
+  return totals && totals.ordersPaid > 0 ? totals[key] / totals.ordersPaid : null;
 }
 
-/**
- * Giữ bản dựng cũ trong lúc bản mới đang về.
- *
- * `useEventMasterData` bật `keepPreviousData`, nên `isPending` chỉ đúng ở lần nạp ĐẦU TIÊN. Đổi sự
- * kiện thì `data` vẫn là của sự kiện trước và `isFetching` bật — hiện khung xương lúc đó là một cú
- * nháy cả màn hình và bảng bên trên nhảy chỗ ngay dưới con trỏ.
- */
-function EventMaster({
-  query,
-  organization,
-  onRetry,
-}: {
-  query: ReturnType<typeof useEventMasterData>;
-  organization: OrganizationSummary;
-  onRetry: () => void;
-}) {
-  if (query.isPending) {
-    return <Skeleton lines={6} />;
-  }
-  if (query.isError) {
-    return <ErrorState error={null} onRetry={onRetry} />;
-  }
-
-  return (
-    <div className={query.isFetching ? styles.stale : undefined}>
-      <EventMasterPanel data={query.data} organization={organization} />
-    </div>
-  );
+function perPaidOrder(totals: SalesTotals | null, key: 'grossVnd' | 'ticketsSold', format: (value: number) => string) {
+  const value = perPaid(totals, key);
+  return value === null ? null : format(value);
 }
 
-/**
- * Doanh thu theo sự kiện, trong phạm vi bộ lọc hiện tại.
- *
- * <h3>Chỉ vẽ tám sự kiện dẫn đầu</h3>
- *
- * Một tổ chức có ba mươi sự kiện thì ba mươi thanh không còn là biểu đồ — nó là một bảng vẽ bằng
- * hình. Tám dòng là số đọc được trong một lần nhìn, và phần còn lại vẫn đọc được đầy đủ ở bảng ngay
- * bên dưới. Đây là lý do "gộp phần đuôi lại" tồn tại: biểu đồ trả lời "ai dẫn đầu", bảng trả lời
- * "còn những ai".
- *
- * <h3>Không xếp theo doanh thu thì biểu đồ này vô nghĩa</h3>
- *
- * Bảng bên dưới giữ thứ tự của backend (theo ngày tạo) vì đó là thứ tự người dùng mong đợi khi rà
- * soát. Biểu đồ thì xếp giảm dần: một biểu đồ thanh không xếp hạng buộc người đọc tự tìm thanh dài
- * nhất bằng mắt, đúng việc mà xếp hạng làm hộ họ.
- */
-function TopEventsChart({
-  rows,
-  sales,
-  down,
-}: {
-  rows: AdminEventRow[];
-  sales: EventSales[];
-  down: boolean;
-}) {
-  const top = useMemo(() => {
-    // Nối theo id ở client: backend trả số bán thành một danh sách rời để `AdminEventRow` không
-    // phải mang hai cột mà chỉ màn hình này cần. Sự kiện không có mặt trong `sales` là sự kiện chưa
-    // bán được vé nào — nó rơi khỏi biểu đồ, và vẫn còn nguyên ở bảng bên dưới.
-    const byEvent = new Map(sales.map((item) => [item.eventId, item]));
-    return rows
-      .flatMap((row) => {
-        const sold = byEvent.get(row.id);
-        return sold && sold.grossVnd > 0 ? [{ row, sold }] : [];
-      })
-      .sort((a, b) => b.sold.grossVnd - a.sold.grossVnd)
-      .slice(0, 8);
-  }, [rows, sales]);
+function paymentRate(totals: SalesTotals | null): number | null {
+  return totals && totals.ordersTotal > 0 ? totals.ordersPaid / totals.ordersTotal : null;
+}
 
-  if (down) {
-    return <p className={styles.chartEmpty}>Chưa hỏi được doanh thu từ analytics.</p>;
-  }
-  if (top.length === 0) {
-    return (
-      <p className={styles.chartEmpty}>Chưa có sự kiện nào bán được vé trong phạm vi bộ lọc này.</p>
-    );
-  }
+function daysUntil(iso: string): string {
+  const days = Math.ceil((Date.parse(iso) - Date.now()) / 86_400_000);
+  return days <= 1 ? 'Trong 24 giờ tới' : `Còn ${days} ngày`;
+}
 
+function captionOf(title: string, shown: number, total: number, order: string): string {
+  return total > shown ? `${title} · ${shown} suất ${order}` : title;
+}
+
+function ChartEmpty({ title, text }: { title: string; text: string }) {
   return (
-    <BarChart
-      caption={
-        rows.length > top.length
-          ? `Doanh thu theo sự kiện · ${top.length} sự kiện dẫn đầu`
-          : 'Doanh thu theo sự kiện'
-      }
-      rows={top.map(({ row, sold }) => ({
-        key: row.id,
-        label: row.title,
-        value: sold.grossVnd,
-        hint: `${formatNumber(sold.ticketsSold)} vé đã bán`,
-      }))}
-      format={(value) => `${formatNumber(value)}đ`}
-    />
+    <>
+      <h2 className="m-0 mb-3 text-[14px] font-semibold">{title}</h2>
+      <p className="m-0 py-8 text-center text-[13px] text-muted">{text}</p>
+    </>
   );
 }

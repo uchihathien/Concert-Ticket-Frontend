@@ -28,6 +28,11 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   PURCHASE_LIMITS_CHANGED: 'Đổi trần mua vé',
   USER_DISABLED: 'Vô hiệu hoá tài khoản',
   USER_ENABLED: 'Khôi phục tài khoản',
+  STAFF_INVITED: 'Mời nhân viên soát vé',
+  STAFF_INVITATION_RESENT: 'Gửi lại thư mời nhân viên',
+  STAFF_INVITATION_CANCELLED: 'Huỷ lời mời nhân viên',
+  STAFF_EVENTS_CHANGED: 'Đổi sự kiện được gán',
+  BUYER_LIST_EXPORTED: 'Xuất danh sách người mua',
 };
 
 export function auditActionLabel(action: string): string {

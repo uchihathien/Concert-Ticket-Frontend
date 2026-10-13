@@ -33,6 +33,7 @@ import {
 import { CalendarCheck, MailX, Send, UserMinus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { OrganizationGate } from '@/components/OrganizationGate';
+import { StaffHistory } from './staff-history';
 
 const STATUS: Record<StaffStatus, { label: string; tone: 'success' | 'warn' | 'danger' }> = {
   ACTIVE: { label: 'Đã kích hoạt', tone: 'success' },
@@ -386,6 +387,8 @@ function StaffContent({ organization }: { organization: OrganizationSummary }) {
       >
         <p className="m-0">{confirm?.body}</p>
       </Modal>
+
+      {canManage ? <StaffHistory organizationId={organizationId} staff={staff.data ?? []} /> : null}
     </>
   );
 }
