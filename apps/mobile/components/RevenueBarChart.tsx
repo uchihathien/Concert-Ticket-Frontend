@@ -15,7 +15,7 @@ export interface EventRevenue {
 /** Số thanh tối đa; phần còn lại gộp thành "Khác" thay vì kéo dài biểu đồ. */
 const MAX_BARS = 6;
 
-/*
+/*  
  * Màu thanh: xanh chanh TRẦM, cùng họ với màu nhấn #D5FF66 của app.
  *
  * #D5FF66 không qua được kiểm tra dải độ sáng cho nền tối (OKLCH L 0.94, dải cho phép 0.48–0.67):

@@ -3,7 +3,9 @@ import {
   getMyOrganizations,
   getMyPermissions,
   listCheckinSessions,
+  listMyShifts,
   type CheckinSession,
+  type MyShift,
 } from '@nexaticket/ts-sdk';
 import { api } from './api';
 
@@ -22,6 +24,8 @@ export interface ScannerContext {
    * phải người quản lý sự kiện của tổ chức.
    */
   assignedOnly: boolean;
+  /** Tổ chức mà tài khoản được soát vé — kể cả khi chưa có suất nào. */
+  organizations: { id: string; name: string }[];
 }
 
 /**
@@ -62,6 +66,7 @@ export async function loadScannerContext(): Promise<ScannerContext> {
       .filter((organization) => permissions.organizations[organization.id]?.includes('CATALOG_MANAGE'))
       .map((organization) => organization.id),
     assignedOnly,
+    organizations: permitted.map((organization) => ({ id: organization.id, name: organization.name })),
   };
 }
 
@@ -106,5 +111,47 @@ export function scanParams(session: ScannerSession) {
     eventTitle: session.eventTitle,
     venueName: session.venueName,
     startsAt: session.startsAt,
+  };
+}
+
+/** Ca của tôi, gộp mọi tổ chức, kèm tên tổ chức để hiện. */
+export interface MyShiftItem extends MyShift {
+  organizationName: string;
+}
+
+export interface MyShiftsContext {
+  shifts: MyShiftItem[];
+  /** Người quản lý sự kiện: không bị ràng buộc ca, soát được mọi suất. */
+  manager: boolean;
+  /** Có ít nhất một tổ chức cho soát vé (không có thì màn này còn là nơi nhận lời mời). */
+  hasScannerOrganization: boolean;
+  scanner: ScannerContext;
+}
+
+export async function loadMyShifts(): Promise<MyShiftsContext> {
+  const scanner = await loadScannerContext();
+  const lists = await Promise.all(
+    scanner.organizations.map(async (organization) =>
+      (await listMyShifts(api, organization.id)).map((shift) => ({ ...shift, organizationName: organization.name })),
+    ),
+  );
+  return {
+    shifts: lists.flat().sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
+    manager: !scanner.assignedOnly && scanner.organizations.length > 0,
+    hasScannerOrganization: scanner.organizations.length > 0,
+    scanner,
+  };
+}
+
+/** Tham số mở máy quét cho một ca đã bắt đầu: cổng cố định theo ca. */
+export function shiftScanParams(shift: MyShiftItem) {
+  return {
+    eventSessionId: shift.eventSessionId,
+    organizationId: shift.organizationId,
+    eventTitle: shift.eventTitle ?? '',
+    startsAt: shift.sessionStartsAt ?? shift.startsAt,
+    shiftId: shift.id,
+    gateName: shift.gateName,
+    shiftEndsAt: shift.endsAt,
   };
 }

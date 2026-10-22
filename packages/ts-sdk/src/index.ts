@@ -41,6 +41,12 @@ export {
   cancelStaffInvitation,
   changeMemberRole,
   createOrganization,
+  createStaffAccount,
+  extendStaffAccount,
+  getStaffAccountStatus,
+  lockStaffAccount,
+  resetStaffPin,
+  unlockStaffAccount,
   getAuditLogs,
   getMembers,
   getMyOrganizations,
@@ -111,13 +117,29 @@ export {
   saveEventRules,
 } from './api/support';
 export {
+  admitByLookup,
+  createCheckinGate,
+  createShift,
+  deleteCheckinGate,
+  deleteShift,
+  endShift,
+  getCheckinBundle,
   getCheckinHistory,
+  listCheckinConflicts,
+  lookupTickets,
+  syncOfflineScans,
+  listCheckinGates,
   listCheckinSessions,
+  listEventShifts,
+  listMyShifts,
   listMyTickets,
   listOrderTickets,
+  renameCheckinGate,
   scanAtGate,
   scanTicket,
   scanTicketForOrganization,
+  startShift,
+  updateShift,
 } from './api/ticketing';
 export { cancelOrder, getOrder, listMyOrders, placeOrder } from './api/ordering';
 export { fetchOrganizationSales } from './api/analytics';
@@ -145,6 +167,11 @@ export {
   useAcceptInvitation,
   useAuditLogs,
   useCancelStaffInvitation,
+  useCreateStaffAccount,
+  useExtendStaffAccount,
+  useLockStaffAccount,
+  useResetStaffPin,
+  useUnlockStaffAccount,
   useChangeMemberRole,
   useCreateOrganization,
   useGrantMember,
@@ -214,7 +241,18 @@ export {
   useResolveHandoff,
   useSaveEventRules,
 } from './hooks/support';
-export { useMyTickets, useOrderTickets, useScanTicket } from './hooks/ticketing';
+export {
+  useCheckinGates,
+  useCreateCheckinGate,
+  useDeleteCheckinGate,
+  useDeleteShift,
+  useEventShifts,
+  useMyTickets,
+  useOrderTickets,
+  useRenameCheckinGate,
+  useSaveShift,
+  useScanTicket,
+} from './hooks/ticketing';
 export { useCancelOrder, useMyOrders, useOrder } from './hooks/ordering';
 export { useOrganizationSales } from './hooks/analytics';
 export {

@@ -68,3 +68,25 @@
   --font-sans: var(--nt-font);
   --font-mono: var(--nt-font-mono);
 }
+
+/*
+ * In phiếu nhân viên (trang Nhân sự): chỉ phần `.print-only-area` ra giấy. Dùng `visibility` chứ
+ * không `display: none` vì phiếu nằm trong hộp thoại dựng bằng portal — ẩn tổ tiên bằng display là
+ * ẩn luôn nó.
+ */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-only-area,
+  .print-only-area * {
+    visibility: visible;
+  }
+  .print-only-area {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    color: #000;
+    background: #fff;
+  }
+}

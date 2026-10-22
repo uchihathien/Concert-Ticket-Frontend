@@ -1,5 +1,6 @@
 import {
   ApiError,
+  endShift,
   getCheckinHistory,
   scanAtGate,
   type GateScanRequest,
@@ -8,18 +9,20 @@ import {
 } from '@nexaticket/ts-sdk';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import * as SecureStore from 'expo-secure-store';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PromptSheet } from '@/components/PromptSheet';
 import { SwitchRoleButton } from '@/components/SwitchRoleButton';
 import { api } from '@/lib/api';
 import { useMobileAuth } from '@/lib/auth-context';
 import { TONE_COLORS, formatClock, formatSessionDate, verdictOf, vibrateFor } from '@/lib/scan-verdicts';
+import { isNetworkFailure, useOnline } from '@/lib/offline/network';
+import { clearOfflineData, deviceId, downloadBundle, hasBundle, pendingCount, scanOffline, syncQueue } from '@/lib/offline/store';
 import { canSwitchSession, loadScannerContext, pickSession, type ScannerSession } from '@/lib/scanner-sessions';
 
-const gateKey = 'nexaticket.mobile.scanner-gate';
+/** Tải bù dữ liệu vé và gửi hàng đợi định kỳ khi có mạng. */
+const REFRESH_MS = 45_000;
 
 /**
  * Cùng một mã lọt vào khung hình hàng chục lần mỗi giây. Trong khoảng này mã vừa quét bị bỏ qua, để
@@ -27,7 +30,7 @@ const gateKey = 'nexaticket.mobile.scanner-gate';
  */
 const REPEAT_GUARD_MS = 4000;
 
-type Sheet = 'code' | 'override' | 'gate' | null;
+type Sheet = 'code' | 'override' | null;
 
 export default function ScanScreen() {
   const params = useLocalSearchParams<{
@@ -36,6 +39,10 @@ export default function ScanScreen() {
     eventTitle?: string;
     venueName?: string;
     startsAt?: string;
+    /** Có khi mở từ "Ca của tôi": cổng cố định theo ca, và có nút KẾT THÚC CA. */
+    shiftId?: string;
+    gateName?: string;
+    shiftEndsAt?: string;
   }>();
   // Suất tự chọn khi màn này được mở mà không kèm suất nào (vào thẳng sau đăng nhập, app nạp lại).
   // Nhân viên đã được gán sự kiện thì không phải quay lại chọn: máy quét tự tìm suất của họ.
@@ -47,11 +54,21 @@ export default function ScanScreen() {
   const venueName = firstParam(params.venueName) || autoSession?.venueName || '';
   const startsAt = firstParam(params.startsAt) || autoSession?.startsAt || '';
   const hasSessionParam = Boolean(firstParam(params.eventSessionId));
+  const shiftId = firstParam(params.shiftId);
+  // Cổng do CA quyết định (server cũng ghi đúng cổng của ca, bất kể máy gửi gì). Người quản lý soát
+  // không theo ca thì không có cổng.
+  const gate = firstParam(params.gateName);
+  const [ending, setEnding] = useState(false);
+  const online = useOnline();
+  /** Kết quả đang hiện do MÁY quyết định (lúc mất mạng), chưa qua server. */
+  const [decidedOffline, setDecidedOffline] = useState(false);
+  const [pending, setPending] = useState(() => pendingCount(firstParam(params.eventSessionId)));
+  const [offlineReady, setOfflineReady] = useState(() => hasBundle(firstParam(params.eventSessionId)));
+  const syncing = useRef(false);
   const { signedIn, signOut } = useMobileAuth();
   const [permission, requestPermission] = useCameraPermissions();
 
   const [direction, setDirection] = useState<ScanDirection>('IN');
-  const [gate, setGate] = useState('');
   const [result, setResult] = useState<GateScanResponse | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -86,6 +103,49 @@ export default function ScanScreen() {
     }, [refreshCounts]),
   );
 
+  /**
+   * Gửi hàng đợi offline lên server, rồi tải bù phần vé đổi. Có xung đột thì báo ngay cho nhân viên —
+   * đó là khách đã được cho vào mà server không đồng ý.
+   */
+  const syncNow = useCallback(async () => {
+    if (!organizationId || !eventSessionId || syncing.current) return;
+    syncing.current = true;
+    try {
+      const synced = await syncQueue(organizationId, eventSessionId);
+      await downloadBundle(organizationId, eventSessionId, firstParam(params.shiftEndsAt) || null);
+      setOfflineReady(true);
+      if (synced && synced.conflicts > 0) {
+        const lines = synced.scans
+          .filter((scan) => scan.conflict)
+          .slice(0, 8)
+          .map((scan) => `• ${scan.ticketCode ?? '—'} ${scan.holderName ?? ''} — ${scan.result}`)
+          .join('\n');
+        Alert.alert(
+          `${synced.conflicts} lượt xung đột`,
+          `Những vé này máy đã cho vào lúc mất mạng nhưng máy chủ không đồng ý (vé đã vào ở máy khác, hoặc bị huỷ):\n\n${lines}\n\nBáo trưởng ca để kiểm tra.`,
+        );
+      }
+      if (synced) refreshCounts();
+    } catch {
+      // Mất mạng giữa chừng: phần chưa gửi còn trong hàng đợi, lần sau gửi tiếp.
+    } finally {
+      syncing.current = false;
+      setPending(pendingCount(eventSessionId));
+    }
+  }, [organizationId, eventSessionId, params.shiftEndsAt, refreshCounts]);
+
+  // Có mạng (kể cả lúc vừa mở máy quét, và lúc vừa có mạng lại): gửi hàng đợi + tải bù ngay, rồi
+  // định kỳ. Lần đầu cũng là lúc tải gói dữ liệu của suất về máy để soát được khi mất mạng.
+  useEffect(() => {
+    if (!online) return;
+    const now = setTimeout(() => void syncNow(), 0);
+    const timer = setInterval(() => void syncNow(), REFRESH_MS);
+    return () => {
+      clearTimeout(now);
+      clearInterval(timer);
+    };
+  }, [online, syncNow]);
+
   useEffect(() => {
     let active = true;
     loadScannerContext()
@@ -98,9 +158,6 @@ export default function ScanScreen() {
       })
       .catch(() => undefined)
       .finally(() => { if (active) setResolving(false); });
-    if (Platform.OS !== 'web') {
-      void SecureStore.getItemAsync(gateKey).then((stored) => { if (active && stored) setGate(stored); });
-    }
     return () => { active = false; };
   }, [hasSessionParam]);
 
@@ -113,28 +170,61 @@ export default function ScanScreen() {
     busyRef.current = true;
     setBusy(true);
     setFailure(null);
+    const decideHere = async () => {
+      // Mất mạng: máy tự quyết định trên dữ liệu đã tải, xếp lượt quét vào hàng đợi.
+      const response = await scanOffline({
+        organizationId,
+        sessionId: eventSessionId,
+        direction,
+        qrToken: request.qrToken,
+        ticketCode: request.ticketCode,
+        gate: gate || null,
+      });
+      lastRequest.current = null;
+      setDecidedOffline(true);
+      setResult(response);
+      setPending(pendingCount(eventSessionId));
+      vibrateFor(verdictOf(response).tone);
+    };
     try {
+      if (!online && hasBundle(eventSessionId) && !request.override) {
+        await decideHere();
+        return;
+      }
       const response = await scanAtGate(api, organizationId, eventSessionId, {
         ...request,
         direction: request.override ? 'IN' : direction,
-        gate: gate || undefined,
-        deviceId: 'mobile-scanner',
+        deviceId: await deviceId(),
       });
       lastRequest.current = { qrToken: request.qrToken, ticketCode: request.ticketCode };
+      setDecidedOffline(false);
       setResult(response);
       vibrateFor(verdictOf(response).tone);
       if (response.result === 'ACCEPTED' || response.result === 'EXITED') refreshCounts();
     } catch (error) {
+      // Mạng rớt ngay giữa lượt quét (NetInfo chưa kịp báo): soát offline luôn, không bắt khách quét lại.
+      if (isNetworkFailure(error) && hasBundle(eventSessionId) && !request.override) {
+        try {
+          await decideHere();
+          return;
+        } catch {
+          // rơi xuống báo lỗi bên dưới
+        }
+      }
       setResult(null);
       vibrateFor('deny');
       if (error instanceof ApiError && error.status === 401) {
         setFailure('Phiên đăng nhập đã hết hạn. Hãy đăng nhập lại để tiếp tục.');
+      } else if (error instanceof ApiError && error.code === 'SHIFT_NOT_ACTIVE') {
+        setFailure('Bạn không còn trong ca của suất này (chưa bắt đầu ca hoặc ca đã hết giờ). Quay lại "Ca của tôi".');
       } else if (error instanceof ApiError && error.status === 403) {
         setFailure(
           request.override
             ? 'Tài khoản không có quyền cho vào thủ công. Hãy gọi người quản lý sự kiện.'
             : 'Tài khoản chưa được cấp quyền soát vé cho tổ chức này.',
         );
+      } else if (isNetworkFailure(error)) {
+        setFailure('Mất mạng và máy chưa có dữ liệu vé của suất này để soát offline. Kết nối mạng một lần để tải.');
       } else {
         setFailure('Không kết nối được máy chủ. Kiểm tra mạng rồi quét lại.');
       }
@@ -160,12 +250,71 @@ export default function ScanScreen() {
     setFailure(null);
   }
 
-  function saveGate(value: string) {
-    setGate(value);
-    setSheet(null);
-    if (Platform.OS === 'web') return;
-    if (value) void SecureStore.setItemAsync(gateKey, value).catch(() => undefined);
-    else void SecureStore.deleteItemAsync(gateKey).catch(() => undefined);
+  function confirmSignOut() {
+    const waiting = pendingCount();
+    if (waiting === 0) {
+      clearOfflineData();
+      void signOut();
+      return;
+    }
+    Alert.alert(
+      'Còn lượt quét chưa đồng bộ',
+      `Máy còn ${waiting} lượt quét offline chưa gửi lên. Đăng xuất bây giờ sẽ MẤT các lượt này. Hãy chờ có mạng để đồng bộ trước.`,
+      [
+        { text: 'Ở lại', style: 'cancel' },
+        { text: 'Vẫn đăng xuất', style: 'destructive', onPress: () => { clearOfflineData(); void signOut(); } },
+      ],
+    );
+  }
+
+  function confirmEndShift() {
+    const waiting = pendingCount(eventSessionId);
+    if (waiting > 0 && !online) {
+      Alert.alert(
+        'Chưa kết thúc ca được',
+        `Còn ${waiting} lượt quét offline chưa đồng bộ, và máy đang mất mạng. Hãy chờ có mạng để gửi lên rồi kết thúc ca — tổng kết ca phải gồm cả các lượt này.`,
+      );
+      return;
+    }
+    Alert.alert(
+      'Kết thúc ca?',
+      waiting > 0
+        ? `Máy sẽ gửi ${waiting} lượt quét offline lên trước, rồi đóng máy quét và hiện tổng kết để bàn giao.`
+        : 'Máy quét đóng lại và bạn nhận tổng kết để bàn giao.',
+      [
+      { text: 'Huỷ', style: 'cancel' },
+      { text: 'Kết thúc ca', style: 'destructive', onPress: () => void finishShift() },
+    ]);
+  }
+
+  async function finishShift() {
+    if (!shiftId || !organizationId) return;
+    setEnding(true);
+    try {
+      // Gửi nốt hàng đợi để tổng kết ca tính cả lượt offline.
+      await syncQueue(organizationId, eventSessionId);
+      const handover = await endShift(api, organizationId, shiftId);
+      router.replace({
+        pathname: '/scanner/handover',
+        params: {
+          eventTitle,
+          gateName: handover.gateName,
+          startedAt: handover.startedAt,
+          endedAt: handover.endedAt,
+          entries: String(handover.tally.entries),
+          exits: String(handover.tally.exits),
+          rejected: String(handover.tally.rejected),
+          overrides: String(handover.tally.overrides),
+          offline: String(handover.tally.offline),
+          lookups: String(handover.tally.lookups),
+          pending: String(pendingCount(eventSessionId)),
+        },
+      });
+    } catch (error) {
+      setFailure(error instanceof ApiError && error.detail ? error.detail : 'Chưa kết thúc được ca. Kiểm tra mạng rồi thử lại.');
+    } finally {
+      setEnding(false);
+    }
   }
 
   if (!signedIn) {
@@ -223,7 +372,15 @@ export default function ScanScreen() {
             </Text>
           </View>
           <View style={styles.headerActions}>
-            {switchable ? (
+            {shiftId ? (
+              <Pressable
+                accessibilityRole="button"
+                disabled={ending}
+                onPress={confirmEndShift}
+                style={({ pressed }) => [styles.endShift, pressed && styles.pressed, ending && styles.disabledButton]}>
+                <Text style={styles.endShiftText}>{ending ? 'ĐANG KẾT THÚC...' : 'KẾT THÚC CA'}</Text>
+              </Pressable>
+            ) : switchable ? (
               <Pressable
                 accessibilityRole="button"
                 onPress={() => router.replace({ pathname: '/scanner', params: { pick: '1' } })}
@@ -236,20 +393,35 @@ export default function ScanScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Đăng xuất nhân viên"
-              onPress={() => void signOut()}
+              onPress={confirmSignOut}
               style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}>
               <Text style={styles.signOutText}>Đăng xuất</Text>
             </Pressable>
           </View>
         </View>
 
+        {!online ? (
+          <View accessibilityRole="alert" style={styles.offlineBanner}>
+            <Text style={styles.offlineText}>
+              ĐANG SOÁT OFFLINE · {pending} lượt chờ đồng bộ
+            </Text>
+            {!offlineReady ? (
+              <Text style={styles.offlineHint}>Máy chưa có dữ liệu vé của suất này — chưa soát offline được.</Text>
+            ) : null}
+          </View>
+        ) : pending > 0 ? (
+          <View style={styles.syncBanner}>
+            <Text style={styles.syncText}>Đang đồng bộ {pending} lượt quét offline…</Text>
+          </View>
+        ) : null}
+
         <View style={styles.counts}>
           <Count label="ĐANG Ở TRONG" value={counts?.inside} />
           <Count label="ĐÃ CHECK-IN" value={counts?.checkedIn} />
-          <Pressable accessibilityRole="button" onPress={() => setSheet('gate')} style={({ pressed }) => [styles.count, pressed && styles.pressed]}>
+          <View style={styles.count}>
             <Text style={styles.countLabel}>CỔNG</Text>
-            <Text numberOfLines={1} style={styles.gateValue}>{gate || 'Chưa đặt'}</Text>
-          </Pressable>
+            <Text numberOfLines={1} style={styles.gateValue}>{gate || '—'}</Text>
+          </View>
         </View>
 
         <View accessibilityRole="tablist" style={styles.modes}>
@@ -293,6 +465,15 @@ export default function ScanScreen() {
           <ToolButton label={torch ? 'ĐÈN BẬT' : 'ĐÈN TẮT'} onPress={() => setTorch((value) => !value)} />
           <ToolButton label="NHẬP MÃ VÉ" onPress={() => setSheet('code')} />
           <ToolButton
+            label="TÌM KHÁCH"
+            onPress={() =>
+              router.push({
+                pathname: '/scanner/lookup',
+                params: { eventSessionId, organizationId, eventTitle, gateName: gate },
+              })
+            }
+          />
+          <ToolButton
             label="LỊCH SỬ"
             onPress={() =>
               router.push({ pathname: '/scanner/history', params: { eventSessionId, organizationId, eventTitle } })
@@ -302,7 +483,10 @@ export default function ScanScreen() {
 
         {result && verdict && tone ? (
           <View accessibilityRole="alert" style={[styles.resultPanel, { backgroundColor: tone.background, borderColor: tone.border }]}>
-            <Text style={[styles.verdict, { color: tone.text }]}>{verdict.title}</Text>
+            <View style={styles.verdictRow}>
+              <Text style={[styles.verdict, { color: tone.text }]}>{verdict.title}</Text>
+              {decidedOffline ? <Text style={styles.offlineTag}>offline</Text> : null}
+            </View>
             {result.holderName ? <Text style={styles.holder}>{result.holderName}</Text> : null}
             {result.ticketTypeName || result.seatLabel || result.seatCode ? (
               <Text style={styles.ticketInfo}>
@@ -312,7 +496,7 @@ export default function ScanScreen() {
               </Text>
             ) : null}
             <Text style={styles.resultHint}>{detailOf(result, verdict.hint, otherSession)}</Text>
-            {result.result === 'ALREADY_CHECKED_IN' && canOverride ? (
+            {result.result === 'ALREADY_CHECKED_IN' && canOverride && !decidedOffline && online ? (
               <Pressable accessibilityRole="button" onPress={() => setSheet('override')} style={({ pressed }) => [styles.override, pressed && styles.pressed]}>
                 <Text style={styles.overrideText}>CHO VÀO THỦ CÔNG</Text>
               </Pressable>
@@ -330,7 +514,7 @@ export default function ScanScreen() {
         {!result && !failure ? (
           <View style={styles.footer}>
             <Text style={styles.footerCopy}>
-              Máy quét liên tục: đưa vé tiếp theo vào khung, không cần bấm gì. Kết quả do máy chủ quyết định.
+              Máy quét liên tục: đưa vé tiếp theo vào khung, không cần bấm gì. Kết quả do máy chủ quyết định; khi mất mạng máy tự kiểm vé đã tải và gửi lên sau.
             </Text>
           </View>
         ) : null}
@@ -361,17 +545,6 @@ export default function ScanScreen() {
           setSheet(null);
           if (lastRequest.current) void submit({ ...lastRequest.current, override: true, reason });
         }}
-      />
-      <PromptSheet
-        visible={sheet === 'gate'}
-        title="Cổng đang soát"
-        description="Ghi vào mọi lượt quét của máy này. Để trống nếu sự kiện chỉ có một cổng."
-        placeholder="VD: Cổng A"
-        initialValue={gate}
-        confirmLabel="Lưu"
-        maxLength={40}
-        onClose={() => setSheet(null)}
-        onSubmit={saveGate}
       />
     </SafeAreaView>
   );
@@ -459,6 +632,16 @@ const styles = StyleSheet.create({
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   signOut: { minHeight: 38, justifyContent: 'center', borderRadius: 7, borderWidth: 1, borderColor: '#3B493F', paddingHorizontal: 10 },
   signOutText: { color: '#A6B1A8', fontSize: 12, fontWeight: '700' },
+  endShift: { minHeight: 38, justifyContent: 'center', borderRadius: 7, borderWidth: 1, borderColor: '#FF9B84', paddingHorizontal: 10 },
+  endShiftText: { color: '#FF9B84', fontSize: 10, fontWeight: '900', letterSpacing: 0.6 },
+  disabledButton: { opacity: 0.55 },
+  offlineBanner: { marginHorizontal: 12, marginTop: 10, paddingHorizontal: 12, paddingVertical: 10, borderRadius: 9, backgroundColor: '#FFC773' },
+  offlineText: { color: '#2C2416', fontSize: 12, fontWeight: '900', letterSpacing: 0.6 },
+  offlineHint: { color: '#2C2416', fontSize: 11, marginTop: 3 },
+  syncBanner: { marginHorizontal: 12, marginTop: 10, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 9, borderWidth: 1, borderColor: '#D9902F' },
+  syncText: { color: '#FFC773', fontSize: 11, fontWeight: '800' },
+  verdictRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  offlineTag: { color: '#2C2416', backgroundColor: '#FFC773', fontSize: 10, fontWeight: '900', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' },
   counts: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingTop: 10 },
   count: { flex: 1, minHeight: 56, justifyContent: 'center', borderRadius: 9, backgroundColor: '#19221B', paddingHorizontal: 10 },
   countLabel: { color: '#95A298', fontSize: 8, fontWeight: '900', letterSpacing: 1 },

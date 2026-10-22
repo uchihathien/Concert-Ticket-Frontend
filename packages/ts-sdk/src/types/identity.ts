@@ -212,16 +212,29 @@ export interface AuditLogParams {
  * ------------------------------------------------------------------------- */
 
 /**
- * `INVITED` đã gửi thư, chờ đặt mật khẩu · `ACTIVE` đã kích hoạt · `EXPIRED` liên kết hết hạn ·
- * `SEND_FAILED` thư chưa đi (gửi lại được).
+ * Trạng thái một dòng của bảng Nhân sự — đọc kèm `kind`:
+ *
+ * - `kind: 'ACCOUNT'` (tài khoản tên đăng nhập + PIN): `ACTIVE` đang dùng · `LOCKED` ban tổ chức
+ *   khoá · `EXPIRED` hết hạn theo lịch suất diễn.
+ * - `kind: 'INVITATION'` (mời bằng email, luồng cũ): `INVITED` đã gửi thư · `ACTIVE` đã kích hoạt ·
+ *   `EXPIRED` liên kết hết hạn · `SEND_FAILED` thư chưa đi.
  */
-export type StaffStatus = 'INVITED' | 'ACTIVE' | 'EXPIRED' | 'SEND_FAILED';
+export type StaffStatus = 'INVITED' | 'ACTIVE' | 'EXPIRED' | 'SEND_FAILED' | 'LOCKED';
+
+export type StaffKind = 'ACCOUNT' | 'INVITATION';
 
 export interface StaffMember {
   userId: string;
-  email: string;
+  /** `null` với tài khoản PIN — email nội bộ của họ không phải để liên lạc. */
+  email: string | null;
   fullName: string | null;
   status: StaffStatus;
+  kind: StaffKind;
+  /** Tên đăng nhập (`nexa-nv01`), chỉ với `ACCOUNT`. */
+  username?: string | null;
+  phone?: string | null;
+  /** Mốc gia hạn tay, chỉ với `ACCOUNT`. */
+  accessUntil?: string | null;
   /** `null` với nhân viên có từ trước khi có mục Nhân sự. */
   invitedAt: string | null;
   /** Tên người mời, để hiển thị. */
@@ -232,6 +245,28 @@ export interface StaffMember {
   /** Sự kiện người này được soát. Rỗng là chưa soát được sự kiện nào. */
   eventIds: string[];
 }
+
+export interface CreateStaffAccountRequest {
+  fullName: string;
+  phone?: string | null;
+  eventIds: string[];
+}
+
+/**
+ * Phiếu nhân viên. `pin` CHỈ có trong phản hồi của lệnh tạo / cấp lại — không có đường nào đọc lại.
+ * `loginUri` là nội dung mã QR đăng nhập (`nexaticket-staff://login?u=…&p=…`).
+ */
+export interface StaffCredentials {
+  userId: string;
+  fullName: string;
+  username: string;
+  pin: string;
+  eventIds: string[];
+  loginUri: string;
+}
+
+/** Trạng thái tài khoản cho màn đăng nhập nhân viên (không cần token). */
+export type StaffAccountPublicStatus = 'LOCKED' | 'EXPIRED' | 'UNKNOWN';
 
 export interface InviteStaffRequest {
   fullName: string;

@@ -10,6 +10,7 @@ const METHOD_LABEL: Record<CheckinHistoryRow['method'], string> = {
   QR: '',
   CODE: 'Gõ mã',
   OVERRIDE: 'Thủ công',
+  LOOKUP: 'Tra cứu',
 };
 
 export default function HistoryScreen() {

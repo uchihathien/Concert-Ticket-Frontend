@@ -125,6 +125,8 @@ export type { ErrorStateProps } from './components/ErrorState';
 export { DetailRows, IdentityCard } from './components/IdentityCard';
 export type { DetailRow, DetailRowsProps, IdentityCardProps } from './components/IdentityCard';
 
+export { DateTimeField } from './components/DateTimeField';
+export type { DateTimeFieldProps } from './components/DateTimeField';
 export { Input } from './components/Input';
 export type { InputProps } from './components/Input';
 

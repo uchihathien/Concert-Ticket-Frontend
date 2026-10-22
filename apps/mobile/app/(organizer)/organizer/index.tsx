@@ -30,7 +30,6 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LoginButton } from '@/components/LoginButton';
-import { SwitchRoleButton } from '@/components/SwitchRoleButton';
 import { RevenueBarChart, type EventRevenue } from '@/components/RevenueBarChart';
 import { api } from '@/lib/api';
 import { useMobileAuth } from '@/lib/auth-context';
@@ -85,7 +84,7 @@ export default function OrganizerHome() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <View style={styles.header}>
         <View><Text style={styles.brand}>NEXATICKET / ORGANIZER</Text><Text style={styles.headerTitle}>{TABS.find((item) => item.key === tab)?.title}</Text></View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><SwitchRoleButton /><Pressable accessibilityRole="button" onPress={() => { setLoading(true); void signOut(); }}><Text style={styles.signOut}>Đăng xuất</Text></Pressable></View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}><Pressable accessibilityRole="button" onPress={() => { setLoading(true); void signOut(); }}><Text style={styles.signOut}>Đăng xuất</Text></Pressable></View>
       </View>
       {organizations.length > 1 ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.orgScroll} contentContainerStyle={styles.orgList}>
@@ -100,7 +99,7 @@ export default function OrganizerHome() {
       <View style={styles.body}>
         {error ? <StateCard title="Không tải được dữ liệu" detail={error} /> : !organization ? <StateCard title="Chưa có tổ chức được cấp quyền" detail="Tài khoản cần quyền CATALOG_MANAGE để sử dụng app tổ chức." /> : (
           <>
-            {tab === 'overview' ? <OverviewScreen organizationId={organization.id} /> : null}
+            {tab === 'overview' ? <OverviewScreen key={organization.id} organizationId={organization.id} /> : null}
             {tab === 'events' ? <EventsScreen organizationId={organization.id} /> : null}
             {tab === 'tickets' ? <TicketsScreen organizationId={organization.id} /> : null}
           </>
@@ -167,8 +166,6 @@ function OverviewScreen({ organizationId }: { organizationId: string }) {
   useEffect(() => {
     let active = true;
     const { params, compare } = resolveRange(range);
-    setLoading(true);
-    setError(null);
     // Tổng kỳ là số chính, thiếu thì báo lỗi. Bảng theo suất, tồn kho và tên sự kiện là phụ: không tải
     // được thì vẫn hiện số tổng, chỉ thiếu phần đó.
     Promise.all([
@@ -178,6 +175,7 @@ function OverviewScreen({ organizationId }: { organizationId: string }) {
       listEvents(api, organizationId).catch(() => [] as AdminEventRow[]),
     ])
       .then(([summary, breakdown, stock, events]) => {
+        if (active) setError(null);
         if (active) setData({ summary, breakdown, stock, titles: Object.fromEntries(events.map((event) => [event.id, event.title])) });
       })
       .catch(() => { if (active) setError('Không tải được doanh thu.'); })
@@ -209,7 +207,7 @@ function OverviewScreen({ organizationId }: { organizationId: string }) {
 
   const chips = (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.orgScroll} contentContainerStyle={styles.choiceList}>
-      {RANGES.map((item) => <Choice key={item.key} label={item.label} selected={item.key === range} onPress={() => setRange(item.key)} />)}
+      {RANGES.map((item) => <Choice key={item.key} label={item.label} selected={item.key === range} onPress={() => { if (item.key !== range) { setLoading(true); setRange(item.key); } }} />)}
     </ScrollView>
   );
 

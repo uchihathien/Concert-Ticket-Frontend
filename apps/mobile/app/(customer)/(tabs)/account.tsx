@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useMobileAuth } from '@/lib/auth-context';
-import { SwitchRoleButton } from '@/components/SwitchRoleButton';
 import { getMobileIdentity, type MobileIdentity } from '@/lib/auth-session';
 import { useSavedEvents } from '@/lib/saved-events';
 
@@ -90,8 +89,6 @@ export default function AccountScreen() {
           />
         </View>
 
-        {signedIn ? <View style={styles.switchRole}><SwitchRoleButton /></View> : null}
-
         {signedIn ? (
           <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.signOut, pressed && styles.pressed]}>
             <Text style={styles.signOutText}>Đăng xuất</Text>
@@ -143,7 +140,6 @@ const styles = StyleSheet.create({
   rowText: { flex: 1, minWidth: 0 },
   rowTitle: { color: '#F1F5F1', fontSize: 15, fontWeight: '700' },
   rowDetail: { color: '#A6B1A8', fontSize: 12, marginTop: 2 },
-  switchRole: { alignItems: 'flex-start', marginTop: 18 },
   signOut: { minHeight: 46, alignItems: 'center', justifyContent: 'center', marginTop: 18, borderRadius: 10, borderWidth: 1, borderColor: '#3B493F' },
   signOutText: { color: '#FF8C79', fontSize: 14, fontWeight: '700' },
   pressed: { opacity: 0.8 },

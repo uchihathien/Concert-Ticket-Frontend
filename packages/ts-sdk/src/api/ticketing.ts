@@ -1,6 +1,16 @@
 import type { ApiClient } from '../http/client';
 import type {
+  CheckinBundle,
+  CheckinBundleTicket,
+  CheckinConflict,
+  CheckinGate,
   CheckinHistory,
+  CheckinShift,
+  CheckinShiftRequest,
+  MyShift,
+  OfflineScanItem,
+  ShiftHandover,
+  SyncResult,
   CheckinSession,
   GateScanRequest,
   GateScanResponse,
@@ -114,5 +124,174 @@ export async function listMyTickets(
 /** Vé của một đơn. Đơn của người khác trả 404, không phải 403. */
 export async function listOrderTickets(client: ApiClient, orderId: string): Promise<Ticket[]> {
   const response = await client.get<Ticket[]>(`/v1/orders/${encodeURIComponent(orderId)}/tickets`);
+  return response.data;
+}
+
+/* ---------------------------------------------------------------------------
+ * Ca trực — `/v1/organizations/{id}/checkin/...`
+ * ------------------------------------------------------------------------- */
+
+function checkinBase(organizationId: string): string {
+  return `/v1/organizations/${encodeURIComponent(organizationId)}/checkin`;
+}
+
+export async function listCheckinGates(
+  client: ApiClient,
+  organizationId: string,
+  eventId: string,
+): Promise<CheckinGate[]> {
+  const response = await client.get<CheckinGate[]>(
+    `${checkinBase(organizationId)}/events/${encodeURIComponent(eventId)}/gates`,
+  );
+  return response.data;
+}
+
+export async function createCheckinGate(
+  client: ApiClient,
+  organizationId: string,
+  eventId: string,
+  name: string,
+): Promise<CheckinGate> {
+  const response = await client.post<CheckinGate>(
+    `${checkinBase(organizationId)}/events/${encodeURIComponent(eventId)}/gates`,
+    { name },
+  );
+  return response.data;
+}
+
+export async function renameCheckinGate(
+  client: ApiClient,
+  organizationId: string,
+  gateId: string,
+  name: string,
+): Promise<void> {
+  await client.put<void>(`${checkinBase(organizationId)}/gates/${encodeURIComponent(gateId)}`, { name });
+}
+
+/** Cổng còn ca thì trả 409 `GATE_IN_USE`. */
+export async function deleteCheckinGate(client: ApiClient, organizationId: string, gateId: string): Promise<void> {
+  await client.delete<void>(`${checkinBase(organizationId)}/gates/${encodeURIComponent(gateId)}`);
+}
+
+export async function listEventShifts(
+  client: ApiClient,
+  organizationId: string,
+  eventId: string,
+): Promise<CheckinShift[]> {
+  const response = await client.get<CheckinShift[]>(
+    `${checkinBase(organizationId)}/events/${encodeURIComponent(eventId)}/shifts`,
+  );
+  return response.data;
+}
+
+export async function createShift(
+  client: ApiClient,
+  organizationId: string,
+  request: CheckinShiftRequest,
+): Promise<CheckinShift> {
+  const response = await client.post<CheckinShift>(`${checkinBase(organizationId)}/shifts`, request);
+  return response.data;
+}
+
+export async function updateShift(
+  client: ApiClient,
+  organizationId: string,
+  shiftId: string,
+  request: CheckinShiftRequest,
+): Promise<CheckinShift> {
+  const response = await client.put<CheckinShift>(
+    `${checkinBase(organizationId)}/shifts/${encodeURIComponent(shiftId)}`,
+    request,
+  );
+  return response.data;
+}
+
+export async function deleteShift(client: ApiClient, organizationId: string, shiftId: string): Promise<void> {
+  await client.delete<void>(`${checkinBase(organizationId)}/shifts/${encodeURIComponent(shiftId)}`);
+}
+
+/** Ca hôm nay và sắp tới của chính người gọi. */
+export async function listMyShifts(client: ApiClient, organizationId: string): Promise<MyShift[]> {
+  const response = await client.get<MyShift[]>(`${checkinBase(organizationId)}/my-shifts`);
+  return response.data;
+}
+
+export async function startShift(
+  client: ApiClient,
+  organizationId: string,
+  shiftId: string,
+  deviceId?: string,
+): Promise<MyShift> {
+  const response = await client.post<MyShift>(
+    `${checkinBase(organizationId)}/shifts/${encodeURIComponent(shiftId)}/start`,
+    { deviceId },
+  );
+  return response.data;
+}
+
+export async function endShift(client: ApiClient, organizationId: string, shiftId: string): Promise<ShiftHandover> {
+  const response = await client.post<ShiftHandover>(
+    `${checkinBase(organizationId)}/shifts/${encodeURIComponent(shiftId)}/end`,
+  );
+  return response.data;
+}
+
+/* ---------------------------------------------------------------------------
+ * Soát vé offline + tìm khách — `.../sessions/{id}/checkins/{bundle,sync,lookup,conflicts}`
+ * ------------------------------------------------------------------------- */
+
+/** Gói dữ liệu soát vé của suất. `since` (= `serverTime` lần trước) để chỉ tải phần đổi. */
+export async function getCheckinBundle(
+  client: ApiClient,
+  organizationId: string,
+  eventSessionId: string,
+  since?: string,
+): Promise<CheckinBundle> {
+  const query = since ? `?since=${encodeURIComponent(since)}` : '';
+  const response = await client.get<CheckinBundle>(`${checkinsPath(organizationId, eventSessionId)}/bundle${query}`);
+  return response.data;
+}
+
+/** Gửi lô lượt quét offline (tối đa 500). Gửi lại cùng `clientScanId` không ghi lần hai. */
+export async function syncOfflineScans(
+  client: ApiClient,
+  organizationId: string,
+  eventSessionId: string,
+  scans: OfflineScanItem[],
+): Promise<SyncResult> {
+  const response = await client.post<SyncResult>(`${checkinsPath(organizationId, eventSessionId)}/sync`, { scans });
+  return response.data;
+}
+
+/** Tìm khách trong suất theo tên (không dấu), email, SĐT hoặc mã vé. Tối đa 20 dòng, đã che. */
+export async function lookupTickets(
+  client: ApiClient,
+  organizationId: string,
+  eventSessionId: string,
+  query: string,
+): Promise<CheckinBundleTicket[]> {
+  const response = await client.get<CheckinBundleTicket[]>(
+    `${checkinsPath(organizationId, eventSessionId)}/lookup?q=${encodeURIComponent(query)}`,
+  );
+  return response.data;
+}
+
+/** Cho vào bằng tra cứu sau khi đối chiếu giấy tờ. Backend trả 200 kèm kết quả như một lượt quét. */
+export async function admitByLookup(
+  client: ApiClient,
+  organizationId: string,
+  eventSessionId: string,
+  request: { ticketId: string; identityChecked: boolean; deviceId?: string },
+): Promise<GateScanResponse> {
+  const response = await client.post<GateScanResponse>(`${checkinsPath(organizationId, eventSessionId)}/lookup`, request);
+  return response.data;
+}
+
+export async function listCheckinConflicts(
+  client: ApiClient,
+  organizationId: string,
+  eventSessionId: string,
+): Promise<CheckinConflict[]> {
+  const response = await client.get<CheckinConflict[]>(`${checkinsPath(organizationId, eventSessionId)}/conflicts`);
   return response.data;
 }
