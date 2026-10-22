@@ -36,7 +36,8 @@ function cell(value: string | number | null | undefined): string {
     return String(value);
   }
 
-  const escaped = /^[=+\-@]/.test(value) ? `'${value}` : value;
+  // Cả TAB và CR đứng đầu: Excel bỏ qua chúng rồi vẫn đọc phần sau như công thức (OWASP CSV injection).
+  const escaped = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
 
   return /[",\n\r]|^\s|\s$/.test(escaped) ? `"${escaped.replace(/"/g, '""')}"` : escaped;
 }
