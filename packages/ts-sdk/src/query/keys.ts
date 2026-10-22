@@ -86,6 +86,10 @@ export const queryKeys = {
     // là một mục cache khác chứ không phải cùng một mục vừa cũ đi.
     organizationTickets: (organizationId: string, params: object) =>
       ['ticketing', 'organizations', organizationId, 'tickets', params] as const,
+    gates: (organizationId: string, eventId: string) =>
+      ['ticketing', 'organizations', organizationId, 'events', eventId, 'gates'] as const,
+    shifts: (organizationId: string, eventId: string) =>
+      ['ticketing', 'organizations', organizationId, 'events', eventId, 'shifts'] as const,
   },
   support: {
     thread: (sessionId: string) => ['support', 'sessions', sessionId, 'messages'] as const,

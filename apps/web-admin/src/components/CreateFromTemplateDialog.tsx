@@ -2,6 +2,7 @@
 
 import { ApiError } from '@nexaticket/ts-sdk';
 import {
+  DateTimeField,
   Button,
   EVENT_CATEGORIES,
   EmptyState,
@@ -199,10 +200,10 @@ function TemplateForm({
 
       <fieldset className="m-0 grid gap-4 border-0 p-0 sm:grid-cols-2">
         <legend className="mb-2 font-semibold">Suất diễn đầu tiên (giờ Việt Nam)</legend>
-        <Input name="startsAt" type="datetime-local" label="Bắt đầu" required />
-        <Input name="endsAt" type="datetime-local" label="Kết thúc" />
-        <Input name="salesOpenAt" type="datetime-local" label="Mở bán" required />
-        <Input name="salesCloseAt" type="datetime-local" label="Đóng bán" required />
+        <DateTimeField name="startsAt" label="Bắt đầu" required />
+        <DateTimeField name="endsAt" label="Kết thúc" />
+        <DateTimeField name="salesOpenAt" label="Mở bán" required />
+        <DateTimeField name="salesCloseAt" label="Đóng bán" required />
       </fieldset>
 
       <fieldset className="m-0 grid gap-3 border-0 p-0">

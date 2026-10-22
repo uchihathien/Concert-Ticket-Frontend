@@ -1,10 +1,22 @@
 'use client';
 
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { listMyTickets, listOrderTickets, scanTicket } from '../api/ticketing';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  createCheckinGate,
+  createShift,
+  deleteCheckinGate,
+  deleteShift,
+  listCheckinGates,
+  listEventShifts,
+  listMyTickets,
+  listOrderTickets,
+  renameCheckinGate,
+  scanTicket,
+  updateShift,
+} from '../api/ticketing';
 import { queryKeys, staleTime } from '../query/keys';
 import { useApiClient } from '../query/provider';
-import type { ListMyTicketsParams, ScanRequest, ScanResponse } from '../types/ticketing';
+import type { CheckinShiftRequest, ListMyTicketsParams, ScanRequest, ScanResponse } from '../types/ticketing';
 
 /**
  * Soát một mã QR.
@@ -51,4 +63,84 @@ export function useOrderTickets(orderId: string | null | undefined) {
     enabled: Boolean(orderId),
     staleTime: staleTime.MY_WALLET,
   });
+}
+
+/* ---------------------------------------------------------------------------
+ * Ca trực (ban tổ chức)
+ * ------------------------------------------------------------------------- */
+
+export function useCheckinGates(organizationId: string | null | undefined, eventId: string | null | undefined) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: queryKeys.ticketing.gates(organizationId ?? '', eventId ?? ''),
+    queryFn: () => listCheckinGates(client, organizationId as string, eventId as string),
+    enabled: Boolean(organizationId && eventId),
+    staleTime: staleTime.ADMIN_TABLE,
+  });
+}
+
+/**
+ * Ca của một sự kiện, kèm ai đang trực. Tự làm mới mỗi 20 giây: đây là bảng theo dõi cổng trong
+ * lúc mở cửa, người xem không bấm tải lại.
+ */
+export function useEventShifts(organizationId: string | null | undefined, eventId: string | null | undefined) {
+  const client = useApiClient();
+  return useQuery({
+    queryKey: queryKeys.ticketing.shifts(organizationId ?? '', eventId ?? ''),
+    queryFn: () => listEventShifts(client, organizationId as string, eventId as string),
+    enabled: Boolean(organizationId && eventId),
+    refetchInterval: 20_000,
+  });
+}
+
+/** Mọi thao tác ca / cổng làm mới cả hai bảng của sự kiện đó. */
+function useShiftMutation<TInput, TResult>(
+  organizationId: string,
+  eventId: string,
+  mutationFn: (client: ReturnType<typeof useApiClient>, input: TInput) => Promise<TResult>,
+) {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: TInput) => mutationFn(client, input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ticketing.gates(organizationId, eventId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.ticketing.shifts(organizationId, eventId) });
+    },
+  });
+}
+
+export function useCreateCheckinGate(organizationId: string, eventId: string) {
+  return useShiftMutation(organizationId, eventId, (client, name: string) =>
+    createCheckinGate(client, organizationId, eventId, name),
+  );
+}
+
+export function useRenameCheckinGate(organizationId: string, eventId: string) {
+  return useShiftMutation(organizationId, eventId, (client, input: { gateId: string; name: string }) =>
+    renameCheckinGate(client, organizationId, input.gateId, input.name),
+  );
+}
+
+export function useDeleteCheckinGate(organizationId: string, eventId: string) {
+  return useShiftMutation(organizationId, eventId, (client, gateId: string) =>
+    deleteCheckinGate(client, organizationId, gateId),
+  );
+}
+
+export function useSaveShift(organizationId: string, eventId: string) {
+  return useShiftMutation(
+    organizationId,
+    eventId,
+    (client, input: { shiftId?: string; request: CheckinShiftRequest }) =>
+      input.shiftId
+        ? updateShift(client, organizationId, input.shiftId, input.request)
+        : createShift(client, organizationId, input.request),
+  );
+}
+
+export function useDeleteShift(organizationId: string, eventId: string) {
+  return useShiftMutation(organizationId, eventId, (client, shiftId: string) =>
+    deleteShift(client, organizationId, shiftId),
+  );
 }

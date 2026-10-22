@@ -118,8 +118,8 @@ export interface CheckinHistoryRow {
   scannedAt: string;
   direction: ScanDirection;
   result: GateScanResult;
-  /** `QR` quét mã · `CODE` gõ mã vé · `OVERRIDE` cho vào thủ công. */
-  method: 'QR' | 'CODE' | 'OVERRIDE';
+  /** `QR` quét mã · `CODE` gõ mã vé · `OVERRIDE` cho vào thủ công · `LOOKUP` tìm khách rồi cho vào. */
+  method: 'QR' | 'CODE' | 'OVERRIDE' | 'LOOKUP';
   gate: string | null;
   note: string | null;
   holderName: string | null;
@@ -225,4 +225,166 @@ export interface TicketSearchParams {
   page?: number;
   /** Backend kẹp trần ở 100. */
   size?: number;
+}
+
+/* ---------------------------------------------------------------------------
+ * Ca trực soát vé
+ *
+ * Nguồn: `CheckinShiftController`, `CheckinShifts` (ticketing-service). Nhân viên chỉ có vai soát vé
+ * chỉ quét được khi đang có ca mở của đúng suất; quét ngoài ca nhận `ApiError` 403 `SHIFT_NOT_ACTIVE`.
+ * ------------------------------------------------------------------------- */
+
+export interface CheckinGate {
+  id: string;
+  eventId: string;
+  name: string;
+}
+
+/** Theo giờ của ca, không theo việc có ai bấm bắt đầu. */
+export type ShiftState = 'NOT_STARTED' | 'ACTIVE' | 'ENDED';
+
+export interface ShiftOnDuty {
+  userId: string;
+  startedAt: string;
+  deviceId: string | null;
+}
+
+export interface CheckinShift {
+  id: string;
+  eventId: string;
+  eventSessionId: string;
+  gateId: string;
+  gateName: string;
+  startsAt: string;
+  endsAt: string;
+  staffIds: string[];
+  state: ShiftState;
+  /** Nhân viên đã bấm "Bắt đầu ca" và chưa kết thúc. */
+  onDuty: ShiftOnDuty[];
+}
+
+export interface CheckinShiftRequest {
+  eventSessionId: string;
+  gateId: string;
+  startsAt: string;
+  endsAt: string;
+  staffIds: string[];
+}
+
+/** Ca của chính nhân viên đang đăng nhập. */
+export interface MyShift {
+  id: string;
+  organizationId: string;
+  eventId: string;
+  eventTitle: string | null;
+  eventSessionId: string;
+  sessionStartsAt: string | null;
+  gateName: string;
+  startsAt: string;
+  endsAt: string;
+  state: ShiftState;
+  /** Phiên ca đang mở của chính mình; `null` nếu chưa bắt đầu. */
+  myStartedAt: string | null;
+  /** Đang trong khung được bấm "Bắt đầu ca" (sớm tối đa 30 phút). */
+  canStart: boolean;
+}
+
+export interface ShiftTally {
+  entries: number;
+  exits: number;
+  rejected: number;
+  overrides: number;
+  offline: number;
+  lookups: number;
+}
+
+/** Tổng kết bàn giao cuối ca. */
+export interface ShiftHandover {
+  shiftId: string;
+  gateName: string;
+  startedAt: string;
+  endedAt: string;
+  tally: ShiftTally;
+}
+
+/* ---------------------------------------------------------------------------
+ * Soát vé offline và tìm khách quên vé
+ *
+ * Nguồn: `OfflineCheckinController`, `OfflineCheckin` (ticketing-service). Email / SĐT luôn ĐÃ CHE.
+ * ------------------------------------------------------------------------- */
+
+/** Một vé trong gói dữ liệu soát vé (và trong kết quả tìm khách). */
+export interface CheckinBundleTicket {
+  ticketId: string;
+  /** 8 ký tự đầu mã vé, viết hoa — đúng thứ in trên vé. */
+  code: string;
+  ticketTypeName: string | null;
+  zoneCode: string | null;
+  seatCode: string | null;
+  seatLabel: string | null;
+  holderName: string | null;
+  emailMasked: string | null;
+  phoneMasked: string | null;
+  status: 'VALID' | 'CHECKED_IN' | 'REVOKED';
+  inside: boolean;
+  entryCount: number;
+  lastEntryAt: string | null;
+  lastEntryGate: string | null;
+  changedAt: string | null;
+}
+
+export interface CheckinBundle {
+  eventSessionId: string;
+  /** Gửi lại làm `since` ở lần tải bù kế tiếp. */
+  serverTime: string;
+  /** `true` khi là toàn bộ vé của suất (thay hẳn dữ liệu cũ trên máy). */
+  full: boolean;
+  /** Khoá công khai Ed25519 thô (32 byte, base64url) theo `kid` của header JWS. */
+  keys: { kid: string; publicKey: string }[];
+  tickets: CheckinBundleTicket[];
+}
+
+export interface OfflineScanItem {
+  /** UUID máy tự sinh — gửi lại cùng id thì server không ghi lần hai. */
+  clientScanId: string;
+  qrToken?: string | null;
+  ticketCode?: string | null;
+  /** Có khi cho vào bằng tra cứu lúc offline. */
+  ticketId?: string | null;
+  direction: ScanDirection;
+  scannedAt: string;
+  deviceId?: string;
+  /** Kết quả máy đã hiện cho khách. */
+  deviceResult: string;
+}
+
+export interface SyncedScan {
+  clientScanId: string;
+  /** Kết quả của server (`GateScanResult`), hoặc mã lỗi như `SHIFT_NOT_ACTIVE`. */
+  result: string;
+  deviceResult: string | null;
+  /** Máy đã cho vào nhưng server không đồng ý — khách đã ở trong, cần người xem lại. */
+  conflict: boolean;
+  duplicate: boolean;
+  ticketCode: string | null;
+  holderName: string | null;
+  seatLabel: string | null;
+  note: string | null;
+}
+
+export interface SyncResult {
+  accepted: number;
+  conflicts: number;
+  scans: SyncedScan[];
+}
+
+export interface CheckinConflict {
+  scannedAt: string;
+  result: string;
+  gate: string | null;
+  ticketCode: string | null;
+  holderName: string | null;
+  seatLabel: string | null;
+  ticketTypeName: string | null;
+  note: string | null;
 }

@@ -18,6 +18,7 @@ import {
   type OrganizationSummary,
 } from '@nexaticket/ts-sdk';
 import {
+  DateTimeField,
   Badge,
   Button,
   ErrorState,
@@ -541,30 +542,22 @@ function SessionDialog({
       }
     >
       <form id="session-form" action={submit} className="grid gap-4">
-        <Input
+        <DateTimeField
           name="startsAt"
-          type="datetime-local"
           label="Bắt đầu"
           required
           defaultValue={isoToVnLocal(session?.startsAt)}
           hint="Giờ Việt Nam."
         />
-        <Input
-          name="endsAt"
-          type="datetime-local"
-          label="Kết thúc"
-          defaultValue={isoToVnLocal(session?.endsAt)}
-        />
-        <Input
+        <DateTimeField name="endsAt" label="Kết thúc" defaultValue={isoToVnLocal(session?.endsAt)} />
+        <DateTimeField
           name="salesOpenAt"
-          type="datetime-local"
           label="Mở bán"
           required
           defaultValue={isoToVnLocal(session?.salesOpenAt)}
         />
-        <Input
+        <DateTimeField
           name="salesCloseAt"
-          type="datetime-local"
           label="Đóng bán"
           required
           defaultValue={isoToVnLocal(session?.salesCloseAt)}

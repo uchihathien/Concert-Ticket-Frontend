@@ -2,26 +2,17 @@ import { getMyPendingInvitations, getMyPermissions } from '@nexaticket/ts-sdk';
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
 import { api } from './api';
+import { storageKey } from './app-variant';
 
-/** Một vai = một nhóm màn hình trong `app/`. */
-export type AppRole = 'customer' | 'organizer' | 'platform' | 'scanner';
+/**
+ * Một vai = một nhóm màn hình trong `app/`. Quản trị nền tảng chỉ làm trên web, nên không có ở đây.
+ *
+ * Bản NexaTicket chỉ mở `customer`; bản NexaTicket Staff chỉ mở `organizer` và `scanner`.
+ */
+export type AppRole = 'customer' | 'organizer' | 'scanner';
 
-const activeRoleKey = 'nexaticket.mobile.active-role';
-const allRoles: readonly AppRole[] = ['customer', 'organizer', 'platform', 'scanner'];
-
-export const ROLE_HOME = {
-  customer: '/',
-  organizer: '/organizer',
-  platform: '/platform',
-  scanner: '/scanner',
-} as const satisfies Record<AppRole, string>;
-
-export const ROLE_LABEL: Record<AppRole, { title: string; detail: string }> = {
-  customer: { title: 'Khách mua vé', detail: 'Khám phá sự kiện, đặt vé và xem vé của bạn.' },
-  organizer: { title: 'Ban tổ chức', detail: 'Theo dõi doanh thu, sự kiện và hỗ trợ khách tại cổng.' },
-  platform: { title: 'Quản trị nền tảng', detail: 'Tổ chức, nhật ký, sổ cái và hỗ trợ.' },
-  scanner: { title: 'Soát vé', detail: 'Chọn suất được giao và quét vé tại cổng.' },
-};
+const activeRoleKey = storageKey('active-role');
+const allRoles: readonly AppRole[] = ['customer', 'organizer', 'scanner'];
 
 /**
  * Vai của tài khoản đang đăng nhập, suy từ `/v1/me/permissions`.
@@ -40,12 +31,14 @@ export async function resolveRoles(): Promise<AppRole[]> {
   ]);
   const organizations = Object.values(permissions.organizations);
   const roles: AppRole[] = [];
+  // Quyền nền tảng không mở vai nào trên điện thoại, nhưng vẫn chặn vai khách như trước: tài khoản
+  // quản trị không phải tài khoản mua vé.
+  const platformAccount = permissions.superAdmin || permissions.platformPermissions.length > 0;
 
-  if (permissions.superAdmin || permissions.platformPermissions.length > 0) roles.push('platform');
   if (organizations.some((granted) => granted.includes('CATALOG_MANAGE'))) roles.push('organizer');
   if (organizations.some((granted) => granted.includes('CHECKIN_SCAN'))) roles.push('scanner');
 
-  if (roles.length === 0) {
+  if (roles.length === 0 && !platformAccount) {
     roles.push('customer');
     if (invitations.length > 0) roles.push('scanner');
   }
