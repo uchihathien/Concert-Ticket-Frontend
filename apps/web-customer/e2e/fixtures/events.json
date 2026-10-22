@@ -1,0 +1,133 @@
+[
+  {
+    "slug": "dem-nhac-ha-2027",
+    "title": "Đêm nhạc Hạ 2027",
+    "summary": "Hai đêm nhạc acoustic dưới mái vòm Nhà hát Lớn.",
+    "description": "Chương trình gồm hai phần.\nPhần hai có khách mời bí mật.",
+    "category": "nhac-song",
+    "posterUrl": null,
+    "city": "Hà Nội",
+    "venueName": "Nhà hát Lớn Hà Nội",
+    "venueAddress": "1 Tràng Tiền, Hoàn Kiếm",
+    "seatMapImageUrl": null,
+    "sessions": [
+      {
+        "id": "5e55a0a1-0000-4000-8000-000000000001",
+        "startsAt": "2027-03-13T12:00:00Z",
+        "endsAt": "2027-03-13T14:30:00Z",
+        "salesOpenAt": null,
+        "salesCloseAt": null,
+        "tiers": [
+          { "id": "71e7a0a1-0000-4000-8000-000000000001", "name": "Hạng VIP", "priceVnd": 1500000, "zoneCode": "A", "zoneName": "Khu A", "capacity": 6 },
+          { "id": "71e7a0a1-0000-4000-8000-000000000002", "name": "Vé đứng", "priceVnd": 450000, "zoneCode": "SAN", "zoneName": "Sàn đứng", "capacity": 50 }
+        ]
+      },
+      {
+        "id": "5e55a0a1-0000-4000-8000-000000000002",
+        "startsAt": "2027-03-14T12:00:00Z",
+        "endsAt": null,
+        "salesOpenAt": null,
+        "salesCloseAt": null,
+        "tiers": [
+          { "id": "71e7a0a1-0000-4000-8000-000000000003", "name": "Hạng VIP", "priceVnd": 1500000, "zoneCode": "A", "zoneName": "Khu A", "capacity": 6 }
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "kich-hai-tet",
+    "title": "Kịch hài Tết Đinh Mùi",
+    "summary": "Tiểu phẩm hài cuối năm.",
+    "description": null,
+    "category": "san-khau",
+    "posterUrl": null,
+    "city": "TP. Hồ Chí Minh",
+    "venueName": "Nhà hát Bến Thành",
+    "venueAddress": "6 Mạc Đĩnh Chi, Quận 1",
+    "seatMapImageUrl": null,
+    "sessions": [
+      {
+        "id": "5e55a0a1-0000-4000-8000-000000000003",
+        "startsAt": "2027-01-20T12:30:00Z",
+        "endsAt": null,
+        "salesOpenAt": null,
+        "salesCloseAt": null,
+        "tiers": [
+          { "id": "71e7a0a1-0000-4000-8000-000000000004", "name": "Ghế thường", "priceVnd": 800000, "zoneCode": "B", "zoneName": "Khu B", "capacity": 300 }
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "giai-chay-dem-da-nang",
+    "title": "Giải chạy đêm Đà Nẵng",
+    "summary": "Cự ly 5km và 10km dọc sông Hàn.",
+    "description": null,
+    "category": "the-thao",
+    "posterUrl": null,
+    "city": "Đà Nẵng",
+    "venueName": "Cầu Rồng",
+    "venueAddress": null,
+    "seatMapImageUrl": null,
+    "sessions": [
+      {
+        "id": "5e55a0a1-0000-4000-8000-000000000004",
+        "startsAt": "2027-04-02T12:00:00Z",
+        "endsAt": null,
+        "salesOpenAt": null,
+        "salesCloseAt": null,
+        "tiers": [
+          { "id": "71e7a0a1-0000-4000-8000-000000000005", "name": "Vận động viên", "priceVnd": 0, "zoneCode": "SAN", "zoneName": "Đường chạy", "capacity": 2000 }
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "hoi-thao-ai-2027",
+    "title": "Hội thảo AI ứng dụng 2027",
+    "summary": "Một ngày, mười hai diễn giả.",
+    "description": null,
+    "category": "hoi-thao",
+    "posterUrl": null,
+    "city": "Hà Nội",
+    "venueName": "Trung tâm Hội nghị Quốc gia",
+    "venueAddress": "Đại lộ Thăng Long, Nam Từ Liêm",
+    "seatMapImageUrl": null,
+    "sessions": [
+      {
+        "id": "5e55a0a1-0000-4000-8000-000000000005",
+        "startsAt": "2027-05-10T01:30:00Z",
+        "endsAt": "2027-05-10T10:00:00Z",
+        "salesOpenAt": "2027-02-01T02:00:00Z",
+        "salesCloseAt": null,
+        "tiers": [
+          { "id": "71e7a0a1-0000-4000-8000-000000000006", "name": "Vé hội thảo", "priceVnd": 1200000, "zoneCode": "H", "zoneName": "Hội trường", "capacity": 500 }
+        ]
+      }
+    ]
+  },
+  {
+    "slug": "xss-check",
+    "title": "<img src=x onerror=\"window.__xss=1\">Đêm thử XSS",
+    "summary": "<script>window.__xss=2</script>Tóm tắt có thẻ script",
+    "description": "<iframe src=\"javascript:window.__xss=3\"></iframe>Mô tả có iframe",
+    "category": "khac",
+    "posterUrl": null,
+    "city": "Huế",
+    "venueName": "<b onmouseover=\"window.__xss=4\">Nhà Văn hoá</b>",
+    "venueAddress": null,
+    "seatMapImageUrl": null,
+    "sessions": [
+      {
+        "id": "5e55a0a1-0000-4000-8000-000000000006",
+        "startsAt": "2027-06-01T12:00:00Z",
+        "endsAt": null,
+        "salesOpenAt": null,
+        "salesCloseAt": null,
+        "tiers": [
+          { "id": "71e7a0a1-0000-4000-8000-000000000007", "name": "<svg onload=\"window.__xss=5\">Hạng thử", "priceVnd": 200000, "zoneCode": "X", "zoneName": "Khu X", "capacity": 10 }
+        ]
+      }
+    ]
+  }
+]

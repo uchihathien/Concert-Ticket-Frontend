@@ -17,7 +17,8 @@
     "next-env.d.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
-    ".next-check/types/**/*.ts"
+    ".next-check/types/**/*.ts",
+    "vitest.config.mts"
   ],
   "exclude": [
     "node_modules"

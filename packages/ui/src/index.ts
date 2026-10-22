@@ -34,8 +34,10 @@ export { foldText, matchesText } from './search';
 export { coverGradient } from './cover';
 export { cx } from './cx';
 
-export { csvFilename, downloadCsv, toCsv } from './csv';
+export { csvFilename, downloadCsv, reportFilename, toCsv } from './csv';
 export type { CsvSection } from './csv';
+export { downloadXlsx, toXlsx } from './xlsx';
+export type { ReportSection } from './xlsx';
 
 export { errorCopy, errorMessage, isKnownErrorCode, publishBlockerLabel } from './errors';
 export type { ApiErrorLike, ErrorCopy, ErrorDisplay } from './errors';

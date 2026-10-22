@@ -86,5 +86,7 @@
 /* Nút xuất nằm phải, trên mọi khối: nó xuất TẤT CẢ những gì bên dưới, nên nó không thuộc khối nào. */
 .toolbar {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: var(--nt-space-2);
 }

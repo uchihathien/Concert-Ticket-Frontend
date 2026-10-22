@@ -26,3 +26,9 @@ logs/
 
 # Next.js tự sinh lại mỗi lần build — không commit để 4 app không lệch nhau.
 next-env.d.ts
+
+# --- Test output ---
+coverage/
+test-results/
+playwright-report/
+.next-e2e/

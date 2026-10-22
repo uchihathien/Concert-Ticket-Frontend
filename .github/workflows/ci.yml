@@ -25,7 +25,45 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm build
-      - run: pnpm test
+      # test:coverage chạy cùng bộ test với `pnpm test` và in thêm bảng coverage từng gói.
+      - run: pnpm test:coverage
+
+      - name: Lưu báo cáo coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            packages/*/coverage/
+            apps/*/coverage/
+          retention-days: 14
+
+  # E2E giao diện khách (Playwright, Chromium). Chạy với API giả + nhà phát hành OIDC giả, nên không cần
+  # backend hay Keycloak. Không nằm chung job `build` để một lần E2E đỏ không che kết quả typecheck/test.
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm --filter @nexaticket/web-customer test:e2e
+
+      - name: Lưu báo cáo Playwright khi đỏ
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: /tmp/nexaticket-web-customer-e2e/report/  # ngoài thư mục app có chủ đích, xem e2e/playwright.config.ts
+          if-no-files-found: ignore
+          retention-days: 7
 
   secret-scan:
     runs-on: ubuntu-latest

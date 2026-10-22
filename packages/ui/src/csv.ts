@@ -36,7 +36,8 @@ function cell(value: string | number | null | undefined): string {
     return String(value);
   }
 
-  const escaped = /^[=+\-@]/.test(value) ? `'${value}` : value;
+  // Cả TAB và CR đứng đầu: Excel bỏ qua chúng rồi vẫn đọc phần sau như công thức (OWASP CSV injection).
+  const escaped = /^[=+\-@\t\r]/.test(value) ? `'${value}` : value;
 
   return /[",\n\r]|^\s|\s$/.test(escaped) ? `"${escaped.replace(/"/g, '""')}"` : escaped;
 }
@@ -94,8 +95,13 @@ export function downloadCsv(filename: string, content: string): void {
   URL.revokeObjectURL(url);
 }
 
-/** Tên file an toàn cho mọi hệ: bỏ dấu, bỏ ký tự Windows không cho phép. */
+/** Tên file .csv an toàn cho mọi hệ. */
 export function csvFilename(parts: string[], date = new Date()): string {
+  return reportFilename(parts, 'csv', date);
+}
+
+/** Tên file báo cáo an toàn cho mọi hệ: bỏ dấu, bỏ ký tự Windows không cho phép. */
+export function reportFilename(parts: string[], extension: string, date = new Date()): string {
   const stamp = date.toISOString().slice(0, 10);
   const slug = parts
     .join('-')
@@ -107,5 +113,5 @@ export function csvFilename(parts: string[], date = new Date()): string {
     .replace(/^-+|-+$/g, '')
     .toLowerCase();
 
-  return `${slug || 'bao-cao'}-${stamp}.csv`;
+  return `${slug || 'bao-cao'}-${stamp}.${extension}`;
 }

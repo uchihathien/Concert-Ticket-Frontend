@@ -2,7 +2,7 @@ import type { EventMasterData, OrganizationSummary } from '@nexaticket/ts-sdk';
 import { eventCategoryLabel, type CsvSection } from '@nexaticket/ui';
 
 /**
- * Dựng báo cáo đầy đủ của một sự kiện thành các khối CSV.
+ * Dựng báo cáo đầy đủ của một sự kiện thành các khối — dùng chung cho cả CSV và Excel (.xlsx).
  *
  * <h3>Xuất đúng những gì màn hình đang hiện, không nhiều hơn</h3>
  *
@@ -211,9 +211,11 @@ function statusLabel(status: EventMasterData['event']['status']): string {
 function isoLocal(value: string): string {
   const date = new Date(value);
   const pad = (n: number) => String(n).padStart(2, '0');
+  // Giờ Việt Nam cố định (UTC+7, không có giờ mùa hè), không theo múi giờ máy của người xuất báo cáo.
+  const vn = new Date(date.getTime() + 7 * 60 * 60 * 1000);
   return (
-    `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}` +
-    ` ${pad(date.getHours())}:${pad(date.getMinutes())}`
+    `${vn.getUTCFullYear()}-${pad(vn.getUTCMonth() + 1)}-${pad(vn.getUTCDate())}` +
+    ` ${pad(vn.getUTCHours())}:${pad(vn.getUTCMinutes())}`
   );
 }
 

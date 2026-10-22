@@ -1,0 +1,18 @@
+{
+  "5e55a0a1-0000-4000-8000-000000000001": {
+    "eventSessionId": "5e55a0a1-0000-4000-8000-000000000001",
+    "availabilityVersion": 1,
+    "seats": [
+      { "id": "5ea70000-0000-4000-8000-000000000001", "seatCode": "A-1-1", "zoneCode": "A", "sectionLabel": "Khu A", "rowLabel": "1", "seatLabel": "1", "posX": null, "posY": null, "ticketTypeId": "71e7a0a1-0000-4000-8000-000000000001", "ticketTypeName": "Hạng VIP", "priceVnd": 1500000, "status": "AVAILABLE" },
+      { "id": "5ea70000-0000-4000-8000-000000000002", "seatCode": "A-1-2", "zoneCode": "A", "sectionLabel": "Khu A", "rowLabel": "1", "seatLabel": "2", "posX": null, "posY": null, "ticketTypeId": "71e7a0a1-0000-4000-8000-000000000001", "ticketTypeName": "Hạng VIP", "priceVnd": 1500000, "status": "AVAILABLE" },
+      { "id": "5ea70000-0000-4000-8000-000000000003", "seatCode": "A-1-3", "zoneCode": "A", "sectionLabel": "Khu A", "rowLabel": "1", "seatLabel": "3", "posX": null, "posY": null, "ticketTypeId": "71e7a0a1-0000-4000-8000-000000000001", "ticketTypeName": "Hạng VIP", "priceVnd": 1500000, "status": "AVAILABLE" },
+      { "id": "5ea70000-0000-4000-8000-000000000004", "seatCode": "A-1-4", "zoneCode": "A", "sectionLabel": "Khu A", "rowLabel": "1", "seatLabel": "4", "posX": null, "posY": null, "ticketTypeId": "71e7a0a1-0000-4000-8000-000000000001", "ticketTypeName": "Hạng VIP", "priceVnd": 1500000, "status": "AVAILABLE" },
+      { "id": "5ea70000-0000-4000-8000-000000000005", "seatCode": "A-1-5", "zoneCode": "A", "sectionLabel": "Khu A", "rowLabel": "1", "seatLabel": "5", "posX": null, "posY": null, "ticketTypeId": "71e7a0a1-0000-4000-8000-000000000001", "ticketTypeName": "Hạng VIP", "priceVnd": 1500000, "status": "SOLD" },
+      { "id": "5ea70000-0000-4000-8000-000000000006", "seatCode": "A-1-6", "zoneCode": "A", "sectionLabel": "Khu A", "rowLabel": "1", "seatLabel": "6", "posX": null, "posY": null, "ticketTypeId": "71e7a0a1-0000-4000-8000-000000000001", "ticketTypeName": "Hạng VIP", "priceVnd": 1500000, "status": "HELD" }
+    ],
+    "standingZones": [
+      { "zoneCode": "SAN", "ticketTypeId": "71e7a0a1-0000-4000-8000-000000000002", "ticketTypeName": "Vé đứng", "priceVnd": 450000, "available": 50, "capacity": 50 }
+    ],
+    "purchaseAllowance": { "limit": 6, "used": 0, "remaining": 6 }
+  }
+}
