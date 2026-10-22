@@ -27,6 +27,21 @@ const VERDICTS: Record<CheckinResult, { title: string; hint: string; accepted: b
   NOT_FOUND: { title: 'KHÔNG TÌM THẤY VÉ', hint: 'Không có vé ứng với mã này.', accepted: false },
 };
 
+/**
+ * Kết quả mà app chưa biết (backend thêm mã mới, hoặc trả EXITED / NOT_OPEN_YET… cho một đường quét khác).
+ *
+ * Phải có một màn hình riêng và mặc định là TỪ CHỐI: bản trước để `verdict = null`, nhưng vẫn khoá đọc mã
+ * (`paused`) — nhân viên nhìn màn hình trống, không có nút nào và ô nhập tay cũng biến mất, kẹt giữa cổng.
+ * Từ chối an toàn hơn cho vào: cái giá của nhầm lẫn này là hỏi lại quản lý, không phải một vé giả lọt vào.
+ */
+function unknownVerdict(code: string) {
+  return {
+    title: 'KHÔNG CHO VÀO',
+    hint: `Kết quả "${code}" ứng dụng chưa hiểu. Đừng cho vào, hỏi quản lý.`,
+    accepted: false,
+  };
+}
+
 export interface ScannerProps {
   eventSessionId: string;
   organizationId: string;
@@ -188,7 +203,7 @@ export function Scanner({
     }
   }
 
-  const verdict = result ? VERDICTS[result.result] : null;
+  const verdict = result ? (VERDICTS[result.result] ?? unknownVerdict(String(result.result))) : null;
 
   return (
     <div className={styles.page}>
