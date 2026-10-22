@@ -2,3 +2,8 @@
 dist/
 .env*.local
 expo-env.d.ts
+
+# Thư mục native do `expo prebuild` sinh ra (Continuous Native Generation), không phải mã nguồn —
+# cùng quy ước với mobile-scanner và mobile-customer. android/app/build có thể nặng hàng GB.
+/android/
+/ios/
