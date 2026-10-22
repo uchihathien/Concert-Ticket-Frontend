@@ -2,7 +2,7 @@ import type { EventMasterData, OrganizationSummary } from '@nexaticket/ts-sdk';
 import { eventCategoryLabel, type CsvSection } from '@nexaticket/ui';
 
 /**
- * Dựng báo cáo đầy đủ của một sự kiện thành các khối CSV.
+ * Dựng báo cáo đầy đủ của một sự kiện thành các khối — dùng chung cho cả CSV và Excel (.xlsx).
  *
  * <h3>Xuất đúng những gì màn hình đang hiện, không nhiều hơn</h3>
  *

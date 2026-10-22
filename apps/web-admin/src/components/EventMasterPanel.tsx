@@ -15,6 +15,7 @@ import {
   csvFilename,
   DetailRows,
   downloadCsv,
+  downloadXlsx,
   MoneyText,
   Panel,
   StatCard,
@@ -23,9 +24,11 @@ import {
   eventCategoryLabel,
   formatDateTime,
   formatNumber,
+  reportFilename,
   toCsv,
+  toXlsx,
 } from '@nexaticket/ui';
-import { Download, TriangleAlert } from 'lucide-react';
+import { Download, FileSpreadsheet, TriangleAlert } from 'lucide-react';
 import { useMemo } from 'react';
 import { buildEventReport } from './event-report';
 import styles from './event-master-panel.module.css';
@@ -63,9 +66,17 @@ export function EventMasterPanel({
   return (
     <div className={styles.master}>
       <div className={styles.toolbar}>
-        <Button variant="secondary" onClick={() => exportReport(data, organization)}>
+        {/*
+          Excel đứng trước: người nhận báo cáo mở bằng Excel, và .xlsx giữ số là số, mỗi khối một
+          sheet. CSV giữ lại cho ai cần nạp vào công cụ khác.
+        */}
+        <Button variant="secondary" onClick={() => exportXlsx(data, organization)}>
+          <FileSpreadsheet size={16} aria-hidden="true" />
+          Xuất Excel (.xlsx)
+        </Button>
+        <Button variant="ghost" onClick={() => exportCsv(data, organization)}>
           <Download size={16} aria-hidden="true" />
-          Xuất báo cáo (CSV)
+          Xuất CSV
         </Button>
       </div>
 
@@ -718,10 +729,18 @@ function share(zone: ZoneRollup): number {
  * Xuất báo cáo đầy đủ của sự kiện đang xem.
  *
  * Dựng từ CHÍNH dữ liệu màn hình đang vẽ, không gọi thêm endpoint nào — nhờ vậy file tải về và màn
- * hình không thể nói hai chuyện khác nhau, kể cả khi một service phía sau vừa im lặng. Chi tiết
- * định dạng (BOM, dấu tách cột, chặn công thức Excel) nằm ở `@nexaticket/ui/csv`.
+ * hình không thể nói hai chuyện khác nhau, kể cả khi một service phía sau vừa im lặng. Hai định dạng
+ * dùng chung một bộ khối từ `buildEventReport`, nên chúng không thể lệch nhau. Chi tiết định dạng
+ * nằm ở `@nexaticket/ui/csv` (BOM, dấu tách cột, chặn công thức) và `@nexaticket/ui/xlsx`.
  */
-function exportReport(data: EventMasterData, organization: OrganizationSummary): void {
+function exportXlsx(data: EventMasterData, organization: OrganizationSummary): void {
+  downloadXlsx(
+    reportFilename([organization.name, data.event.title], 'xlsx'),
+    toXlsx(buildEventReport(data, organization)),
+  );
+}
+
+function exportCsv(data: EventMasterData, organization: OrganizationSummary): void {
   downloadCsv(
     csvFilename([organization.name, data.event.title]),
     toCsv(buildEventReport(data, organization)),
