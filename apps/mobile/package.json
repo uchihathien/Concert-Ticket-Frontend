@@ -8,8 +8,10 @@
   },
   "scripts": {
     "start": "expo start --lan --port 8082",
+    "start:staff": "APP_VARIANT=staff expo start --lan --port 8083",
     "start:tunnel": "expo start --tunnel --port 8082",
     "android": "expo start --android --lan --port 8082",
+    "android:staff": "APP_VARIANT=staff expo start --android --lan --port 8083",
     "ios": "expo start --ios --lan --port 8082",
     "web": "expo start --web --port 8082",
     "lint": "expo lint",
@@ -17,6 +19,9 @@
   },
   "dependencies": {
     "@nexaticket/ts-sdk": "workspace:*",
+    "@noble/ed25519": "^3.2.0",
+    "@noble/hashes": "^2.4.0",
+    "@react-native-community/netinfo": "12.0.1",
     "@tanstack/react-query": "^5.62.11",
     "expo": "~57.0.27",
     "expo-auth-session": "~57.0.14",
@@ -28,6 +33,7 @@
     "expo-router": "~57.0.25",
     "expo-secure-store": "~57.0.4",
     "expo-splash-screen": "~57.0.9",
+    "expo-sqlite": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.3",
     "expo-web-browser": "~57.0.3",

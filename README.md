@@ -87,16 +87,55 @@ bấm vào là ra trang lỗi của Keycloak.
 | `web-admin`    | 3001 | Tổ chức                             | Sáng    |
 | `web-scanner`  | 3002 | Nhân viên soát vé                   | **Tối** |
 | `web-platform` | 3003 | Superadmin                          | Sáng    |
-| `mobile` | Expo 8082 | Một app cho mọi vai: khách, tổ chức, soát vé, superadmin (iOS/Android) | **Tối** |
+| `mobile` (NexaTicket) | Expo 8082 | Khách mua vé (iOS/Android) | **Tối** |
+| `mobile` (NexaTicket Staff) | Expo 8083 | Ban tổ chức + nhân viên soát vé (iOS/Android) | **Tối** |
 
-Chạy app native từ thư mục `frontend/`: `pnpm --filter @nexaticket/mobile start`, rồi quét một mã QR
-bằng Expo Go. App dùng Expo SDK 57 nên Node cần từ 22.13 trở lên; biến môi trường xem
-[`apps/mobile/.env.example`](apps/mobile/.env.example).
+`apps/mobile` là MỘT mã nguồn cho HAI ứng dụng (Expo app variants), chọn bằng `APP_VARIANT` — xem
+[`apps/mobile/app.config.ts`](apps/mobile/app.config.ts):
 
-`mobile` gộp bốn app `mobile-customer`, `mobile-organizer`, `mobile-platform`, `mobile-scanner`: mỗi vai
-là một nhóm route trong `app/`, và root layout chỉ mở nhóm của vai đang đăng nhập. Vai suy từ
-`/v1/me/permissions` (xem `apps/mobile/lib/roles.ts`), không đọc tên role trong JWT. Khách chưa đăng
-nhập vẫn xem được sự kiện trong nhóm `(customer)`.
+| Bản | Lệnh chạy (từ `frontend/`) | Tên / scheme | Bundle / package | Client Keycloak |
+| --- | --- | --- | --- | --- |
+| Khách | `pnpm --filter @nexaticket/mobile start` (cổng 8082) | NexaTicket / `nexaticket` | `com.nexaticket.customer` | `mobile-customer` |
+| Staff | `pnpm --filter @nexaticket/mobile start:staff` (cổng 8083) | NexaTicket Staff / `nexaticket-staff` | `com.nexaticket.staff` | `mobile-staff` |
+
+Quét mã QR bằng Expo Go. Expo SDK 57 nên Node cần từ 22.13; biến môi trường xem
+[`apps/mobile/.env.example`](apps/mobile/.env.example). Chỉ bản Staff khai quyền camera.
+
+- **Bản khách** chỉ có nhóm `(customer)`. Tài khoản ban tổ chức / nhân viên / quản trị đăng nhập vào đây
+  thì được báo dùng NexaTicket Staff hoặc web.
+- **Bản Staff** chỉ có `(organizer)` và `(scanner)`. Chưa đăng nhập thì mở màn đăng nhập nhân viên
+  (`app/staff-login.tsx`): quét mã QR trên phiếu, hoặc gõ tên đăng nhập + PIN, hoặc "Đăng nhập ban tổ
+  chức" (tài khoản email, qua trình duyệt). Deep link `nexaticket-staff://login?u=…&p=…` cũng đăng nhập.
+  Tài khoản có cả hai vai vào khu ban tổ chức; tab Soát vé chuyển sang máy quét.
+- Quản trị nền tảng chỉ dùng trên web — không còn nhóm `(platform)` trên điện thoại.
+
+Vai suy từ `/v1/me/permissions` (xem `apps/mobile/lib/roles.ts`), không đọc tên role trong JWT.
+
+### Build APK bằng EAS
+
+```bash
+cd apps/mobile
+eas build -p android --profile staff-preview      # APK NexaTicket Staff
+eas build -p android --profile customer-preview   # APK NexaTicket
+# production: customer-production / staff-production (eas.json)
+```
+
+### Quy trình nhân viên soát vé
+
+1. **web-admin → Nhân sự soát vé → Thêm nhân viên**: họ tên, SĐT (tuỳ chọn), sự kiện. Hệ thống cấp tên
+   đăng nhập (`nexa-nv01`) + PIN 6 số và hiện **phiếu nhân viên** có mã QR — bấm **In phiếu**. PIN chỉ
+   hiện một lần; mất phiếu thì **Cấp lại PIN**.
+2. Cùng trang, mục **Ca trực**: thêm cổng cho sự kiện, tạo ca theo suất + cổng + giờ, chọn nhân viên.
+3. Nhân viên mở **NexaTicket Staff → Quét mã QR nhân viên**, đưa phiếu vào camera → vào **Ca của tôi**.
+4. **Bắt đầu ca** (sớm tối đa 30 phút) → máy tải dữ liệu vé của suất về máy (SQLite) → máy quét, cổng
+   cố định theo ca. Ngoài ca thì không quét được (`SHIFT_NOT_ACTIVE`).
+5. **Mất mạng** vẫn soát: dải vàng "ĐANG SOÁT OFFLINE · N lượt chờ đồng bộ"; máy tự kiểm chữ ký QR
+   (Ed25519) và trạng thái trong/ngoài trên dữ liệu đã tải. Có mạng lại tự gửi theo lô; lượt xung đột
+   (vd hai máy cùng cho một vé vào) được báo ngay.
+6. Khách quên vé: **TÌM KHÁCH** → tên / email / SĐT / mã vé → tick "Đã đối chiếu giấy tờ tuỳ thân" →
+   **CHO VÀO**. Offline thì tìm trong dữ liệu trên máy.
+7. **Kết thúc ca** → gửi nốt hàng đợi → tổng kết bàn giao (vào, ra, từ chối, thủ công, tra cứu, offline).
+   Tài khoản tự khoá 6 giờ sau suất cuối của các sự kiện được gán; ban tổ chức **Gia hạn** được.
 
 `web-platform` tách khỏi `web-admin` vì ranh giới tài chính là ranh giới bảo mật: nó gọi deployable `finance`, có client OIDC riêng, và không nên chạy chung bundle với app mà tổ chức dùng.
 

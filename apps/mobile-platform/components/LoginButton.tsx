@@ -12,6 +12,9 @@ export function LoginButton() {
   const [request, response, promptAsync] = AuthSession.useAuthRequest({
     clientId: mobileClientId, redirectUri, responseType: AuthSession.ResponseType.Code,
     scopes: ['openid', 'profile', 'email'], usePKCE: true,
+    // Bắt Keycloak luôn hỏi tài khoản: phiên SSO còn sống (của app khác hoặc tài khoản vừa thoát)
+    // không được tự đăng nhập vào app này.
+    prompt: AuthSession.Prompt.Login,
   }, discovery);
   useEffect(() => {
     if (response?.type !== 'success' || !request?.codeVerifier) return;
@@ -25,7 +28,7 @@ export function LoginButton() {
       .finally(() => setBusy(false));
   }, [response, request, refresh]);
   return (
-    <Pressable accessibilityRole="button" disabled={!request || busy} onPress={() => { setBusy(true); void promptAsync().finally(() => setBusy(false)); }} style={({ pressed }) => [styles.button, pressed && styles.pressed, (!request || busy) && styles.disabled]}>
+    <Pressable accessibilityRole="button" disabled={!request || busy} onPress={() => { setBusy(true); void promptAsync({ preferEphemeralSession: true }).finally(() => setBusy(false)); }} style={({ pressed }) => [styles.button, pressed && styles.pressed, (!request || busy) && styles.disabled]}>
       <Text style={styles.text}>{busy ? 'Đang kết nối...' : 'Đăng nhập nền tảng'}</Text>
     </Pressable>
   );

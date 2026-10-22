@@ -5,7 +5,8 @@ import { Alert, Pressable, StyleSheet, Text } from 'react-native';
 import { useMobileAuth } from '@/lib/auth-context';
 import { discovery, exchangeMobileCode, mobileClientId, redirectUri } from '@/lib/auth-session';
 
-export function LoginButton() {
+/** `link`: dòng chữ nhỏ thay vì nút lớn — dùng ở màn đăng nhập nhân viên cho tài khoản email. */
+export function LoginButton({ variant = 'button', label }: { variant?: 'button' | 'link'; label?: string } = {}) {
   const { refresh } = useMobileAuth();
   const handledCode = useRef<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -50,8 +51,14 @@ export function LoginButton() {
         setBusy(true);
         void promptAsync({ preferEphemeralSession: true }).finally(() => setBusy(false));
       }}
-      style={({ pressed }) => [styles.button, pressed && styles.pressed, (!request || busy) && styles.disabled]}>
-      <Text style={styles.text}>{busy ? 'Đang kết nối...' : 'Đăng nhập bằng NexaTicket'}</Text>
+      style={({ pressed }) => [
+        variant === 'link' ? styles.link : styles.button,
+        pressed && styles.pressed,
+        (!request || busy) && styles.disabled,
+      ]}>
+      <Text style={variant === 'link' ? styles.linkText : styles.text}>
+        {busy ? 'Đang kết nối...' : label ?? 'Đăng nhập bằng NexaTicket'}
+      </Text>
     </Pressable>
   );
 }
@@ -61,4 +68,6 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.82 },
   disabled: { opacity: 0.58 },
   text: { color: '#17210D', fontSize: 14, fontWeight: '800' },
+  link: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
+  linkText: { color: '#D5FF66', fontSize: 13, fontWeight: '700' },
 });

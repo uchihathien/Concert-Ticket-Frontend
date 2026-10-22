@@ -8,6 +8,7 @@ import type {
   GrantMemberResult,
   InvitationCreated,
   InviteMemberRequest,
+  CreateStaffAccountRequest,
   InviteStaffRequest,
   InviteStaffResult,
   Member,
@@ -18,6 +19,8 @@ import type {
   OrganizationSummary,
   PendingInvitation,
   RoleView,
+  StaffAccountPublicStatus,
+  StaffCredentials,
   StaffMember,
 } from '../types/identity';
 
@@ -359,6 +362,62 @@ export async function cancelStaffInvitation(
   userId: string,
 ): Promise<void> {
   await client.delete<void>(`${staffPath(organizationId)}/${encodeURIComponent(userId)}/invitation`);
+}
+
+/** Cấp tài khoản nhân viên (tên đăng nhập tự sinh + PIN 6 số). Phản hồi mang PIN — chỉ một lần. */
+export async function createStaffAccount(
+  client: ApiClient,
+  organizationId: string,
+  request: CreateStaffAccountRequest,
+): Promise<StaffCredentials> {
+  const response = await client.post<StaffCredentials>(`${staffPath(organizationId)}/accounts`, request);
+  return response.data;
+}
+
+/** Cấp PIN mới cho tài khoản nhân viên; mọi phiên đang mở của họ bị đóng. */
+export async function resetStaffPin(
+  client: ApiClient,
+  organizationId: string,
+  userId: string,
+): Promise<StaffCredentials> {
+  const response = await client.post<StaffCredentials>(
+    `${staffPath(organizationId)}/${encodeURIComponent(userId)}/pin`,
+  );
+  return response.data;
+}
+
+export async function lockStaffAccount(client: ApiClient, organizationId: string, userId: string): Promise<void> {
+  await client.post<void>(`${staffPath(organizationId)}/${encodeURIComponent(userId)}/lock`);
+}
+
+/** Mở khoá tài khoản bị khoá tay. Tài khoản hết hạn trả 409 `STAFF_ACCOUNT_EXPIRED` — dùng gia hạn. */
+export async function unlockStaffAccount(client: ApiClient, organizationId: string, userId: string): Promise<void> {
+  await client.post<void>(`${staffPath(organizationId)}/${encodeURIComponent(userId)}/unlock`);
+}
+
+/** Gia hạn tới `until` (bỏ trống là 24 giờ nữa); tài khoản đang hết hạn được bật lại. */
+export async function extendStaffAccount(
+  client: ApiClient,
+  organizationId: string,
+  userId: string,
+  until?: string,
+): Promise<{ accessUntil: string }> {
+  const response = await client.post<{ accessUntil: string }>(
+    `${staffPath(organizationId)}/${encodeURIComponent(userId)}/extend`,
+    until ? { until } : {},
+  );
+  return response.data;
+}
+
+/** Bị khoá hay hết hạn — màn đăng nhập nhân viên hỏi sau khi Keycloak báo "Account disabled". */
+export async function getStaffAccountStatus(
+  client: ApiClient,
+  username: string,
+): Promise<StaffAccountPublicStatus> {
+  const response = await client.get<{ status: StaffAccountPublicStatus }>(
+    `/v1/staff-accounts/status?username=${encodeURIComponent(username)}`,
+  );
+  return response.data.status;
 }
 
 /** Sự kiện mà chính người gọi được soát — app soát vé dùng để chỉ hiện đúng những suất đó. */

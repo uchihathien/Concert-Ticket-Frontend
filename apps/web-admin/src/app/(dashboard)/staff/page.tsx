@@ -4,18 +4,24 @@ import {
   ApiError,
   useAdminEvents,
   useCancelStaffInvitation,
+  useCreateStaffAccount,
+  useExtendStaffAccount,
   useHasPermission,
   useInviteStaff,
+  useLockStaffAccount,
   useRemoveMember,
   useResendStaffInvitation,
+  useResetStaffPin,
   useSetStaffEvents,
   useStaff,
+  useUnlockStaffAccount,
   type AdminEventRow,
   type OrganizationSummary,
+  type StaffCredentials,
   type StaffMember,
-  type StaffStatus,
 } from '@nexaticket/ts-sdk';
 import {
+  DateTimeField,
   ActionMenu,
   Badge,
   Button,
@@ -27,23 +33,52 @@ import {
   RowActions,
   Table,
   formatDate,
+  isoToVnLocal,
   useToast,
+  vnLocalToIso,
   type ActionMenuItem,
 } from '@nexaticket/ui';
-import { CalendarCheck, MailX, Send, UserMinus } from 'lucide-react';
+import { CalendarCheck, CalendarClock, KeyRound, Lock, LockOpen, MailX, Send, UserMinus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { OrganizationGate } from '@/components/OrganizationGate';
+import { StaffCardModal } from './staff-card';
 import { StaffHistory } from './staff-history';
+import { StaffShifts } from './staff-shifts';
 
-const STATUS: Record<StaffStatus, { label: string; tone: 'success' | 'warn' | 'danger' }> = {
-  ACTIVE: { label: 'Đã kích hoạt', tone: 'success' },
-  INVITED: { label: 'Đã mời', tone: 'warn' },
-  EXPIRED: { label: 'Link hết hạn', tone: 'danger' },
-  SEND_FAILED: { label: 'Lỗi gửi thư', tone: 'danger' },
-};
+type Tone = 'success' | 'warn' | 'danger';
+
+/** Cùng chữ EXPIRED nhưng hai nghĩa: tài khoản PIN hết hạn, hay liên kết trong thư mời hết hạn. */
+function statusOf(row: StaffMember): { label: string; tone: Tone } {
+  if (row.kind === 'ACCOUNT') {
+    if (row.status === 'LOCKED') return { label: 'Đã khoá', tone: 'danger' };
+    if (row.status === 'EXPIRED') return { label: 'Hết hạn', tone: 'danger' };
+    return { label: 'Đang dùng', tone: 'success' };
+  }
+  switch (row.status) {
+    case 'INVITED':
+      return { label: 'Đã mời', tone: 'warn' };
+    case 'EXPIRED':
+      return { label: 'Link hết hạn', tone: 'danger' };
+    case 'SEND_FAILED':
+      return { label: 'Lỗi gửi thư', tone: 'danger' };
+    default:
+      return { label: 'Đã kích hoạt', tone: 'success' };
+  }
+}
+
+/** Giá trị mặc định cho ô gia hạn: 24 giờ nữa, giờ Việt Nam như mọi ô giờ khác của app. */
+function inTwentyFourHours(): string {
+  return isoToVnLocal(new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString());
+}
 
 /**
  * A-STAFF — nhân viên soát vé của tổ chức.
+ *
+ * <h3>Hai cách có nhân viên</h3>
+ *
+ * Mặc định là **Thêm nhân viên**: hệ thống cấp tên đăng nhập + mã PIN và in ra phiếu có mã QR —
+ * cộng tác viên theo ca thường không có email, và cần vào việc ngay tại quầy. **Mời bằng email** là
+ * luồng cũ, giữ cho người có email muốn tự đặt mật khẩu.
  *
  * <h3>Vì sao tách khỏi trang Thành viên</h3>
  *
@@ -79,7 +114,17 @@ function StaffContent({ organization }: { organization: OrganizationSummary }) {
   const resend = useResendStaffInvitation(organizationId);
   const cancel = useCancelStaffInvitation(organizationId);
   const removeMember = useRemoveMember(organizationId);
+  const createAccount = useCreateStaffAccount(organizationId);
+  const resetPin = useResetStaffPin(organizationId);
+  const lockAccount = useLockStaffAccount(organizationId);
+  const unlockAccount = useUnlockStaffAccount(organizationId);
+  const extendAccount = useExtendStaffAccount(organizationId);
 
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createEvents, setCreateEvents] = useState<string[]>([]);
+  const [credentials, setCredentials] = useState<StaffCredentials | null>(null);
+  const [extending, setExtending] = useState<StaffMember | null>(null);
+  const [extendUntil, setExtendUntil] = useState('');
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteEvents, setInviteEvents] = useState<string[]>([]);
   const [assigning, setAssigning] = useState<StaffMember | null>(null);
@@ -111,6 +156,53 @@ function StaffContent({ organization }: { organization: OrganizationSummary }) {
     );
   };
 
+  const submitCreate = (formData: FormData) => {
+    const phone = String(formData.get('phone') ?? '').trim();
+    createAccount.mutate(
+      {
+        fullName: String(formData.get('fullName') ?? '').trim(),
+        phone: phone || null,
+        eventIds: createEvents,
+      },
+      {
+        onSuccess: (result) => {
+          setCreateOpen(false);
+          setCreateEvents([]);
+          setCredentials(result);
+        },
+        onError: fail,
+      },
+    );
+  };
+
+  const submitExtend = () => {
+    if (!extending) return;
+    const until = vnLocalToIso(extendUntil);
+    extendAccount.mutate(
+      { userId: extending.userId, until },
+      {
+        onSuccess: (result) => {
+          setExtending(null);
+          toast.show({ tone: 'success', message: `Đã gia hạn tới ${formatDate(result.accessUntil)}` });
+        },
+        onError: fail,
+      },
+    );
+  };
+
+  /** Chạy một thao tác rồi đóng hộp xác nhận, báo kết quả bằng toast. */
+  const confirmRun = (mutate: (callbacks: { onSuccess: () => void; onError: (error: unknown) => void }) => void, done: string) =>
+    mutate({
+      onSuccess: () => {
+        setConfirm(null);
+        toast.show({ tone: 'success', message: done });
+      },
+      onError: (error) => {
+        setConfirm(null);
+        fail(error);
+      },
+    });
+
   const submitAssign = () => {
     if (!assigning) return;
     setEvents.mutate(
@@ -141,16 +233,27 @@ function StaffContent({ organization }: { organization: OrganizationSummary }) {
     <>
       <PageHeader
         title="Nhân sự soát vé"
-        description="Mời nhân viên bằng email và gán sự kiện họ được soát. Bạn và các quản lý sự kiện tự soát được, không cần thêm ở đây."
+        description="Cấp tài khoản cho nhân viên soát vé và gán sự kiện họ được soát. Bạn và các quản lý sự kiện tự soát được, không cần thêm ở đây."
         actions={
-          <Button
-            onClick={() => {
-              setInviteEvents([]);
-              setInviteOpen(true);
-            }}
-          >
-            Mời nhân viên
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setInviteEvents([]);
+                setInviteOpen(true);
+              }}
+            >
+              Mời bằng email
+            </Button>
+            <Button
+              onClick={() => {
+                setCreateEvents([]);
+                setCreateOpen(true);
+              }}
+            >
+              Thêm nhân viên
+            </Button>
+          </div>
         }
       />
 
@@ -173,8 +276,15 @@ function StaffContent({ organization }: { organization: OrganizationSummary }) {
               header: 'Nhân viên',
               cell: (row) => (
                 <div className="grid gap-0.5">
-                  <span>{row.fullName ?? row.email}</span>
-                  {row.fullName ? <span className="text-[13px] text-muted">{row.email}</span> : null}
+                  <span>{row.fullName ?? row.username ?? row.email}</span>
+                  {row.kind === 'ACCOUNT' ? (
+                    <span className="font-mono text-[13px] text-muted">
+                      {row.username}
+                      {row.phone ? ` · ${row.phone}` : ''}
+                    </span>
+                  ) : row.fullName ? (
+                    <span className="text-[13px] text-muted">{row.email}</span>
+                  ) : null}
                 </div>
               ),
             },
@@ -184,10 +294,13 @@ function StaffContent({ organization }: { organization: OrganizationSummary }) {
               cell: (row) => (
                 <div className="grid gap-0.5">
                   <span>
-                    <Badge tone={STATUS[row.status].tone}>{STATUS[row.status].label}</Badge>
+                    <Badge tone={statusOf(row).tone}>{statusOf(row).label}</Badge>
                   </span>
-                  {row.status === 'INVITED' && row.expiresAt ? (
+                  {row.kind === 'INVITATION' && row.status === 'INVITED' && row.expiresAt ? (
                     <span className="text-[13px] text-muted">Link hết hạn {formatDate(row.expiresAt)}</span>
+                  ) : null}
+                  {row.kind === 'ACCOUNT' && row.accessUntil ? (
+                    <span className="text-[13px] text-muted">Gia hạn tới {formatDate(row.accessUntil)}</span>
                   ) : null}
                 </div>
               ),
@@ -208,7 +321,7 @@ function StaffContent({ organization }: { organization: OrganizationSummary }) {
             },
             {
               key: 'invited',
-              header: 'Người mời',
+              header: 'Người tạo / mời',
               cell: (row) =>
                 row.invitedAt ? (
                   <div className="grid gap-0.5">
@@ -223,7 +336,94 @@ function StaffContent({ organization }: { organization: OrganizationSummary }) {
               key: 'actions',
               header: '',
               cell: (row) => {
-                const pending = row.status !== 'ACTIVE';
+                const name = row.fullName ?? row.username ?? row.email ?? 'nhân viên';
+                const pending = row.kind === 'INVITATION' && row.status !== 'ACTIVE';
+                const removeItem: ActionMenuItem = {
+                  label: 'Gỡ khỏi tổ chức',
+                  icon: <UserMinus />,
+                  tone: 'danger' as const,
+                  onSelect: () =>
+                    setConfirm({
+                      title: 'Gỡ khỏi tổ chức?',
+                      // Nói rõ thứ còn lại: người gỡ cần biết lịch sử quét không mất.
+                      body: `${name} mất quyền soát vé ngay lập tức. Tài khoản và lịch sử quét của họ được giữ lại để đối soát.`,
+                      confirmLabel: 'Gỡ nhân viên',
+                      run: () => confirmRun((callbacks) => removeMember.mutate(row.userId, callbacks), 'Đã gỡ nhân viên'),
+                    }),
+                };
+                if (row.kind === 'ACCOUNT') {
+                  const accountItems: ActionMenuItem[] = [
+                    {
+                      label: 'Gán sự kiện',
+                      icon: <CalendarCheck />,
+                      onSelect: () => {
+                        setAssignEvents(row.eventIds);
+                        setAssigning(row);
+                      },
+                    },
+                    {
+                      label: 'Cấp lại PIN',
+                      icon: <KeyRound />,
+                      onSelect: () =>
+                        setConfirm({
+                          title: 'Cấp lại PIN?',
+                          body: `${name} nhận một PIN mới và phiếu mới. PIN cũ hết dùng, máy đang đăng nhập bằng tài khoản này bị đăng xuất.`,
+                          confirmLabel: 'Cấp PIN mới',
+                          run: () =>
+                            resetPin.mutate(row.userId, {
+                              onSuccess: (result) => {
+                                setConfirm(null);
+                                setCredentials(result);
+                              },
+                              onError: (error) => {
+                                setConfirm(null);
+                                fail(error);
+                              },
+                            }),
+                        }),
+                    },
+                    row.status === 'LOCKED'
+                      ? {
+                          label: 'Mở khoá',
+                          icon: <LockOpen />,
+                          onSelect: () =>
+                            setConfirm({
+                              title: 'Mở khoá tài khoản?',
+                              body: `${name} đăng nhập lại được bằng PIN hiện tại.`,
+                              confirmLabel: 'Mở khoá',
+                              run: () =>
+                                confirmRun((callbacks) => unlockAccount.mutate(row.userId, callbacks), 'Đã mở khoá'),
+                            }),
+                        }
+                      : {
+                          label: 'Khoá',
+                          icon: <Lock />,
+                          tone: 'danger' as const,
+                          onSelect: () =>
+                            setConfirm({
+                              title: 'Khoá tài khoản?',
+                              body: `${name} bị đăng xuất ngay và không đăng nhập được cho tới khi mở khoá.`,
+                              confirmLabel: 'Khoá',
+                              run: () =>
+                                confirmRun((callbacks) => lockAccount.mutate(row.userId, callbacks), 'Đã khoá tài khoản'),
+                            }),
+                        },
+                    {
+                      label: 'Gia hạn',
+                      icon: <CalendarClock />,
+                      onSelect: () => {
+                        setExtendUntil(inTwentyFourHours());
+                        setExtending(row);
+                      },
+                    },
+                    removeItem,
+                  ];
+                  return (
+                    <RowActions>
+                      <ActionMenu label={`Thao tác với ${name}`} items={accountItems} />
+                    </RowActions>
+                  );
+                }
                 const items: ActionMenuItem[] = [
                   {
                     label: 'Gán sự kiện',
@@ -279,35 +479,11 @@ function StaffContent({ organization }: { organization: OrganizationSummary }) {
                             }),
                         },
                       ]
-                    : [
-                        {
-                          label: 'Gỡ khỏi tổ chức',
-                          icon: <UserMinus />,
-                          tone: 'danger' as const,
-                          onSelect: () =>
-                            setConfirm({
-                              title: 'Gỡ khỏi tổ chức?',
-                              // Nói rõ thứ còn lại: người gỡ cần biết lịch sử quét không mất.
-                              body: `${row.email} mất quyền soát vé ngay lập tức. Tài khoản và lịch sử quét của họ được giữ lại để đối soát.`,
-                              confirmLabel: 'Gỡ nhân viên',
-                              run: () =>
-                                removeMember.mutate(row.userId, {
-                                  onSuccess: () => {
-                                    setConfirm(null);
-                                    toast.show({ tone: 'success', message: 'Đã gỡ nhân viên' });
-                                  },
-                                  onError: (error) => {
-                                    setConfirm(null);
-                                    fail(error);
-                                  },
-                                }),
-                            }),
-                        },
-                      ]),
+                    : [removeItem]),
                 ];
                 return (
                   <RowActions>
-                    <ActionMenu label={`Thao tác với ${row.fullName ?? row.email}`} items={items} />
+                    <ActionMenu label={`Thao tác với ${name}`} items={items} />
                   </RowActions>
                 );
               },
@@ -317,9 +493,79 @@ function StaffContent({ organization }: { organization: OrganizationSummary }) {
       )}
 
       <Modal
+        open={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title="Thêm nhân viên soát vé"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setCreateOpen(false)}>
+              Huỷ
+            </Button>
+            <Button type="submit" form="create-staff" loading={createAccount.isPending}>
+              Tạo tài khoản
+            </Button>
+          </>
+        }
+      >
+        <form id="create-staff" action={submitCreate} className="grid gap-4">
+          <Input name="fullName" label="Họ tên" required maxLength={120} />
+          <Input
+            name="phone"
+            type="tel"
+            label="Số điện thoại"
+            hint="Không bắt buộc — để liên lạc khi đổi ca."
+            maxLength={20}
+            pattern="[0-9+ .()-]{6,20}"
+          />
+          <EventChecklist events={events.data} selected={createEvents} onChange={setCreateEvents} />
+          <p className="m-0 text-[13px] text-muted">
+            Hệ thống cấp tên đăng nhập và mã PIN 6 số, rồi hiện phiếu có mã QR để in. Nhân viên không cần
+            email. Tài khoản tự khoá 6 giờ sau suất cuối của các sự kiện được gán.
+          </p>
+        </form>
+      </Modal>
+
+      <StaffCardModal
+        credentials={credentials}
+        organizationName={organization.name}
+        eventTitles={eventTitles}
+        onClose={() => setCredentials(null)}
+      />
+
+      <Modal
+        open={extending !== null}
+        onClose={() => setExtending(null)}
+        title="Gia hạn tài khoản"
+        footer={
+          <>
+            <Button variant="secondary" onClick={() => setExtending(null)}>
+              Huỷ
+            </Button>
+            <Button onClick={submitExtend} loading={extendAccount.isPending}>
+              Gia hạn
+            </Button>
+          </>
+        }
+      >
+        <div className="grid gap-4">
+          <p className="m-0 text-muted">{extending?.fullName ?? extending?.username}</p>
+          <DateTimeField
+            label="Dùng được tới (giờ Việt Nam)"
+            value={extendUntil}
+            onChange={setExtendUntil}
+            required
+          />
+          <p className="m-0 text-[13px] text-muted">
+            Tài khoản dùng được ít nhất tới mốc này, kể cả khi suất cuối đã qua. Tài khoản đang hết hạn
+            được bật lại; tài khoản bị khoá tay vẫn khoá.
+          </p>
+        </div>
+      </Modal>
+
+      <Modal
         open={inviteOpen}
         onClose={() => setInviteOpen(false)}
-        title="Mời nhân viên soát vé"
+        title="Mời nhân viên bằng email"
         footer={
           <>
             <Button variant="secondary" onClick={() => setInviteOpen(false)}>
@@ -358,7 +604,7 @@ function StaffContent({ organization }: { organization: OrganizationSummary }) {
         }
       >
         <div className="grid gap-4">
-          <p className="m-0 text-muted">{assigning?.fullName ?? assigning?.email}</p>
+          <p className="m-0 text-muted">{assigning?.fullName ?? assigning?.username ?? assigning?.email}</p>
           <EventChecklist events={events.data} selected={assignEvents} onChange={setAssignEvents} />
           <p className="m-0 text-[13px] text-muted">
             Bỏ chọn một sự kiện là gỡ quyền soát vé của người này ở sự kiện đó. Tài khoản và lịch sử
@@ -378,7 +624,14 @@ function StaffContent({ organization }: { organization: OrganizationSummary }) {
             </Button>
             <Button
               onClick={() => confirm?.run()}
-              loading={resend.isPending || cancel.isPending || removeMember.isPending}
+              loading={
+                resend.isPending ||
+                cancel.isPending ||
+                removeMember.isPending ||
+                resetPin.isPending ||
+                lockAccount.isPending ||
+                unlockAccount.isPending
+              }
             >
               {confirm?.confirmLabel ?? 'Xác nhận'}
             </Button>
@@ -387,6 +640,8 @@ function StaffContent({ organization }: { organization: OrganizationSummary }) {
       >
         <p className="m-0">{confirm?.body}</p>
       </Modal>
+
+      <StaffShifts organizationId={organizationId} events={events.data} staff={staff.data ?? []} />
 
       {canManage ? <StaffHistory organizationId={organizationId} staff={staff.data ?? []} /> : null}
     </>

@@ -24,17 +24,23 @@ export function StaffHistory({ organizationId, staff }: { organizationId: string
   const resent = useAuditLogs(scope, { action: 'STAFF_INVITATION_RESENT' });
   const cancelled = useAuditLogs(scope, { action: 'STAFF_INVITATION_CANCELLED' });
   const reassigned = useAuditLogs(scope, { action: 'STAFF_EVENTS_CHANGED' });
+  const created = useAuditLogs(scope, { action: 'STAFF_ACCOUNT_CREATED' });
+  const pinReset = useAuditLogs(scope, { action: 'STAFF_PIN_RESET' });
+  const locked = useAuditLogs(scope, { action: 'STAFF_ACCOUNT_LOCKED' });
+  const expired = useAuditLogs(scope, { action: 'STAFF_ACCOUNT_EXPIRED' });
   const members = useOrganizationMembers(scope);
 
   const rows = useMemo(
     () =>
-      [...(invited.data ?? []), ...(resent.data ?? []), ...(cancelled.data ?? []), ...(reassigned.data ?? [])]
+      [invited, resent, cancelled, reassigned, created, pinReset, locked, expired]
+        .flatMap((query) => query.data ?? [])
         .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
         .slice(0, MAX_ROWS),
-    [invited.data, resent.data, cancelled.data, reassigned.data],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- đủ khi dữ liệu từng truy vấn đổi
+    [invited.data, resent.data, cancelled.data, reassigned.data, created.data, pinReset.data, locked.data, expired.data],
   );
 
-  const staffName = useMemo(() => new Map(staff.map((item) => [item.userId, item.fullName ?? item.email])), [staff]);
+  const staffName = useMemo(() => new Map(staff.map((item) => [item.userId, item.fullName ?? item.username ?? item.email])), [staff]);
   const memberName = useMemo(
     () => new Map((members.data ?? []).map((item) => [item.userId, item.fullName ?? item.email ?? item.userId.slice(0, 8)])),
     [members.data],

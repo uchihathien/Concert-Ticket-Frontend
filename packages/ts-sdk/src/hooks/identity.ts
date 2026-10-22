@@ -5,6 +5,11 @@ import {
   acceptInvitation,
   activateOrganization,
   cancelStaffInvitation,
+  createStaffAccount,
+  extendStaffAccount,
+  lockStaffAccount,
+  resetStaffPin,
+  unlockStaffAccount,
   changeMemberRole,
   createOrganization,
   getAuditLogs,
@@ -36,6 +41,7 @@ import type {
   CreateOrganizationRequest,
   GrantMemberRequest,
   InviteMemberRequest,
+  CreateStaffAccountRequest,
   InviteStaffRequest,
   OrganizationRole,
   OrganizationSummary,
@@ -417,5 +423,31 @@ export function useResendStaffInvitation(organizationId: string) {
 export function useCancelStaffInvitation(organizationId: string) {
   return useStaffMutation(organizationId, (client, userId: string) =>
     cancelStaffInvitation(client, organizationId, userId),
+  );
+}
+
+export function useCreateStaffAccount(organizationId: string) {
+  return useStaffMutation(organizationId, (client, input: CreateStaffAccountRequest) =>
+    createStaffAccount(client, organizationId, input),
+  );
+}
+
+export function useResetStaffPin(organizationId: string) {
+  return useStaffMutation(organizationId, (client, userId: string) => resetStaffPin(client, organizationId, userId));
+}
+
+export function useLockStaffAccount(organizationId: string) {
+  return useStaffMutation(organizationId, (client, userId: string) => lockStaffAccount(client, organizationId, userId));
+}
+
+export function useUnlockStaffAccount(organizationId: string) {
+  return useStaffMutation(organizationId, (client, userId: string) =>
+    unlockStaffAccount(client, organizationId, userId),
+  );
+}
+
+export function useExtendStaffAccount(organizationId: string) {
+  return useStaffMutation(organizationId, (client, input: { userId: string; until?: string }) =>
+    extendStaffAccount(client, organizationId, input.userId, input.until),
   );
 }
