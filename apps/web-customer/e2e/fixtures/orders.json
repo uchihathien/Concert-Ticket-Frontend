@@ -1,0 +1,39 @@
+[
+  {
+    "id": "0bde0000-0000-4000-8000-000000000001",
+    "orderNumber": "NT1000001",
+    "eventSessionId": "5e55a0a1-0000-4000-8000-000000000001",
+    "eventId": null,
+    "status": "PAID",
+    "subtotalVnd": 900000,
+    "discountVnd": 0,
+    "totalVnd": 900000,
+    "paymentReference": "NT1000001",
+    "vietQrPayload": null,
+    "checkoutUrl": null,
+    "paymentExpiresAt": "2026-10-01T03:15:00Z",
+    "paidAt": "2026-10-01T03:05:00Z",
+    "items": [
+      { "seatCode": null, "zoneCode": "SAN", "admissionType": "STANDING", "seatLabel": null, "ticketTypeName": "Vé đứng", "unitPriceVnd": 450000, "discountVnd": 0 },
+      { "seatCode": null, "zoneCode": "SAN", "admissionType": "STANDING", "seatLabel": null, "ticketTypeName": "Vé đứng", "unitPriceVnd": 450000, "discountVnd": 0 }
+    ]
+  },
+  {
+    "id": "0bde0000-0000-4000-8000-000000000002",
+    "orderNumber": "NT1000002",
+    "eventSessionId": "5e55a0a1-0000-4000-8000-000000000003",
+    "eventId": null,
+    "status": "EXPIRED",
+    "subtotalVnd": 800000,
+    "discountVnd": 0,
+    "totalVnd": 800000,
+    "paymentReference": "NT1000002",
+    "vietQrPayload": null,
+    "checkoutUrl": null,
+    "paymentExpiresAt": "2026-10-02T03:15:00Z",
+    "paidAt": null,
+    "items": [
+      { "seatCode": "B-3-12", "zoneCode": "B", "admissionType": "SEATED", "seatLabel": "12", "ticketTypeName": "Ghế thường", "unitPriceVnd": 800000, "discountVnd": 0 }
+    ]
+  }
+]
