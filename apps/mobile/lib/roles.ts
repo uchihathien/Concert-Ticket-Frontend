@@ -18,7 +18,7 @@ export const ROLE_HOME = {
 
 export const ROLE_LABEL: Record<AppRole, { title: string; detail: string }> = {
   customer: { title: 'Khách mua vé', detail: 'Khám phá sự kiện, đặt vé và xem vé của bạn.' },
-  organizer: { title: 'Ban tổ chức', detail: 'Quản lý sự kiện, địa điểm và thành viên tổ chức.' },
+  organizer: { title: 'Ban tổ chức', detail: 'Theo dõi doanh thu, sự kiện và hỗ trợ khách tại cổng.' },
   platform: { title: 'Quản trị nền tảng', detail: 'Tổ chức, nhật ký, sổ cái và hỗ trợ.' },
   scanner: { title: 'Soát vé', detail: 'Chọn suất được giao và quét vé tại cổng.' },
 };
