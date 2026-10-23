@@ -7,6 +7,7 @@ import type {
   Handoff,
   HandoffThread,
   KnowledgeChunk,
+  ProposalConfirmation,
   RetrievedChunk,
   SupportIntent,
 } from '../types/support';
@@ -56,6 +57,30 @@ export async function getChatThread(client: ApiClient, sessionId: string): Promi
 export async function requestHumanAgent(client: ApiClient, sessionId: string): Promise<Handoff> {
   const response = await client.post<Handoff>(`/v1/chat/agent/sessions/${sessionId}/handoff`, {});
   return response.data;
+}
+
+/**
+ * Nút Đồng ý trên thẻ đề xuất — đường TẤT ĐỊNH duy nhất tạo đơn từ chat, không qua mô hình.
+ *
+ * Idempotent theo `proposalId` ở server (khoá giữ chỗ/đặt đơn suy từ id đề xuất): bấm hai lần
+ * vẫn một đơn. Lần hai trả 409 `PROPOSAL_ALREADY_CONFIRMED` với đơn cũ ở `meta.order` và thẻ
+ * PAYMENT ở `meta.action` — giao diện vẽ lại thẻ thanh toán thay vì báo lỗi. 410 hết hạn/đã huỷ,
+ * 422 `BOOKING_REJECTED` (đề xuất đã bị huỷ phía server, `detail` là lý do), 503 thử lại sau.
+ */
+export async function confirmProposal(
+  client: ApiClient,
+  proposalId: string,
+): Promise<ProposalConfirmation> {
+  const response = await client.post<ProposalConfirmation>(
+    `/v1/chat/agent/proposals/${proposalId}/confirm`,
+    {},
+  );
+  return response.data;
+}
+
+/** Nút Huỷ. 204; đã hết hạn hay đã huỷ thì cũng 204; đã xác nhận thì 409 như trên. */
+export async function cancelProposal(client: ApiClient, proposalId: string): Promise<void> {
+  await client.post<null>(`/v1/chat/agent/proposals/${proposalId}/cancel`, {});
 }
 
 /** Bàn hỗ trợ — phía người trực. Đòi quyền `PLATFORM_SUPPORT_HANDLE`. */

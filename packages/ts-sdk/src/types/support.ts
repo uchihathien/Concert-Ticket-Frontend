@@ -151,6 +151,23 @@ export interface PaymentCard {
 export type ActionCard = BookingProposalCard | PaymentCard;
 export type ActionCardKind = ActionCard['kind'] | 'BOOKING_INTENT';
 
+/** Đơn vừa tạo từ nút Đồng ý — bản rút gọn; VietQR nằm trong thẻ PAYMENT của `action`. */
+export interface ProposalOrder {
+  orderId: string;
+  orderNumber: string;
+  totalVnd: number;
+  checkoutUrl: string | null;
+  paymentExpiresAt: string | null;
+}
+
+/** Phản hồi 201 của `confirmProposal`. 409 (đã xác nhận) mang `order` và `action` trong `ApiError.meta`. */
+export interface ProposalConfirmation {
+  proposalId: string;
+  status: 'CONFIRMED';
+  order: ProposalOrder;
+  action: PaymentCard;
+}
+
 export interface AskResponse {
   sessionId: string;
   answer: string;

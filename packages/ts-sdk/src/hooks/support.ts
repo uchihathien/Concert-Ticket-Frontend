@@ -4,7 +4,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   addKnowledgeChunk,
   askSupport,
+  cancelProposal,
   claimHandoff,
+  confirmProposal,
   deleteKnowledgeChunk,
   getChatThread,
   getEventRules,
@@ -67,6 +69,38 @@ export function useRequestHumanAgent() {
   return useMutation({
     mutationFn: (sessionId: string) => requestHumanAgent(client, sessionId),
     onSuccess: (_handoff, sessionId) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.support.thread(sessionId) });
+    },
+  });
+}
+
+/**
+ * Nút Đồng ý trên thẻ đề xuất.
+ *
+ * Làm mới hội thoại sau khi xong: backend ghi một lượt "Đã tạo đơn …" vào lịch sử, và màn hình
+ * phải hiện nó — cùng lý do với `useAskSupport`.
+ */
+export function useConfirmProposal() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ proposalId }: { proposalId: string; sessionId: string }) =>
+      confirmProposal(client, proposalId),
+    onSuccess: (_confirmation, { sessionId }) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.support.thread(sessionId) });
+    },
+  });
+}
+
+export function useCancelProposal() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ proposalId }: { proposalId: string; sessionId: string }) =>
+      cancelProposal(client, proposalId),
+    onSuccess: (_void, { sessionId }) => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.support.thread(sessionId) });
     },
   });

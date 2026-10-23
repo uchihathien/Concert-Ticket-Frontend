@@ -103,7 +103,9 @@ export {
 export {
   addKnowledgeChunk,
   askSupport,
+  cancelProposal,
   claimHandoff,
+  confirmProposal,
   deleteKnowledgeChunk,
   getChatThread,
   getEventRules,
@@ -228,8 +230,10 @@ export {
 export {
   useAddKnowledgeChunk,
   useAskSupport,
+  useCancelProposal,
   useChatThread,
   useClaimHandoff,
+  useConfirmProposal,
   useHandoffQueue,
   useHandoffThread,
   useReplyToHandoff,

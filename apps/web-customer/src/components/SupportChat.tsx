@@ -5,11 +5,16 @@ import {
   ApiError,
   newIdempotencyKey,
   useAskSupport,
+  useCancelProposal,
   useChatThread,
+  useConfirmProposal,
   useRequestHumanAgent,
+  type ActionCard,
+  type BookingProposalCard,
   type ChatMessage,
+  type PaymentCard as PaymentCardData,
 } from '@nexaticket/ts-sdk';
-import { Button, Skeleton, cx, formatTime, useToast } from '@nexaticket/ui';
+import { Button, Skeleton, cx, formatDateTime, formatTime, formatVnd, useToast } from '@nexaticket/ui';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import styles from './support-chat.module.css';
@@ -29,6 +34,13 @@ import styles from './support-chat.module.css';
  *       Đây cũng là trạng thái duy nhất hội thoại được hỏi lại theo chu kỳ.
  * </ol>
  *
+ * <h3>Thẻ hành động đi riêng với chữ</h3>
+ *
+ * Khi trợ lý lập đề xuất đặt vé, backend trả `action` có cấu trúc bên cạnh `answer`. Thẻ vẽ từ
+ * `action`, KHÔNG BAO GIỜ parse câu của mô hình — chữ trên thẻ là dữ liệu hệ thống, và đơn chỉ ra
+ * đời khi khách bấm Đồng ý (ADR-2001). Thẻ là dữ liệu của MỘT lượt, giữ trong state chứ không lưu
+ * `sessionStorage`: sau khi tải lại trang, `ChatThread.action` (story 1.7) mới là nguồn dựng lại.
+ *
  * <h3>Phiên sống trong `sessionStorage`</h3>
  *
  * Đủ để khách chuyển trang mà không mất mạch hội thoại, và tự hết khi đóng tab — đúng vòng đời của
@@ -39,6 +51,8 @@ export function SupportChat() {
   const { state } = useSessionState();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  /** Thẻ của lượt gần nhất; `null` nghĩa là lượt vừa rồi không có thẻ và thẻ cũ phải biến mất. */
+  const [activeCard, setActiveCard] = useState<ActionCard | null>(null);
   const toast = useToast();
 
   const thread = useChatThread(sessionId);
@@ -64,11 +78,11 @@ export function SupportChat() {
     if (saved) setSessionId(saved);
   }, []);
 
-  // Cuộn xuống tin mới nhất. Không có bước này thì câu trả lời vừa tới nằm ngoài tầm nhìn và
-  // khách tưởng không có gì xảy ra.
+  // Cuộn xuống tin mới nhất (hoặc thẻ mới nhất). Không có bước này thì câu trả lời vừa tới nằm
+  // ngoài tầm nhìn và khách tưởng không có gì xảy ra.
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [thread.data?.messages.length]);
+  }, [thread.data?.messages.length, activeCard]);
 
   if (state !== 'authenticated') {
     return (
@@ -115,6 +129,9 @@ export function SupportChat() {
         setSessionId(reply.sessionId);
         window.sessionStorage.setItem(SESSION_KEY, reply.sessionId);
       }
+      // Kể cả `null`: lượt không có thẻ thì thẻ cũ biến mất — một đề xuất của lượt trước không
+      // còn là thứ khách đang nói tới.
+      setActiveCard(reply.action);
     } catch (error) {
       // Trả lại chữ đã gõ: bắt khách gõ lại một câu dài vì mạng chập là cách chắc chắn làm họ bỏ
       // cuộc giữa chừng. `pendingKey` cố ý KHÔNG xoá — lần gửi lại phải mang đúng khoá ấy.
@@ -162,6 +179,22 @@ export function SupportChat() {
               </span>
             </span>
             <Skeleton lines={2} />
+          </li>
+        ) : null}
+
+        {activeCard && sessionId ? (
+          <li className={cx(styles.message, styles.fromBot, styles.cardItem)}>
+            {activeCard.kind === 'BOOKING_PROPOSAL' ? (
+              <ProposalCard
+                key={activeCard.id}
+                card={activeCard}
+                sessionId={sessionId}
+                busy={ask.isPending}
+                onResolved={setActiveCard}
+              />
+            ) : activeCard.kind === 'PAYMENT' ? (
+              <PaymentPlaceholder card={activeCard} />
+            ) : null}
           </li>
         ) : null}
       </ol>
@@ -242,6 +275,203 @@ export function SupportChat() {
  * lại hội thoại của người trước, trong đó có mã đơn và số tiền.
  */
 const SESSION_KEY = 'nexaticket.support.session';
+
+type ProposalState =
+  | { kind: 'open' }
+  | { kind: 'confirming' }
+  | { kind: 'expired' }
+  | { kind: 'rejected'; detail: string };
+
+/**
+ * Thẻ "Đề xuất đặt vé": tóm tắt, tổng tiền, đồng hồ, hai nút.
+ *
+ * Mọi chữ trên thẻ lấy từ `card` (dữ liệu backend dựng từ catalog), không từ câu trả lời của mô
+ * hình. Bấm Đồng ý là lời gọi tất định tới endpoint xác nhận; thành công thì thẻ này được thay
+ * bằng thẻ thanh toán (`onResolved(action)`), huỷ hay hết hạn thì biến mất (`onResolved(null)`).
+ *
+ * Thẻ không tự phục hồi sau khi tải lại trang ở story này — thẻ là dữ liệu của một lượt; sau tải
+ * lại, `ChatThread.action` (story 1.7) là nguồn dựng lại.
+ */
+function ProposalCard({
+  card,
+  sessionId,
+  busy,
+  onResolved,
+}: {
+  card: BookingProposalCard;
+  sessionId: string;
+  /** Khách đang gửi câu mới: tạm khoá nút để không bấm Đồng ý đúng lúc một lượt khác đang chạy. */
+  busy: boolean;
+  onResolved: (next: ActionCard | null) => void;
+}) {
+  const toast = useToast();
+  const confirm = useConfirmProposal();
+  const cancel = useCancelProposal();
+  const [state, setState] = useState<ProposalState>({ kind: 'open' });
+  const remaining = useCountdownSeconds(card.expiresAt);
+
+  // Đồng hồ về 0 thì thẻ tự chuyển hết hạn — không gọi API: server tự biết, và một lời gọi chỉ để
+  // nhận 410 là một lời gọi vô ích.
+  useEffect(() => {
+    if (remaining === 0 && state.kind === 'open') setState({ kind: 'expired' });
+  }, [remaining, state.kind]);
+
+  async function onConfirm() {
+    setState({ kind: 'confirming' });
+    try {
+      const confirmation = await confirm.mutateAsync({ proposalId: card.id, sessionId });
+      onResolved(confirmation.action);
+    } catch (error) {
+      if (!(error instanceof ApiError)) {
+        setState({ kind: 'open' });
+        toast.showError(null);
+        return;
+      }
+      switch (error.code) {
+        case 'PROPOSAL_ALREADY_CONFIRMED': {
+          // Bấm hai lần, hoặc một tab khác đã bấm: đơn đã có, hiện lại thẻ thanh toán từ meta.
+          const action = error.meta?.action as PaymentCardData | undefined;
+          const order = error.meta?.order as
+            | { orderId: string; orderNumber: string; totalVnd: number; checkoutUrl?: string | null; paymentExpiresAt?: string | null }
+            | undefined;
+          if (action?.kind === 'PAYMENT') {
+            onResolved(action);
+          } else if (order) {
+            onResolved({
+              kind: 'PAYMENT',
+              orderId: order.orderId,
+              orderNumber: order.orderNumber,
+              totalVnd: order.totalVnd,
+              vietQrPayload: null,
+              paymentReference: null,
+              checkoutUrl: order.checkoutUrl ?? null,
+              paymentExpiresAt: order.paymentExpiresAt ?? null,
+            });
+          } else {
+            onResolved(null);
+          }
+          return;
+        }
+        case 'PROPOSAL_EXPIRED':
+          setState({ kind: 'expired' });
+          return;
+        case 'BOOKING_REJECTED':
+          // Server đã huỷ đề xuất: nút Đồng ý không còn ý nghĩa, chỉ còn cách hỏi lại trợ lý.
+          setState({ kind: 'rejected', detail: error.detail ?? 'Không giữ được chỗ cho đề xuất này.' });
+          return;
+        default:
+          setState({ kind: 'open' });
+          toast.showError(error);
+      }
+    }
+  }
+
+  async function onCancel() {
+    try {
+      await cancel.mutateAsync({ proposalId: card.id, sessionId });
+      onResolved(null);
+    } catch (error) {
+      // 404/410: đề xuất không còn — kết quả khách muốn đã có. Mã khác thì báo.
+      if (error instanceof ApiError && (error.status === 404 || error.status === 410)) {
+        onResolved(null);
+        return;
+      }
+      toast.showError(error instanceof ApiError ? error : null);
+    }
+  }
+
+  const locked = busy || state.kind !== 'open';
+
+  return (
+    <div className={styles.card}>
+      <p className={styles.cardTitle}>Đề xuất đặt vé</p>
+      <p className={styles.cardMeta}>{card.summary}</p>
+      <p className={styles.cardTotal}>Tổng {formatVnd(card.totalVnd)}</p>
+
+      {state.kind === 'expired' ? (
+        <p className={styles.cardDone} role="status">
+          Đề xuất đã hết hạn — hỏi lại trợ lý nhé.
+        </p>
+      ) : state.kind === 'rejected' ? (
+        <p className={styles.cardError} role="status">
+          {state.detail} Bạn hỏi lại trợ lý để lập đề xuất mới nhé.
+        </p>
+      ) : (
+        <>
+          {/* Đồng hồ ngoài vùng aria-live, cùng lý do với `.clock` ở trên. */}
+          <p
+            className={cx(styles.cardTimer, remaining <= 60 ? styles.cardTimerWarn : undefined)}
+            aria-hidden="true"
+          >
+            Còn {formatMmSs(remaining)}
+          </p>
+          <p className={styles.cardHint}>
+            Bấm <strong>Đồng ý</strong> để mình giữ chỗ.
+          </p>
+          <div className={styles.cardActions}>
+            <Button onClick={() => void onConfirm()} loading={state.kind === 'confirming'} disabled={locked}>
+              Đồng ý
+            </Button>
+            <Button variant="secondary" onClick={() => void onCancel()} loading={cancel.isPending} disabled={locked}>
+              Huỷ
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Thẻ thanh toán tạm (story 1.5): số đơn, tổng tiền, hạn và đường dẫn payOS nguyên văn. Story 1.7
+ * thay bằng `PaymentCard` thật có mã VietQR và tự hỏi lại trạng thái đơn.
+ */
+function PaymentPlaceholder({ card }: { card: PaymentCardData }) {
+  return (
+    <div className={styles.card} role="status">
+      <p className={styles.cardTitle}>Thanh toán</p>
+      <p className={styles.cardMeta}>
+        Đã tạo đơn {card.orderNumber} · {formatVnd(card.totalVnd)}
+      </p>
+      {card.paymentExpiresAt ? (
+        <p className={styles.cardTotal}>Thanh toán trước {formatDateTime(card.paymentExpiresAt)}</p>
+      ) : null}
+      {card.checkoutUrl ? (
+        // Không `target="_blank"`: payOS đưa khách về `returnUrl`, cùng lý do với PaymentPanel.
+        <a className={styles.cardLink} href={card.checkoutUrl}>
+          Thanh toán qua payOS
+        </a>
+      ) : null}
+    </div>
+  );
+}
+
+/** "mm:ss" cho đồng hồ trên thẻ. */
+function formatMmSs(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+/**
+ * Số giây còn lại tới một mốc, không âm.
+ *
+ * Tính từ mốc thời gian mỗi nhịp, cùng lý do với `useElapsedSeconds`: tab nền bị hãm interval nên
+ * đếm bằng biến tăng dần sẽ sai.
+ */
+function useCountdownSeconds(deadline: string): number {
+  const compute = () => Math.max(0, Math.round((new Date(deadline).getTime() - Date.now()) / 1000));
+  const [seconds, setSeconds] = useState(compute);
+
+  useEffect(() => {
+    setSeconds(compute());
+    const timer = window.setInterval(() => setSeconds(compute()), 1000);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `compute` chỉ phụ thuộc `deadline`
+  }, [deadline]);
+
+  return seconds;
+}
 
 /**
  * Đường dẫn sự kiện trong tin nhắn, dạng `/events/<slug>`.
