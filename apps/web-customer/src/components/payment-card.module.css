@@ -1,0 +1,105 @@
+/*
+ * Thẻ thanh toán trong chat: bản thu nhỏ của trang thanh toán, đủ để trả tiền mà không rời hội thoại.
+ *
+ * Cùng thứ tự ưu tiên với PaymentPanel (ADR-0016): có link payOS thì nút là đường chính, QR là đường
+ * phụ; không có link thì QR đứng làm đường chính. Thẻ hẹp (tối đa 440px) nên mọi thứ xếp một cột.
+ */
+.card {
+  display: grid;
+  gap: var(--nt-space-3);
+  border: 1px solid var(--nt-primary);
+  border-radius: var(--nt-radius-lg);
+  background: var(--nt-surface);
+  padding: var(--nt-space-4);
+}
+
+.title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--nt-text-muted);
+}
+
+.orderLine {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--nt-space-2);
+  font-size: 15px;
+}
+
+.orderNumber {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Đồng hồ: khối riêng như trên trang thanh toán — đây là thông tin có hạn duy nhất trên thẻ. */
+.deadline {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 0;
+  padding: var(--nt-space-2) var(--nt-space-3);
+  background: var(--nt-bg-subtle);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  font-size: 14px;
+}
+
+.countdown {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.payLink {
+  display: block;
+  text-align: center;
+  font-weight: 600;
+  color: var(--nt-primary-ink);
+  background: var(--nt-primary);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-3) var(--nt-space-4);
+  text-decoration: none;
+}
+
+.qr {
+  display: grid;
+  gap: var(--nt-space-2);
+  justify-items: center;
+}
+
+.note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}
+
+/* Đã trả / đã đóng ---------------------------------------------------------- */
+.doneTitle,
+.closedTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.doneTitle {
+  color: var(--nt-success);
+}
+
+.doneLink {
+  justify-self: start;
+  font-weight: 600;
+  color: var(--nt-primary-ink);
+  background: var(--nt-primary);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-2) var(--nt-space-4);
+  text-decoration: none;
+}
+
+.closedNote {
+  margin: 0;
+  font-size: 14px;
+}

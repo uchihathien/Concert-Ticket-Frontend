@@ -14,9 +14,10 @@ import {
   type ChatMessage,
   type PaymentCard as PaymentCardData,
 } from '@nexaticket/ts-sdk';
-import { Button, Skeleton, cx, formatDateTime, formatTime, formatVnd, useToast } from '@nexaticket/ui';
+import { Button, Skeleton, cx, formatTime, formatVnd, useToast } from '@nexaticket/ui';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import { PaymentCard } from './PaymentCard';
 import styles from './support-chat.module.css';
 
 /**
@@ -38,8 +39,13 @@ import styles from './support-chat.module.css';
  *
  * Khi trợ lý lập đề xuất đặt vé, backend trả `action` có cấu trúc bên cạnh `answer`. Thẻ vẽ từ
  * `action`, KHÔNG BAO GIỜ parse câu của mô hình — chữ trên thẻ là dữ liệu hệ thống, và đơn chỉ ra
- * đời khi khách bấm Đồng ý (ADR-2001). Thẻ là dữ liệu của MỘT lượt, giữ trong state chứ không lưu
- * `sessionStorage`: sau khi tải lại trang, `ChatThread.action` (story 1.7) mới là nguồn dựng lại.
+ * đời khi khách bấm Đồng ý (ADR-2001).
+ *
+ * Hai nguồn cho thẻ, theo thứ tự: `activeCard` (thẻ của lượt vừa gửi, có ngay cùng câu trả lời)
+ * rồi `ChatThread.action` (thẻ còn mở của phiên, nguồn dựng lại sau khi tải lại trang). Mỗi lần hội
+ * thoại được làm mới, `activeCard` nhường chỗ cho thẻ của hội thoại — hai nguồn cùng nói về một đề
+ * xuất, và nguồn từ server mới biết nó còn mở hay đã hết hạn. Thẻ khách vừa huỷ/đóng được nhớ theo
+ * khoá để bản cũ còn trong cache không hiện lại trong nhịp chờ làm mới.
  *
  * <h3>Phiên sống trong `sessionStorage`</h3>
  *
@@ -53,6 +59,8 @@ export function SupportChat() {
   const [draft, setDraft] = useState('');
   /** Thẻ của lượt gần nhất; `null` nghĩa là lượt vừa rồi không có thẻ và thẻ cũ phải biến mất. */
   const [activeCard, setActiveCard] = useState<ActionCard | null>(null);
+  /** Thẻ khách vừa huỷ hoặc đã xong; bản còn trong cache hội thoại không được hiện lại. */
+  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
   const toast = useToast();
 
   const thread = useChatThread(sessionId);
@@ -60,6 +68,15 @@ export function SupportChat() {
   const requestHuman = useRequestHumanAgent();
   const listRef = useRef<HTMLOListElement>(null);
   const waited = useElapsedSeconds(ask.isPending);
+  const threadCard = thread.data?.action ?? null;
+  const shownCard =
+    activeCard ?? (threadCard && cardKey(threadCard) !== dismissedKey ? threadCard : null);
+
+  // Hội thoại vừa được làm mới: thẻ của lượt nhường chỗ cho thẻ của hội thoại (xem chú thích đầu file).
+  const threadUpdatedAt = thread.dataUpdatedAt;
+  useEffect(() => {
+    setActiveCard(null);
+  }, [threadUpdatedAt]);
 
   /**
    * Khoá chống trùng của câu đang gửi, giữ qua các lần thử lại.
@@ -82,7 +99,7 @@ export function SupportChat() {
   // ngoài tầm nhìn và khách tưởng không có gì xảy ra.
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [thread.data?.messages.length, activeCard]);
+  }, [thread.data?.messages.length, shownCard]);
 
   if (state !== 'authenticated') {
     return (
@@ -182,18 +199,31 @@ export function SupportChat() {
           </li>
         ) : null}
 
-        {activeCard && sessionId ? (
+        {shownCard && sessionId ? (
           <li className={cx(styles.message, styles.fromBot, styles.cardItem)}>
-            {activeCard.kind === 'BOOKING_PROPOSAL' ? (
+            {shownCard.kind === 'BOOKING_PROPOSAL' ? (
               <ProposalCard
-                key={activeCard.id}
-                card={activeCard}
+                key={shownCard.id}
+                card={shownCard}
                 sessionId={sessionId}
                 busy={ask.isPending}
-                onResolved={setActiveCard}
+                onResolved={(next) => {
+                  if (next === null) setDismissedKey(cardKey(shownCard));
+                  setActiveCard(next);
+                }}
               />
-            ) : activeCard.kind === 'PAYMENT' ? (
-              <PaymentPlaceholder card={activeCard} />
+            ) : shownCard.kind === 'PAYMENT' ? (
+              <PaymentCard
+                key={shownCard.orderId}
+                card={shownCard}
+                onSettled={() => {
+                  // Đơn đã trả hoặc đã đóng: hội thoại có lượt mới ("đã nhận tiền"), và thẻ này không
+                  // còn là việc đang chờ khách.
+                  setDismissedKey(cardKey(shownCard));
+                  setActiveCard(null);
+                  void thread.refetch();
+                }}
+              />
             ) : null}
           </li>
         ) : null}
@@ -422,28 +452,9 @@ function ProposalCard({
   );
 }
 
-/**
- * Thẻ thanh toán tạm (story 1.5): số đơn, tổng tiền, hạn và đường dẫn payOS nguyên văn. Story 1.7
- * thay bằng `PaymentCard` thật có mã VietQR và tự hỏi lại trạng thái đơn.
- */
-function PaymentPlaceholder({ card }: { card: PaymentCardData }) {
-  return (
-    <div className={styles.card} role="status">
-      <p className={styles.cardTitle}>Thanh toán</p>
-      <p className={styles.cardMeta}>
-        Đã tạo đơn {card.orderNumber} · {formatVnd(card.totalVnd)}
-      </p>
-      {card.paymentExpiresAt ? (
-        <p className={styles.cardTotal}>Thanh toán trước {formatDateTime(card.paymentExpiresAt)}</p>
-      ) : null}
-      {card.checkoutUrl ? (
-        // Không `target="_blank"`: payOS đưa khách về `returnUrl`, cùng lý do với PaymentPanel.
-        <a className={styles.cardLink} href={card.checkoutUrl}>
-          Thanh toán qua payOS
-        </a>
-      ) : null}
-    </div>
-  );
+/** Khoá nhận dạng một thẻ, để nhớ thẻ nào khách đã đóng. */
+function cardKey(card: ActionCard): string {
+  return card.kind === 'BOOKING_PROPOSAL' ? `proposal:${card.id}` : `order:${card.orderId}`;
 }
 
 /** "mm:ss" cho đồng hồ trên thẻ. */

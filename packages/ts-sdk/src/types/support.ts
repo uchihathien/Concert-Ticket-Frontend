@@ -108,6 +108,11 @@ export interface ChatThread {
   sessionId: string;
   handoff: Handoff | null;
   messages: ChatMessage[];
+  /**
+   * Thẻ còn mở của phiên (đề xuất chưa hết hạn, hoặc thanh toán của đơn vừa tạo) — nguồn dựng lại thẻ
+   * sau khi tải lại trang. `null` khi không có gì đang chờ khách.
+   */
+  action: ActionCard | null;
 }
 
 export interface AskRequest {

@@ -14,6 +14,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { closedNote, closedTitle } from '@/lib/order-copy';
 import type { SessionIndex, SessionInfo } from '@/lib/session-index';
 import { ApiErrorState } from './ApiErrorState';
 import styles from './payment.module.css';
@@ -119,13 +120,7 @@ export function PaymentPanel({ orderId, sessionIndex }: PaymentPanelProps) {
     return (
       <div className={styles.closed} role="status">
         <p className={styles.closedTitle}>{closedTitle(order.status)}</p>
-        <p className={styles.closedNote}>
-          {order.status === 'MANUAL_REVIEW'
-            ? // Nói thẳng là tiền đã tới. Câu "chỗ đã mở lại cho người khác" một mình sẽ khiến
-              // người vừa chuyển khoản nghĩ tiền của họ biến mất, và họ sẽ chuyển lần thứ hai.
-              'Chúng tôi đã nhận được khoản chuyển khoản của bạn, nhưng nó tới sau khi đơn hết hạn và chỗ đã được mở lại. Bộ phận hỗ trợ sẽ liên hệ để hoàn tiền cho bạn.'
-            : 'Chỗ đã được mở lại cho người khác. Nếu bạn vẫn muốn mua, hãy chọn chỗ lại từ đầu.'}
-        </p>
+        <p className={styles.closedNote}>{closedNote(order.status)}</p>
         {/*
           Câu trên bảo "chọn chỗ lại từ đầu" nên trên màn phải có đường làm việc đó. Bản trước chỉ
           có link sang danh sách đơn — hứa một hành động rồi bắt khách tự đi tìm.
@@ -368,9 +363,3 @@ function OrderSummary({
   );
 }
 
-function closedTitle(status: Order['status']): string {
-  if (status === 'EXPIRED') return 'Đơn đã hết hạn thanh toán';
-  if (status === 'CANCELLED') return 'Đơn đã bị huỷ';
-  if (status === 'MANUAL_REVIEW') return 'Tiền tới sau khi đơn hết hạn';
-  return 'Đơn đã được hoàn tiền';
-}
