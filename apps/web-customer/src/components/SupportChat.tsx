@@ -12,11 +12,13 @@ import {
   type ActionCard,
   type BookingProposalCard,
   type ChatMessage,
+  type ChoicesCard as ChoicesCardData,
   type PaymentCard as PaymentCardData,
 } from '@nexaticket/ts-sdk';
 import { Button, Skeleton, cx, formatTime, formatVnd, useToast } from '@nexaticket/ui';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import type { AskSupportContext } from '@/lib/ask-support';
 import { PaymentCard } from './PaymentCard';
 import styles from './support-chat.module.css';
 
@@ -53,7 +55,7 @@ import styles from './support-chat.module.css';
  * một cuộc hỏi đáp hỗ trợ. Dùng `localStorage` thì một máy dùng chung sẽ mở lại hội thoại của
  * người trước.
  */
-export function SupportChat() {
+export function SupportChat({ eventContext = null }: { eventContext?: AskSupportContext | null } = {}) {
   const { state } = useSessionState();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
@@ -87,6 +89,17 @@ export function SupportChat() {
    * câu ấy mới dùng lại khoá; sửa chữ rồi gửi là một ý định mới và nhận khoá mới.
    */
   const pendingKey = useRef<{ message: string; key: string } | null>(null);
+
+  /**
+   * Phiên đăng nhập hết hạn GIỮA cuộc chat (backend trả 401). Khung chat không tự biến thành cổng
+   * đăng nhập — hội thoại vẫn hiện — mà thêm một thẻ mời đăng nhập lại, giữ nguyên câu khách vừa gõ.
+   */
+  const [needsLogin, setNeedsLogin] = useState(false);
+
+  // Mở từ nút "Hỏi trợ lý về sự kiện này": điền sẵn tên sự kiện để khách chỉ việc gõ tiếp câu hỏi.
+  useEffect(() => {
+    if (eventContext) setDraft(`Về sự kiện "${eventContext.eventTitle}": `);
+  }, [eventContext]);
 
   // Khôi phục phiên sau khi chuyển trang. Đọc trong effect chứ không lúc khởi tạo state:
   // sessionStorage không tồn tại lúc render ở server, và chạm vào nó ở đó làm hỏng hydrate.
@@ -133,15 +146,21 @@ export function SupportChat() {
   // đang được hỗ trợ mà màn hình vẫn nói là đang chờ, và họ chờ tiếp thay vì nhắn.
   const stillQueued = handoff?.status === 'WAITING';
 
-  async function send() {
-    const message = draft.trim();
+  /**
+   * Gửi một câu. `text` có mặt khi câu đến từ một nút (chip, "Đổi lựa chọn", "Đặt lại") — khi đó ô nhập
+   * giữ nguyên chữ khách đang gõ dở, và câu gửi đi là đúng `value` của nút, không sửa một ký tự (server
+   * đối chiếu nó với danh sách chip vừa hiện).
+   */
+  async function send(text?: string) {
+    const fromButton = text !== undefined;
+    const message = (text ?? draft).trim();
     if (!message || ask.isPending) return;
 
     const key =
       pendingKey.current?.message === message ? pendingKey.current.key : newIdempotencyKey();
     pendingKey.current = { message, key };
 
-    setDraft('');
+    if (!fromButton) setDraft('');
     try {
       const reply = await ask.mutateAsync({
         sessionId: sessionId ?? undefined,
@@ -158,10 +177,15 @@ export function SupportChat() {
       // Kể cả `null`: lượt không có thẻ thì thẻ cũ biến mất — một đề xuất của lượt trước không
       // còn là thứ khách đang nói tới.
       setActiveCard(reply.action);
+      setNeedsLogin(false);
     } catch (error) {
       // Trả lại chữ đã gõ: bắt khách gõ lại một câu dài vì mạng chập là cách chắc chắn làm họ bỏ
       // cuộc giữa chừng. `pendingKey` cố ý KHÔNG xoá — lần gửi lại phải mang đúng khoá ấy.
-      setDraft(message);
+      if (!fromButton) setDraft(message);
+      if (error instanceof ApiError && error.status === 401) {
+        setNeedsLogin(true);
+        return;
+      }
       toast.showError(error instanceof ApiError ? error : null);
     }
   }
@@ -210,7 +234,9 @@ export function SupportChat() {
 
         {shownCard && sessionId ? (
           <li className={cx(styles.message, styles.fromBot, styles.cardItem)}>
-            {shownCard.kind === 'BOOKING_PROPOSAL' ? (
+            {shownCard.kind === 'CHOICES' ? (
+              <ChoicesCard card={shownCard} busy={ask.isPending} onChoose={(value) => void send(value)} />
+            ) : shownCard.kind === 'BOOKING_PROPOSAL' ? (
               <ProposalCard
                 key={shownCard.id}
                 card={shownCard}
@@ -220,11 +246,13 @@ export function SupportChat() {
                   if (next === null) setDismissedKey(cardKey(shownCard));
                   setActiveCard(next);
                 }}
+                onSend={(text) => void send(text)}
               />
             ) : shownCard.kind === 'PAYMENT' ? (
               <PaymentCard
                 key={shownCard.orderId}
                 card={shownCard}
+                onRebook={(text) => void send(text)}
                 onSettled={() => {
                   // Đơn đã trả hoặc đã đóng. KHÔNG giấu thẻ: chính thẻ này đang nói "đã nhận được
                   // thanh toán" kèm đường tới vé (hoặc "đơn đã hết hạn"), và đó là câu khách đang
@@ -236,7 +264,35 @@ export function SupportChat() {
             ) : null}
           </li>
         ) : null}
+        {needsLogin ? (
+          <li className={cx(styles.message, styles.fromBot, styles.cardItem)}>
+            <div className={styles.card} role="status">
+              <p className={styles.cardTitle}>Cần đăng nhập lại</p>
+              <p className={styles.cardMeta}>
+                Phiên đăng nhập của bạn đã hết hạn. Đăng nhập lại để mình tiếp tục giữ chỗ và tra đơn cho bạn —
+                câu bạn vừa gõ vẫn còn trong ô nhập.
+              </p>
+              <Link className={styles.gateLink} href="/login?returnUrl=%2Fsupport">
+                Đăng nhập
+              </Link>
+            </div>
+          </li>
+        ) : null}
       </ol>
+
+      {eventContext && !waitingForHuman ? (
+        <div className={styles.quickActions}>
+          <span className={styles.quickLabel}>{eventContext.eventTitle}</span>
+          <button
+            type="button"
+            className={styles.chip}
+            disabled={ask.isPending}
+            onClick={() => void send(`Đặt vé ${eventContext.eventTitle}`)}
+          >
+            Đặt vé sự kiện này
+          </button>
+        </div>
+      ) : null}
 
       {stillQueued ? (
         <p className={styles.handoffBanner} role="status">
@@ -336,12 +392,15 @@ function ProposalCard({
   sessionId,
   busy,
   onResolved,
+  onSend,
 }: {
   card: BookingProposalCard;
   sessionId: string;
   /** Khách đang gửi câu mới: tạm khoá nút để không bấm Đồng ý đúng lúc một lượt khác đang chạy. */
   busy: boolean;
   onResolved: (next: ActionCard | null) => void;
+  /** Gửi một câu thay khách — "Đổi lựa chọn": server huỷ đề xuất và hỏi lại hạng vé bằng chip. */
+  onSend: (text: string) => void;
 }) {
   const toast = useToast();
   const confirm = useConfirmProposal();
@@ -432,9 +491,16 @@ function ProposalCard({
           Đề xuất đã hết hạn — hỏi lại trợ lý nhé.
         </p>
       ) : state.kind === 'rejected' ? (
-        <p className={styles.cardError} role="status">
-          {state.detail} Bạn hỏi lại trợ lý để lập đề xuất mới nhé.
-        </p>
+        <>
+          <p className={styles.cardError} role="status">
+            {state.detail}
+          </p>
+          <div className={styles.cardActions}>
+            <Button variant="secondary" disabled={busy} onClick={() => onSend(CHANGE_SELECTION)}>
+              Chọn hạng khác
+            </Button>
+          </div>
+        </>
       ) : (
         <>
           {/* Đồng hồ ngoài vùng aria-live, cùng lý do với `.clock` ở trên. */}
@@ -451,6 +517,9 @@ function ProposalCard({
             <Button onClick={() => void onConfirm()} loading={state.kind === 'confirming'} disabled={locked}>
               Đồng ý
             </Button>
+            <Button variant="secondary" onClick={() => onSend(CHANGE_SELECTION)} disabled={locked}>
+              Đổi lựa chọn
+            </Button>
             <Button variant="secondary" onClick={() => void onCancel()} loading={cancel.isPending} disabled={locked}>
               Huỷ
             </Button>
@@ -461,9 +530,59 @@ function ProposalCard({
   );
 }
 
+/**
+ * Câu nút "Đổi lựa chọn" gửi đi. Server nhận đúng câu này (ChatBookingFlow): huỷ đề xuất đang mở và hỏi
+ * lại hạng vé, giữ sự kiện, suất và số vé.
+ */
+const CHANGE_SELECTION = 'Đổi lựa chọn';
+
+/**
+ * Thẻ chip: trợ lý cần khách chọn sự kiện, suất, hạng vé hoặc số vé.
+ *
+ * Bấm chip là gửi `value` như một tin nhắn — server đối chiếu với đúng danh sách chip vừa hiện, nên
+ * chip gửi nguyên văn. Giá và số chỗ trên chip (`hint`) là dữ liệu catalog/inventory, không do mô
+ * hình viết. Khoá cả thẻ trong lúc một lượt đang chạy: bấm hai chip liền tay là hai lựa chọn chồng nhau.
+ */
+function ChoicesCard({
+  card,
+  busy,
+  onChoose,
+}: {
+  card: ChoicesCardData;
+  busy: boolean;
+  onChoose: (value: string) => void;
+}) {
+  return (
+    <div className={styles.card}>
+      <p className={styles.cardTitle}>{card.prompt}</p>
+      <div className={styles.chips} role="group" aria-label={card.prompt}>
+        {card.options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className={styles.choice}
+            disabled={busy}
+            onClick={() => onChoose(option.value)}
+          >
+            <span className={styles.choiceLabel}>{option.label}</span>
+            {option.hint ? <span className={styles.choiceHint}>{option.hint}</span> : null}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Khoá nhận dạng một thẻ, để nhớ thẻ nào khách đã đóng. */
 function cardKey(card: ActionCard): string {
-  return card.kind === 'BOOKING_PROPOSAL' ? `proposal:${card.id}` : `order:${card.orderId}`;
+  switch (card.kind) {
+    case 'BOOKING_PROPOSAL':
+      return `proposal:${card.id}`;
+    case 'PAYMENT':
+      return `order:${card.orderId}`;
+    default:
+      return `choices:${card.step}:${card.options.map((o) => o.value).join('|')}`;
+  }
 }
 
 /** "mm:ss" cho đồng hồ trên thẻ. */

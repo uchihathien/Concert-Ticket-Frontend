@@ -103,3 +103,31 @@
   margin: 0;
   font-size: 14px;
 }
+
+/* Đã thanh toán: viền xanh — khách nhìn thoáng là biết xong. */
+.cardPaid {
+  border-color: var(--nt-success);
+  background: color-mix(in srgb, var(--nt-success) 8%, var(--nt-surface));
+}
+
+/* Đã hết hạn/đã huỷ: xám đi, chỉ còn chữ và nút đặt lại. */
+.cardClosed {
+  border-color: var(--nt-border);
+  opacity: 0.85;
+}
+
+.eventLine {
+  display: grid;
+  gap: 2px;
+}
+
+.eventTitle {
+  margin: 0;
+  font-weight: 700;
+}
+
+.eventMeta {
+  margin: 0;
+  font-size: 13px;
+  color: var(--nt-text-muted);
+}

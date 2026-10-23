@@ -556,6 +556,54 @@ describe('support', () => {
     expect(seen[10]!.body).toMatchObject({ refundAllowed: false, refundWindowHours: 0 });
   });
 
+  it('thẻ CHOICES và thẻ PAYMENT có dòng vé + trạng thái đi nguyên vẹn qua client', async () => {
+    const chip = { label: 'VIP', value: 'Hạng VIP', hint: '1.800.000đ · còn 12 chỗ' };
+    reply = {
+      status: 200,
+      body: {
+        sessionId: 'cs1',
+        answer: 'Bạn chọn hạng vé nào?',
+        toolsUsed: [],
+        action: { kind: 'CHOICES', step: 'ZONE', prompt: 'Bạn chọn hạng vé nào?', options: [chip] },
+      },
+    };
+    const asked = await askSupport(client, { message: 'cho mình 2 vé đêm nhạc Trịnh' }, 'k-chip');
+    expect(asked.action?.kind).toBe('CHOICES');
+    if (asked.action?.kind === 'CHOICES') {
+      expect(asked.action.step).toBe('ZONE');
+      expect(asked.action.options).toEqual([chip]);
+    }
+
+    reply = {
+      status: 200,
+      body: {
+        sessionId: 'cs1',
+        handoff: null,
+        messages: [],
+        action: {
+          kind: 'PAYMENT',
+          orderId: 'o1',
+          orderNumber: 'NT-1',
+          totalVnd: 3_600_000,
+          vietQrPayload: null,
+          paymentReference: null,
+          checkoutUrl: 'https://pay',
+          paymentExpiresAt: '2026-10-23T10:15:00Z',
+          eventTitle: 'Đêm nhạc Trịnh',
+          eventSlug: 'dem-nhac-trinh',
+          lines: [{ zoneName: 'VIP', quantity: 2, unitPriceVnd: 1_800_000 }],
+          status: 'PAID',
+        },
+      },
+    };
+    const thread = await getChatThread(client, 'cs1');
+    expect(thread.action?.kind).toBe('PAYMENT');
+    if (thread.action?.kind === 'PAYMENT') {
+      expect(thread.action.status).toBe('PAID');
+      expect(thread.action.lines).toEqual([{ zoneName: 'VIP', quantity: 2, unitPriceVnd: 1_800_000 }]);
+    }
+  });
+
   it('listHandoffs: cắt khoảng trắng ở q, bỏ q chỉ có khoảng trắng, mine=false không gửi', async () => {
     reply = { status: 200, body: [] };
     await listHandoffs(client);

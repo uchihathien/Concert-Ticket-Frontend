@@ -1,7 +1,17 @@
 'use client';
 
-import { useOrder, type Order, type PaymentCard as PaymentCardData } from '@nexaticket/ts-sdk';
-import { Countdown, CopyField, MoneyText, QrPanel, Skeleton } from '@nexaticket/ui';
+import { ApiError, useCancelOrder, useOrder, type Order, type PaymentCard as PaymentCardData } from '@nexaticket/ts-sdk';
+import {
+  Button,
+  Countdown,
+  CopyField,
+  MoneyText,
+  QrPanel,
+  Skeleton,
+  cx,
+  formatDateTime,
+  useToast,
+} from '@nexaticket/ui';
 import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import { closedNote, closedTitle } from '@/lib/order-copy';
@@ -15,6 +25,11 @@ export interface PaymentCardProps {
   card: PaymentCardData;
   /** Gọi ĐÚNG MỘT LẦN khi đơn rời trạng thái chờ tiền (PAID, EXPIRED, …). */
   onSettled?: (status: Order['status']) => void;
+  /**
+   * Nút "Đặt lại" trên đơn đã hết hạn/đã huỷ: gửi một câu đặt vé lại cùng sự kiện vào khung chat. Vắng
+   * thì không có nút (thẻ dùng ngoài chat).
+   */
+  onRebook?: (text: string) => void;
 }
 
 /**
@@ -32,8 +47,10 @@ export interface PaymentCardProps {
  *
  * Chuyển khoản vào một đơn đã hết hạn là mất tiền oan và phải hoàn thủ công; thẻ đóng chỉ còn chữ.
  */
-export function PaymentCard({ card, onSettled }: PaymentCardProps) {
+export function PaymentCard({ card, onSettled, onRebook }: PaymentCardProps) {
   const { data: order, isPending, error, refetch } = useOrder(card.orderId);
+  const cancelOrder = useCancelOrder();
+  const toast = useToast();
   const settled = order !== undefined && order.status !== 'AWAITING_PAYMENT';
 
   useEffect(() => {
@@ -71,9 +88,10 @@ export function PaymentCard({ card, onSettled }: PaymentCardProps) {
 
   if (order.status === 'PAID') {
     return (
-      <div className={styles.card} role="status">
+      <div className={cx(styles.card, styles.cardPaid)} role="status">
         <p className={styles.title}>Thanh toán</p>
-        <p className={styles.doneTitle}>Đã nhận được thanh toán</p>
+        <p className={styles.doneTitle}>Đã thanh toán — vé đã có trong Vé của tôi</p>
+        <EventLine card={card} />
         <p className={styles.orderLine}>
           <span className={styles.orderNumber}>{order.orderNumber}</span>
           <MoneyText amountVnd={order.totalVnd} strong />
@@ -87,12 +105,27 @@ export function PaymentCard({ card, onSettled }: PaymentCardProps) {
 
   if (order.status !== 'AWAITING_PAYMENT') {
     return (
-      <div className={styles.card} role="status">
+      <div className={cx(styles.card, styles.cardClosed)} role="status">
         <p className={styles.title}>Thanh toán</p>
         <p className={styles.closedTitle}>{closedTitle(order.status)}</p>
+        <EventLine card={card} />
         <p className={styles.closedNote}>{closedNote(order.status)}</p>
+        {onRebook && card.eventTitle && (order.status === 'EXPIRED' || order.status === 'CANCELLED') ? (
+          <Button variant="secondary" onClick={() => onRebook(`Đặt lại vé ${card.eventTitle}`)}>
+            Đặt lại
+          </Button>
+        ) : null}
       </div>
     );
+  }
+
+  async function onCancelHold() {
+    try {
+      await cancelOrder.mutateAsync(card.orderId);
+      await refetch();
+    } catch (cancelError) {
+      toast.showError(cancelError instanceof ApiError ? cancelError : null);
+    }
   }
 
   const qrPayload = order.vietQrPayload ?? card.vietQrPayload;
@@ -103,6 +136,7 @@ export function PaymentCard({ card, onSettled }: PaymentCardProps) {
   return (
     <div className={styles.card}>
       <p className={styles.title}>Thanh toán</p>
+      <EventLine card={card} />
       <p className={styles.orderLine}>
         <span className={styles.orderNumber}>Đơn {order.orderNumber}</span>
         <MoneyText amountVnd={order.totalVnd} strong />
@@ -143,6 +177,37 @@ export function PaymentCard({ card, onSettled }: PaymentCardProps) {
       {reference ? <CopyField value={reference} label="Sao chép nội dung chuyển khoản" /> : null}
 
       <p className={styles.note}>Thẻ này tự cập nhật khi tiền về — bạn không cần bấm gì thêm.</p>
+
+      {/*
+        Huỷ đơn chờ thanh toán là thao tác ordering cho khách tự làm (POST /orders/{id}/cancel): chỗ được
+        trả lại ngay thay vì treo tới hết hạn. Đã chuyển khoản rồi thì đừng bấm — tiền về đơn đã huỷ phải
+        hoàn thủ công, nên nút để ở cuối, sau phần thanh toán.
+      */}
+      <Button variant="secondary" loading={cancelOrder.isPending} onClick={() => void onCancelHold()}>
+        Huỷ giữ chỗ
+      </Button>
+    </div>
+  );
+}
+
+/**
+ * Dòng mô tả đơn: sự kiện, suất, địa điểm, hạng vé. Lấy từ thẻ (backend dựng từ đề xuất đã xác nhận
+ * và catalog) — đơn của ordering không mang tên sự kiện. Thẻ dựng từ bản cũ thì không có dòng này.
+ */
+function EventLine({ card }: { card: PaymentCardData }) {
+  if (!card.eventTitle) return null;
+  const meta = [card.sessionStartsAt ? formatDateTime(card.sessionStartsAt) : null, card.venueName ?? null]
+    .filter((part): part is string => Boolean(part))
+    .join(' · ');
+  return (
+    <div className={styles.eventLine}>
+      <p className={styles.eventTitle}>{card.eventTitle}</p>
+      {meta ? <p className={styles.eventMeta}>{meta}</p> : null}
+      {card.lines?.map((line) => (
+        <p key={line.zoneName} className={styles.eventMeta}>
+          {line.quantity} × {line.zoneName}
+        </p>
+      ))}
     </div>
   );
 }

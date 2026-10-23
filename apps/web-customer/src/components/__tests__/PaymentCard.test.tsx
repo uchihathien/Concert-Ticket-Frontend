@@ -1,5 +1,5 @@
 import type { Order, PaymentCard as PaymentCardData } from '@nexaticket/ts-sdk';
-import { act, screen } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PaymentCard } from '../PaymentCard';
 import { renderWithApi } from './harness';
@@ -39,17 +39,33 @@ function card(overrides: Partial<PaymentCardData> = {}): PaymentCardData {
 }
 
 /** Mỗi lần GET đơn trả phần tử kế tiếp; hết danh sách thì lặp phần tử cuối. */
-function mount(cardData: PaymentCardData, responses: Order[], onSettled?: (s: Order['status']) => void) {
+function mount(
+  cardData: PaymentCardData,
+  responses: Order[],
+  onSettled?: (s: Order['status']) => void,
+  onRebook?: (text: string) => void,
+) {
   let n = 0;
-  return renderWithApi(<PaymentCard card={cardData} onSettled={onSettled} />, (call) => {
+  return renderWithApi(<PaymentCard card={cardData} onSettled={onSettled} onRebook={onRebook} />, (call) => {
     if (call.method === 'GET' && call.path === '/v1/orders/o1') {
       const body = responses[Math.min(n, responses.length - 1)];
       n += 1;
       return { status: 200, body };
     }
+    if (call.method === 'POST' && call.path === '/v1/orders/o1/cancel') {
+      return { status: 204 };
+    }
     throw new Error(`Không có route giả cho ${call.method} ${call.path}`);
   });
 }
+
+const withEvent: Partial<PaymentCardData> = {
+  eventTitle: 'Đêm nhạc Trịnh',
+  eventSlug: 'dem-nhac-trinh',
+  sessionStartsAt: '2026-11-20T13:00:00Z',
+  venueName: 'Nhà hát Lớn',
+  lines: [{ zoneName: 'VIP', quantity: 2, unitPriceVnd: 1_800_000 }],
+};
 
 const qrIn = (container: HTMLElement) => container.querySelector('[aria-label*="VietQR"]');
 
@@ -94,7 +110,7 @@ describe('PaymentCard', () => {
     beforeEach(() => vi.useFakeTimers({ shouldAdvanceTime: true }));
     afterEach(() => vi.useRealTimers());
 
-    it('đổi sang "đã nhận được thanh toán" ở lần hỏi thứ hai và báo onSettled đúng một lần', async () => {
+    it('đổi sang "đã thanh toán" ở lần hỏi thứ hai và báo onSettled đúng một lần', async () => {
       const onSettled = vi.fn();
       const { calls } = mount(card(), [order(), order({ status: 'PAID' })], onSettled);
 
@@ -105,7 +121,7 @@ describe('PaymentCard', () => {
         await vi.advanceTimersByTimeAsync(5_000);
       });
 
-      expect(await screen.findByText('Đã nhận được thanh toán')).toBeInTheDocument();
+      expect(await screen.findByText('Đã thanh toán — vé đã có trong Vé của tôi')).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Xem vé ngay' }).getAttribute('href')).toBe(
         '/orders/o1/tickets',
       );
@@ -120,5 +136,33 @@ describe('PaymentCard', () => {
       expect(calls.filter((c) => c.path === '/v1/orders/o1')).toHaveLength(seen);
       expect(onSettled).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('thẻ có sự kiện thì hiện tên, địa điểm và dòng vé', async () => {
+    mount(card(withEvent), [order()]);
+
+    expect(await screen.findByText('Đêm nhạc Trịnh')).toBeInTheDocument();
+    expect(screen.getByText(/Nhà hát Lớn/)).toBeInTheDocument();
+    expect(screen.getByText('2 × VIP')).toBeInTheDocument();
+  });
+
+  it('Huỷ giữ chỗ gọi huỷ đơn rồi hỏi lại đơn', async () => {
+    const { calls } = mount(card(), [order(), order({ status: 'CANCELLED' })]);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Huỷ giữ chỗ' }));
+
+    await waitFor(() =>
+      expect(calls.some((c) => c.method === 'POST' && c.path === '/v1/orders/o1/cancel')).toBe(true),
+    );
+    await waitFor(() => expect(calls.filter((c) => c.path === '/v1/orders/o1').length).toBeGreaterThanOrEqual(2));
+  });
+
+  it('đơn hết hạn có nút Đặt lại gửi câu đặt lại đúng sự kiện', async () => {
+    const onRebook = vi.fn();
+    mount(card(withEvent), [order({ status: 'EXPIRED' })], undefined, onRebook);
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Đặt lại' }));
+
+    expect(onRebook).toHaveBeenCalledWith('Đặt lại vé Đêm nhạc Trịnh');
   });
 });

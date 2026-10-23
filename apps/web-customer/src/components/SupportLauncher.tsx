@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
+import { ASK_SUPPORT_EVENT, type AskSupportContext } from '@/lib/ask-support';
 import { SupportChat } from './SupportChat';
 import styles from './support-launcher.module.css';
 
@@ -24,6 +25,8 @@ import styles from './support-launcher.module.css';
 export function SupportLauncher() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  /** Sự kiện khách vừa bấm "Hỏi trợ lý" — khung chat dùng để gợi ý câu hỏi và nút đặt vé. */
+  const [eventContext, setEventContext] = useState<AskSupportContext | null>(null);
   const panelId = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -54,7 +57,20 @@ export function SupportLauncher() {
   // góc phải trong lúc người dùng đang đọc một trang khác là thứ họ phải tắt đi thay vì thứ giúp họ.
   useEffect(() => {
     setOpen(false);
+    setEventContext(null);
   }, [pathname]);
+
+  // Nút "Hỏi trợ lý về sự kiện này" ở trang sự kiện (xem lib/ask-support).
+  useEffect(() => {
+    function onAsk(event: Event) {
+      const detail = (event as CustomEvent<AskSupportContext>).detail;
+      if (!detail) return;
+      setEventContext(detail);
+      setOpen(true);
+    }
+    window.addEventListener(ASK_SUPPORT_EVENT, onAsk);
+    return () => window.removeEventListener(ASK_SUPPORT_EVENT, onAsk);
+  }, []);
 
   if (pathname === '/support') {
     return null;
@@ -96,7 +112,7 @@ export function SupportLauncher() {
           </div>
 
           <div className={styles.panelBody}>
-            <SupportChat />
+            <SupportChat eventContext={eventContext} />
           </div>
         </div>
       ) : null}

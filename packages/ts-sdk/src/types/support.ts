@@ -4,6 +4,8 @@
  * Nguồn: `SupportChatController`, `SupportDeskController`, `HandoffViews` của ai-chatbox-service.
  */
 
+import type { OrderStatus } from './ordering';
+
 /**
  * Ai nói.
  *
@@ -151,9 +153,52 @@ export interface PaymentCard {
   paymentReference: string | null;
   checkoutUrl: string | null;
   paymentExpiresAt: string | null;
+  /**
+   * Sự kiện của đơn — vắng khi catalog không trả lời lúc dựng thẻ, hoặc thẻ dựng từ bản lưu cũ. Thẻ vẫn
+   * thanh toán được, chỉ thiếu dòng mô tả.
+   */
+  eventTitle?: string;
+  eventSlug?: string;
+  sessionStartsAt?: string;
+  venueName?: string;
+  lines?: PaymentCardLine[];
+  /**
+   * Trạng thái đơn lúc dựng thẻ (vd. khi khách hỏi "mình thanh toán chưa"). Vắng = vừa tạo, chưa tra
+   * lại. Giao diện vẫn tự hỏi lại đơn — trường này chỉ để thẻ nói đúng ngay từ lần vẽ đầu.
+   */
+  status?: OrderStatus;
 }
 
-export type ActionCard = BookingProposalCard | PaymentCard;
+/** Một dòng vé trên thẻ thanh toán: "2 × VIP". */
+export interface PaymentCardLine {
+  zoneName: string;
+  quantity: number;
+  unitPriceVnd: number;
+}
+
+/** Bước đang hỏi trong luồng đặt vé bằng chip. */
+export type ChoiceStep = 'EVENT' | 'SESSION' | 'ZONE' | 'QUANTITY';
+
+/**
+ * Một chip. Bấm là gửi `value` như một tin nhắn — server đối chiếu nó với đúng danh sách chip vừa
+ * hiện, nên đừng sửa chữ trước khi gửi.
+ */
+export interface ChoiceOption {
+  label: string;
+  value: string;
+  /** Dòng phụ, vd. "1.800.000đ · còn 12 chỗ". */
+  hint?: string;
+}
+
+/** Các lựa chọn nhanh khi trợ lý cần khách chọn: sự kiện, suất, hạng vé, số vé. */
+export interface ChoicesCard {
+  kind: 'CHOICES';
+  step: ChoiceStep;
+  prompt: string;
+  options: ChoiceOption[];
+}
+
+export type ActionCard = BookingProposalCard | PaymentCard | ChoicesCard;
 export type ActionCardKind = ActionCard['kind'] | 'BOOKING_INTENT';
 
 /** Đơn vừa tạo từ nút Đồng ý — bản rút gọn; VietQR nằm trong thẻ PAYMENT của `action`. */

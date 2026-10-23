@@ -1,0 +1,27 @@
+/* Nút phụ cạnh "Mua vé ngay": cùng chiều cao, viền thay vì nền — nút chính vẫn là mua vé. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 0 var(--nt-space-6);
+  border-radius: 999px;
+  border: 1px solid rgb(255 255 255 / 40%);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.button:hover {
+  border-color: var(--nt-primary);
+  color: var(--nt-primary);
+}
+
+.button:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
