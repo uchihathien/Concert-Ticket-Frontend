@@ -116,11 +116,48 @@ export interface AskRequest {
   message: string;
 }
 
+/**
+ * Thẻ hành động đi kèm câu trả lời — giao diện vẽ nút từ đây, không bao giờ parse `answer`.
+ *
+ * `BOOKING_PROPOSAL`: trợ lý vừa lập đề xuất, khách bấm Xác nhận/Huỷ. `PAYMENT`: đơn vừa tạo,
+ * vẽ mã VietQR (chuỗi QR chỉ đi qua thẻ này, không qua mô hình). `BOOKING_INTENT` khai sẵn cho
+ * Phase 2, chưa có dữ liệu.
+ */
+export interface BookingProposalCard {
+  kind: 'BOOKING_PROPOSAL';
+  id: string;
+  /** Một dòng cho người đọc, vd. "2 vé VIP · Đêm nhạc Trịnh · 20:00 ngày 20/11/2026". */
+  summary: string;
+  eventTitle: string;
+  sessionStartsAt: string | null;
+  zoneCode: string;
+  quantity: number;
+  totalVnd: number;
+  expiresAt: string;
+}
+
+export interface PaymentCard {
+  kind: 'PAYMENT';
+  orderId: string;
+  orderNumber: string;
+  totalVnd: number;
+  /** Null khi thẻ dựng lại sau tải trang — lấy lại qua GET /v1/orders/{id}. */
+  vietQrPayload: string | null;
+  paymentReference: string | null;
+  checkoutUrl: string | null;
+  paymentExpiresAt: string | null;
+}
+
+export type ActionCard = BookingProposalCard | PaymentCard;
+export type ActionCardKind = ActionCard['kind'] | 'BOOKING_INTENT';
+
 export interface AskResponse {
   sessionId: string;
   answer: string;
   /** Tên tool trợ lý đã gọi. Hữu ích khi gỡ lỗi, không nhất thiết hiện cho khách. */
   toolsUsed: string[];
+  /** Thẻ của lượt này; null khi không có. Luôn có mặt trong JSON. */
+  action: ActionCard | null;
 }
 
 // --- Kho tri thức của trợ lý ------------------------------------------------
