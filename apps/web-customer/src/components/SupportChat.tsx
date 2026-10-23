@@ -98,7 +98,16 @@ export function SupportChat() {
   // Cuộn xuống tin mới nhất (hoặc thẻ mới nhất). Không có bước này thì câu trả lời vừa tới nằm
   // ngoài tầm nhìn và khách tưởng không có gì xảy ra.
   useEffect(() => {
-    listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
+    const list = listRef.current;
+    if (!list) return;
+    const toBottom = () => list.scrollTo({ top: list.scrollHeight });
+    toBottom();
+    // Thẻ thanh toán đổi chiều cao SAU khi nạp đơn (khung xương → mã QR): cuộn lần đầu xong thì thẻ
+    // mới cao thêm và nửa dưới nằm ngoài tầm nhìn. Theo dõi kích thước từng mục để cuộn theo.
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(toBottom);
+    for (const item of list.children) observer.observe(item);
+    return () => observer.disconnect();
   }, [thread.data?.messages.length, shownCard]);
 
   if (state !== 'authenticated') {
@@ -217,10 +226,10 @@ export function SupportChat() {
                 key={shownCard.orderId}
                 card={shownCard}
                 onSettled={() => {
-                  // Đơn đã trả hoặc đã đóng: hội thoại có lượt mới ("đã nhận tiền"), và thẻ này không
-                  // còn là việc đang chờ khách.
-                  setDismissedKey(cardKey(shownCard));
-                  setActiveCard(null);
+                  // Đơn đã trả hoặc đã đóng. KHÔNG giấu thẻ: chính thẻ này đang nói "đã nhận được
+                  // thanh toán" kèm đường tới vé (hoặc "đơn đã hết hạn"), và đó là câu khách đang
+                  // chờ — giấu đi thì tiền vừa chuyển mà màn hình trống trơn. Chỉ làm mới hội thoại
+                  // để nhận lượt mới nếu backend có ghi.
                   void thread.refetch();
                 }}
               />
