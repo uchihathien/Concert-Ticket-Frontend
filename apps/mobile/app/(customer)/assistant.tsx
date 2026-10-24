@@ -21,6 +21,7 @@ import {
   Text,
   TextInput,
   View,
+  type ScrollViewInstance,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -59,7 +60,7 @@ export default function AssistantScreen() {
   const [needsLogin, setNeedsLogin] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const scrollRef = useRef<ScrollView>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   /** Khoá chống trùng của câu đang gửi, giữ qua các lần thử lại — cùng lý do với web. */
   const pendingKey = useRef<{ message: string; key: string } | null>(null);
 
