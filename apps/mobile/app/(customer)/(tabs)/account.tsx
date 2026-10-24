@@ -81,6 +81,12 @@ export default function AccountScreen() {
             href="/saved"
           />
           <MenuRow
+            icon={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }}
+            title="Trợ lý AI"
+            detail="Hỏi đáp, đặt vé ngay trong trò chuyện"
+            href="/assistant"
+          />
+          <MenuRow
             icon={{ ios: 'questionmark.circle.fill', android: 'help', web: 'help' }}
             title="Trợ giúp & hỗ trợ"
             detail="Câu hỏi thường gặp, liên hệ"

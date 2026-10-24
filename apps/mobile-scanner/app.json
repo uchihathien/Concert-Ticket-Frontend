@@ -37,7 +37,8 @@
           "cameraPermission": "Cho phép NexaTicket Scanner dùng camera để quét vé QR.",
           "recordAudioAndroid": false
         }
-      ]
+      ],
+      "expo-status-bar"
     ],
     "experiments": {
       "typedRoutes": true

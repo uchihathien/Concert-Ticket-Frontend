@@ -24,6 +24,7 @@ import { serverApi } from '@/lib/server-api';
 import { EventSeatMapPreview } from '@/components/EventSeatMapPreview';
 import styles from './detail.module.css';
 import { SaveEventButton } from '@/components/SaveEventButton';
+import { AskAssistantButton } from '@/components/AskAssistantButton';
 
 /** Backend đặt Cache-Control 2 phút; ISR khớp theo. */
 export const revalidate = 120;
@@ -195,6 +196,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ sl
                     Mua vé ngay
                   </a>
                 ) : null}
+
+                <AskAssistantButton eventSlug={event.slug} eventTitle={event.title} />
               </div>
             </div>
 

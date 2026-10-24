@@ -218,7 +218,7 @@ export default function LookupScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.list}
           ListEmptyComponent={
-            query.trim().length >= 2 && !searching ? <Text style={styles.empty}>Không tìm thấy vé nào khớp.</Text> : null
+            query.trim().length >= 2 && !searching ? <Text style={styles.empty}>Không tìm thấy vé nào khớp.</Text> : undefined
           }
           renderItem={({ item }) => (
             <Pressable

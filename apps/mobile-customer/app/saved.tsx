@@ -51,7 +51,7 @@ export default function SavedScreen() {
           ListHeaderComponent={
             slugs.length > 0 ? (
               <Text style={styles.note}>{slugs.length} sự kiện · lưu trên thiết bị này{pending ? ' · đang tải…' : ''}</Text>
-            ) : null
+            ) : undefined
           }
           ListEmptyComponent={
             <View style={styles.empty}>

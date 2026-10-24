@@ -5,13 +5,21 @@ import {
   ApiError,
   newIdempotencyKey,
   useAskSupport,
+  useCancelProposal,
   useChatThread,
+  useConfirmProposal,
   useRequestHumanAgent,
+  type ActionCard,
+  type BookingProposalCard,
   type ChatMessage,
+  type ChoicesCard as ChoicesCardData,
+  type PaymentCard as PaymentCardData,
 } from '@nexaticket/ts-sdk';
-import { Button, Skeleton, cx, formatTime, useToast } from '@nexaticket/ui';
+import { Button, Skeleton, cx, formatTime, formatVnd, useToast } from '@nexaticket/ui';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
+import type { AskSupportContext } from '@/lib/ask-support';
+import { PaymentCard } from './PaymentCard';
 import styles from './support-chat.module.css';
 
 /**
@@ -29,16 +37,32 @@ import styles from './support-chat.module.css';
  *       Đây cũng là trạng thái duy nhất hội thoại được hỏi lại theo chu kỳ.
  * </ol>
  *
+ * <h3>Thẻ hành động đi riêng với chữ</h3>
+ *
+ * Khi trợ lý lập đề xuất đặt vé, backend trả `action` có cấu trúc bên cạnh `answer`. Thẻ vẽ từ
+ * `action`, KHÔNG BAO GIỜ parse câu của mô hình — chữ trên thẻ là dữ liệu hệ thống, và đơn chỉ ra
+ * đời khi khách bấm Đồng ý (ADR-2001).
+ *
+ * Hai nguồn cho thẻ, theo thứ tự: `activeCard` (thẻ của lượt vừa gửi, có ngay cùng câu trả lời)
+ * rồi `ChatThread.action` (thẻ còn mở của phiên, nguồn dựng lại sau khi tải lại trang). Mỗi lần hội
+ * thoại được làm mới, `activeCard` nhường chỗ cho thẻ của hội thoại — hai nguồn cùng nói về một đề
+ * xuất, và nguồn từ server mới biết nó còn mở hay đã hết hạn. Thẻ khách vừa huỷ/đóng được nhớ theo
+ * khoá để bản cũ còn trong cache không hiện lại trong nhịp chờ làm mới.
+ *
  * <h3>Phiên sống trong `sessionStorage`</h3>
  *
  * Đủ để khách chuyển trang mà không mất mạch hội thoại, và tự hết khi đóng tab — đúng vòng đời của
  * một cuộc hỏi đáp hỗ trợ. Dùng `localStorage` thì một máy dùng chung sẽ mở lại hội thoại của
  * người trước.
  */
-export function SupportChat() {
+export function SupportChat({ eventContext = null }: { eventContext?: AskSupportContext | null } = {}) {
   const { state } = useSessionState();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
+  /** Thẻ của lượt gần nhất; `null` nghĩa là lượt vừa rồi không có thẻ và thẻ cũ phải biến mất. */
+  const [activeCard, setActiveCard] = useState<ActionCard | null>(null);
+  /** Thẻ khách vừa huỷ hoặc đã xong; bản còn trong cache hội thoại không được hiện lại. */
+  const [dismissedKey, setDismissedKey] = useState<string | null>(null);
   const toast = useToast();
 
   const thread = useChatThread(sessionId);
@@ -46,6 +70,15 @@ export function SupportChat() {
   const requestHuman = useRequestHumanAgent();
   const listRef = useRef<HTMLOListElement>(null);
   const waited = useElapsedSeconds(ask.isPending);
+  const threadCard = thread.data?.action ?? null;
+  const shownCard =
+    activeCard ?? (threadCard && cardKey(threadCard) !== dismissedKey ? threadCard : null);
+
+  // Hội thoại vừa được làm mới: thẻ của lượt nhường chỗ cho thẻ của hội thoại (xem chú thích đầu file).
+  const threadUpdatedAt = thread.dataUpdatedAt;
+  useEffect(() => {
+    setActiveCard(null);
+  }, [threadUpdatedAt]);
 
   /**
    * Khoá chống trùng của câu đang gửi, giữ qua các lần thử lại.
@@ -57,6 +90,17 @@ export function SupportChat() {
    */
   const pendingKey = useRef<{ message: string; key: string } | null>(null);
 
+  /**
+   * Phiên đăng nhập hết hạn GIỮA cuộc chat (backend trả 401). Khung chat không tự biến thành cổng
+   * đăng nhập — hội thoại vẫn hiện — mà thêm một thẻ mời đăng nhập lại, giữ nguyên câu khách vừa gõ.
+   */
+  const [needsLogin, setNeedsLogin] = useState(false);
+
+  // Mở từ nút "Hỏi trợ lý về sự kiện này": điền sẵn tên sự kiện để khách chỉ việc gõ tiếp câu hỏi.
+  useEffect(() => {
+    if (eventContext) setDraft(`Về sự kiện "${eventContext.eventTitle}": `);
+  }, [eventContext]);
+
   // Khôi phục phiên sau khi chuyển trang. Đọc trong effect chứ không lúc khởi tạo state:
   // sessionStorage không tồn tại lúc render ở server, và chạm vào nó ở đó làm hỏng hydrate.
   useEffect(() => {
@@ -64,11 +108,20 @@ export function SupportChat() {
     if (saved) setSessionId(saved);
   }, []);
 
-  // Cuộn xuống tin mới nhất. Không có bước này thì câu trả lời vừa tới nằm ngoài tầm nhìn và
-  // khách tưởng không có gì xảy ra.
+  // Cuộn xuống tin mới nhất (hoặc thẻ mới nhất). Không có bước này thì câu trả lời vừa tới nằm
+  // ngoài tầm nhìn và khách tưởng không có gì xảy ra.
   useEffect(() => {
-    listRef.current?.scrollTo({ top: listRef.current.scrollHeight });
-  }, [thread.data?.messages.length]);
+    const list = listRef.current;
+    if (!list) return;
+    const toBottom = () => list.scrollTo({ top: list.scrollHeight });
+    toBottom();
+    // Thẻ thanh toán đổi chiều cao SAU khi nạp đơn (khung xương → mã QR): cuộn lần đầu xong thì thẻ
+    // mới cao thêm và nửa dưới nằm ngoài tầm nhìn. Theo dõi kích thước từng mục để cuộn theo.
+    if (typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(toBottom);
+    for (const item of list.children) observer.observe(item);
+    return () => observer.disconnect();
+  }, [thread.data?.messages.length, shownCard]);
 
   if (state !== 'authenticated') {
     return (
@@ -93,15 +146,21 @@ export function SupportChat() {
   // đang được hỗ trợ mà màn hình vẫn nói là đang chờ, và họ chờ tiếp thay vì nhắn.
   const stillQueued = handoff?.status === 'WAITING';
 
-  async function send() {
-    const message = draft.trim();
+  /**
+   * Gửi một câu. `text` có mặt khi câu đến từ một nút (chip, "Đổi lựa chọn", "Đặt lại") — khi đó ô nhập
+   * giữ nguyên chữ khách đang gõ dở, và câu gửi đi là đúng `value` của nút, không sửa một ký tự (server
+   * đối chiếu nó với danh sách chip vừa hiện).
+   */
+  async function send(text?: string) {
+    const fromButton = text !== undefined;
+    const message = (text ?? draft).trim();
     if (!message || ask.isPending) return;
 
     const key =
       pendingKey.current?.message === message ? pendingKey.current.key : newIdempotencyKey();
     pendingKey.current = { message, key };
 
-    setDraft('');
+    if (!fromButton) setDraft('');
     try {
       const reply = await ask.mutateAsync({
         sessionId: sessionId ?? undefined,
@@ -115,10 +174,18 @@ export function SupportChat() {
         setSessionId(reply.sessionId);
         window.sessionStorage.setItem(SESSION_KEY, reply.sessionId);
       }
+      // Kể cả `null`: lượt không có thẻ thì thẻ cũ biến mất — một đề xuất của lượt trước không
+      // còn là thứ khách đang nói tới.
+      setActiveCard(reply.action);
+      setNeedsLogin(false);
     } catch (error) {
       // Trả lại chữ đã gõ: bắt khách gõ lại một câu dài vì mạng chập là cách chắc chắn làm họ bỏ
       // cuộc giữa chừng. `pendingKey` cố ý KHÔNG xoá — lần gửi lại phải mang đúng khoá ấy.
-      setDraft(message);
+      if (!fromButton) setDraft(message);
+      if (error instanceof ApiError && error.status === 401) {
+        setNeedsLogin(true);
+        return;
+      }
       toast.showError(error instanceof ApiError ? error : null);
     }
   }
@@ -164,7 +231,68 @@ export function SupportChat() {
             <Skeleton lines={2} />
           </li>
         ) : null}
+
+        {shownCard && sessionId ? (
+          <li className={cx(styles.message, styles.fromBot, styles.cardItem)}>
+            {shownCard.kind === 'CHOICES' ? (
+              <ChoicesCard card={shownCard} busy={ask.isPending} onChoose={(value) => void send(value)} />
+            ) : shownCard.kind === 'BOOKING_PROPOSAL' ? (
+              <ProposalCard
+                key={shownCard.id}
+                card={shownCard}
+                sessionId={sessionId}
+                busy={ask.isPending}
+                onResolved={(next) => {
+                  if (next === null) setDismissedKey(cardKey(shownCard));
+                  setActiveCard(next);
+                }}
+                onSend={(text) => void send(text)}
+              />
+            ) : shownCard.kind === 'PAYMENT' ? (
+              <PaymentCard
+                key={shownCard.orderId}
+                card={shownCard}
+                onRebook={(text) => void send(text)}
+                onSettled={() => {
+                  // Đơn đã trả hoặc đã đóng. KHÔNG giấu thẻ: chính thẻ này đang nói "đã nhận được
+                  // thanh toán" kèm đường tới vé (hoặc "đơn đã hết hạn"), và đó là câu khách đang
+                  // chờ — giấu đi thì tiền vừa chuyển mà màn hình trống trơn. Chỉ làm mới hội thoại
+                  // để nhận lượt mới nếu backend có ghi.
+                  void thread.refetch();
+                }}
+              />
+            ) : null}
+          </li>
+        ) : null}
+        {needsLogin ? (
+          <li className={cx(styles.message, styles.fromBot, styles.cardItem)}>
+            <div className={styles.card} role="status">
+              <p className={styles.cardTitle}>Cần đăng nhập lại</p>
+              <p className={styles.cardMeta}>
+                Phiên đăng nhập của bạn đã hết hạn. Đăng nhập lại để mình tiếp tục giữ chỗ và tra đơn cho bạn —
+                câu bạn vừa gõ vẫn còn trong ô nhập.
+              </p>
+              <Link className={styles.gateLink} href="/login?returnUrl=%2Fsupport">
+                Đăng nhập
+              </Link>
+            </div>
+          </li>
+        ) : null}
       </ol>
+
+      {eventContext && !waitingForHuman ? (
+        <div className={styles.quickActions}>
+          <span className={styles.quickLabel}>{eventContext.eventTitle}</span>
+          <button
+            type="button"
+            className={styles.chip}
+            disabled={ask.isPending}
+            onClick={() => void send(`Đặt vé ${eventContext.eventTitle}`)}
+          >
+            Đặt vé sự kiện này
+          </button>
+        </div>
+      ) : null}
 
       {stillQueued ? (
         <p className={styles.handoffBanner} role="status">
@@ -242,6 +370,247 @@ export function SupportChat() {
  * lại hội thoại của người trước, trong đó có mã đơn và số tiền.
  */
 const SESSION_KEY = 'nexaticket.support.session';
+
+type ProposalState =
+  | { kind: 'open' }
+  | { kind: 'confirming' }
+  | { kind: 'expired' }
+  | { kind: 'rejected'; detail: string };
+
+/**
+ * Thẻ "Đề xuất đặt vé": tóm tắt, tổng tiền, đồng hồ, hai nút.
+ *
+ * Mọi chữ trên thẻ lấy từ `card` (dữ liệu backend dựng từ catalog), không từ câu trả lời của mô
+ * hình. Bấm Đồng ý là lời gọi tất định tới endpoint xác nhận; thành công thì thẻ này được thay
+ * bằng thẻ thanh toán (`onResolved(action)`), huỷ hay hết hạn thì biến mất (`onResolved(null)`).
+ *
+ * Thẻ không tự phục hồi sau khi tải lại trang ở story này — thẻ là dữ liệu của một lượt; sau tải
+ * lại, `ChatThread.action` (story 1.7) là nguồn dựng lại.
+ */
+function ProposalCard({
+  card,
+  sessionId,
+  busy,
+  onResolved,
+  onSend,
+}: {
+  card: BookingProposalCard;
+  sessionId: string;
+  /** Khách đang gửi câu mới: tạm khoá nút để không bấm Đồng ý đúng lúc một lượt khác đang chạy. */
+  busy: boolean;
+  onResolved: (next: ActionCard | null) => void;
+  /** Gửi một câu thay khách — "Đổi lựa chọn": server huỷ đề xuất và hỏi lại hạng vé bằng chip. */
+  onSend: (text: string) => void;
+}) {
+  const toast = useToast();
+  const confirm = useConfirmProposal();
+  const cancel = useCancelProposal();
+  const [state, setState] = useState<ProposalState>({ kind: 'open' });
+  const remaining = useCountdownSeconds(card.expiresAt);
+
+  // Đồng hồ về 0 thì thẻ tự chuyển hết hạn — không gọi API: server tự biết, và một lời gọi chỉ để
+  // nhận 410 là một lời gọi vô ích.
+  useEffect(() => {
+    if (remaining === 0 && state.kind === 'open') setState({ kind: 'expired' });
+  }, [remaining, state.kind]);
+
+  async function onConfirm() {
+    setState({ kind: 'confirming' });
+    try {
+      const confirmation = await confirm.mutateAsync({ proposalId: card.id, sessionId });
+      onResolved(confirmation.action);
+    } catch (error) {
+      if (!(error instanceof ApiError)) {
+        setState({ kind: 'open' });
+        toast.showError(null);
+        return;
+      }
+      switch (error.code) {
+        case 'PROPOSAL_ALREADY_CONFIRMED': {
+          // Bấm hai lần, hoặc một tab khác đã bấm: đơn đã có, hiện lại thẻ thanh toán từ meta.
+          const action = error.meta?.action as PaymentCardData | undefined;
+          const order = error.meta?.order as
+            | { orderId: string; orderNumber: string; totalVnd: number; checkoutUrl?: string | null; paymentExpiresAt?: string | null }
+            | undefined;
+          if (action?.kind === 'PAYMENT') {
+            onResolved(action);
+          } else if (order) {
+            onResolved({
+              kind: 'PAYMENT',
+              orderId: order.orderId,
+              orderNumber: order.orderNumber,
+              totalVnd: order.totalVnd,
+              vietQrPayload: null,
+              paymentReference: null,
+              checkoutUrl: order.checkoutUrl ?? null,
+              paymentExpiresAt: order.paymentExpiresAt ?? null,
+            });
+          } else {
+            onResolved(null);
+          }
+          return;
+        }
+        case 'PROPOSAL_EXPIRED':
+          setState({ kind: 'expired' });
+          return;
+        case 'BOOKING_REJECTED':
+          // Server đã huỷ đề xuất: nút Đồng ý không còn ý nghĩa, chỉ còn cách hỏi lại trợ lý.
+          setState({ kind: 'rejected', detail: error.detail ?? 'Không giữ được chỗ cho đề xuất này.' });
+          return;
+        default:
+          setState({ kind: 'open' });
+          toast.showError(error);
+      }
+    }
+  }
+
+  async function onCancel() {
+    try {
+      await cancel.mutateAsync({ proposalId: card.id, sessionId });
+      onResolved(null);
+    } catch (error) {
+      // 404/410: đề xuất không còn — kết quả khách muốn đã có. Mã khác thì báo.
+      if (error instanceof ApiError && (error.status === 404 || error.status === 410)) {
+        onResolved(null);
+        return;
+      }
+      toast.showError(error instanceof ApiError ? error : null);
+    }
+  }
+
+  const locked = busy || state.kind !== 'open';
+
+  return (
+    <div className={styles.card}>
+      <p className={styles.cardTitle}>Đề xuất đặt vé</p>
+      <p className={styles.cardMeta}>{card.summary}</p>
+      <p className={styles.cardTotal}>Tổng {formatVnd(card.totalVnd)}</p>
+
+      {state.kind === 'expired' ? (
+        <p className={styles.cardDone} role="status">
+          Đề xuất đã hết hạn — hỏi lại trợ lý nhé.
+        </p>
+      ) : state.kind === 'rejected' ? (
+        <>
+          <p className={styles.cardError} role="status">
+            {state.detail}
+          </p>
+          <div className={styles.cardActions}>
+            <Button variant="secondary" disabled={busy} onClick={() => onSend(CHANGE_SELECTION)}>
+              Chọn hạng khác
+            </Button>
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Đồng hồ ngoài vùng aria-live, cùng lý do với `.clock` ở trên. */}
+          <p
+            className={cx(styles.cardTimer, remaining <= 60 ? styles.cardTimerWarn : undefined)}
+            aria-hidden="true"
+          >
+            Còn {formatMmSs(remaining)}
+          </p>
+          <p className={styles.cardHint}>
+            Bấm <strong>Đồng ý</strong> để mình giữ chỗ.
+          </p>
+          <div className={styles.cardActions}>
+            <Button onClick={() => void onConfirm()} loading={state.kind === 'confirming'} disabled={locked}>
+              Đồng ý
+            </Button>
+            <Button variant="secondary" onClick={() => onSend(CHANGE_SELECTION)} disabled={locked}>
+              Đổi lựa chọn
+            </Button>
+            <Button variant="secondary" onClick={() => void onCancel()} loading={cancel.isPending} disabled={locked}>
+              Huỷ
+            </Button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Câu nút "Đổi lựa chọn" gửi đi. Server nhận đúng câu này (ChatBookingFlow): huỷ đề xuất đang mở và hỏi
+ * lại hạng vé, giữ sự kiện, suất và số vé.
+ */
+const CHANGE_SELECTION = 'Đổi lựa chọn';
+
+/**
+ * Thẻ chip: trợ lý cần khách chọn sự kiện, suất, hạng vé hoặc số vé.
+ *
+ * Bấm chip là gửi `value` như một tin nhắn — server đối chiếu với đúng danh sách chip vừa hiện, nên
+ * chip gửi nguyên văn. Giá và số chỗ trên chip (`hint`) là dữ liệu catalog/inventory, không do mô
+ * hình viết. Khoá cả thẻ trong lúc một lượt đang chạy: bấm hai chip liền tay là hai lựa chọn chồng nhau.
+ */
+function ChoicesCard({
+  card,
+  busy,
+  onChoose,
+}: {
+  card: ChoicesCardData;
+  busy: boolean;
+  onChoose: (value: string) => void;
+}) {
+  return (
+    <div className={styles.card}>
+      <p className={styles.cardTitle}>{card.prompt}</p>
+      <div className={styles.chips} role="group" aria-label={card.prompt}>
+        {card.options.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className={styles.choice}
+            disabled={busy}
+            onClick={() => onChoose(option.value)}
+          >
+            <span className={styles.choiceLabel}>{option.label}</span>
+            {option.hint ? <span className={styles.choiceHint}>{option.hint}</span> : null}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Khoá nhận dạng một thẻ, để nhớ thẻ nào khách đã đóng. */
+function cardKey(card: ActionCard): string {
+  switch (card.kind) {
+    case 'BOOKING_PROPOSAL':
+      return `proposal:${card.id}`;
+    case 'PAYMENT':
+      return `order:${card.orderId}`;
+    default:
+      return `choices:${card.step}:${card.options.map((o) => o.value).join('|')}`;
+  }
+}
+
+/** "mm:ss" cho đồng hồ trên thẻ. */
+function formatMmSs(totalSeconds: number): string {
+  const m = Math.floor(totalSeconds / 60);
+  const s = totalSeconds % 60;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+/**
+ * Số giây còn lại tới một mốc, không âm.
+ *
+ * Tính từ mốc thời gian mỗi nhịp, cùng lý do với `useElapsedSeconds`: tab nền bị hãm interval nên
+ * đếm bằng biến tăng dần sẽ sai.
+ */
+function useCountdownSeconds(deadline: string): number {
+  const compute = () => Math.max(0, Math.round((new Date(deadline).getTime() - Date.now()) / 1000));
+  const [seconds, setSeconds] = useState(compute);
+
+  useEffect(() => {
+    setSeconds(compute());
+    const timer = window.setInterval(() => setSeconds(compute()), 1000);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `compute` chỉ phụ thuộc `deadline`
+  }, [deadline]);
+
+  return seconds;
+}
 
 /**
  * Đường dẫn sự kiện trong tin nhắn, dạng `/events/<slug>`.

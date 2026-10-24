@@ -4,6 +4,8 @@
  * Nguồn: `SupportChatController`, `SupportDeskController`, `HandoffViews` của ai-chatbox-service.
  */
 
+import type { OrderStatus } from './ordering';
+
 /**
  * Ai nói.
  *
@@ -108,6 +110,11 @@ export interface ChatThread {
   sessionId: string;
   handoff: Handoff | null;
   messages: ChatMessage[];
+  /**
+   * Thẻ còn mở của phiên (đề xuất chưa hết hạn, hoặc thanh toán của đơn vừa tạo) — nguồn dựng lại thẻ
+   * sau khi tải lại trang. `null` khi không có gì đang chờ khách.
+   */
+  action: ActionCard | null;
 }
 
 export interface AskRequest {
@@ -116,11 +123,108 @@ export interface AskRequest {
   message: string;
 }
 
+/**
+ * Thẻ hành động đi kèm câu trả lời — giao diện vẽ nút từ đây, không bao giờ parse `answer`.
+ *
+ * `BOOKING_PROPOSAL`: trợ lý vừa lập đề xuất, khách bấm Xác nhận/Huỷ. `PAYMENT`: đơn vừa tạo,
+ * vẽ mã VietQR (chuỗi QR chỉ đi qua thẻ này, không qua mô hình). `BOOKING_INTENT` khai sẵn cho
+ * Phase 2, chưa có dữ liệu.
+ */
+export interface BookingProposalCard {
+  kind: 'BOOKING_PROPOSAL';
+  id: string;
+  /** Một dòng cho người đọc, vd. "2 vé VIP · Đêm nhạc Trịnh · 20:00 ngày 20/11/2026". */
+  summary: string;
+  eventTitle: string;
+  sessionStartsAt: string | null;
+  zoneCode: string;
+  quantity: number;
+  totalVnd: number;
+  expiresAt: string;
+}
+
+export interface PaymentCard {
+  kind: 'PAYMENT';
+  orderId: string;
+  orderNumber: string;
+  totalVnd: number;
+  /** Null khi thẻ dựng lại sau tải trang — lấy lại qua GET /v1/orders/{id}. */
+  vietQrPayload: string | null;
+  paymentReference: string | null;
+  checkoutUrl: string | null;
+  paymentExpiresAt: string | null;
+  /**
+   * Sự kiện của đơn — vắng khi catalog không trả lời lúc dựng thẻ, hoặc thẻ dựng từ bản lưu cũ. Thẻ vẫn
+   * thanh toán được, chỉ thiếu dòng mô tả.
+   */
+  eventTitle?: string;
+  eventSlug?: string;
+  sessionStartsAt?: string;
+  venueName?: string;
+  lines?: PaymentCardLine[];
+  /**
+   * Trạng thái đơn lúc dựng thẻ (vd. khi khách hỏi "mình thanh toán chưa"). Vắng = vừa tạo, chưa tra
+   * lại. Giao diện vẫn tự hỏi lại đơn — trường này chỉ để thẻ nói đúng ngay từ lần vẽ đầu.
+   */
+  status?: OrderStatus;
+}
+
+/** Một dòng vé trên thẻ thanh toán: "2 × VIP". */
+export interface PaymentCardLine {
+  zoneName: string;
+  quantity: number;
+  unitPriceVnd: number;
+}
+
+/** Bước đang hỏi trong luồng đặt vé bằng chip. */
+export type ChoiceStep = 'EVENT' | 'SESSION' | 'ZONE' | 'QUANTITY';
+
+/**
+ * Một chip. Bấm là gửi `value` như một tin nhắn — server đối chiếu nó với đúng danh sách chip vừa
+ * hiện, nên đừng sửa chữ trước khi gửi.
+ */
+export interface ChoiceOption {
+  label: string;
+  value: string;
+  /** Dòng phụ, vd. "1.800.000đ · còn 12 chỗ". */
+  hint?: string;
+}
+
+/** Các lựa chọn nhanh khi trợ lý cần khách chọn: sự kiện, suất, hạng vé, số vé. */
+export interface ChoicesCard {
+  kind: 'CHOICES';
+  step: ChoiceStep;
+  prompt: string;
+  options: ChoiceOption[];
+}
+
+export type ActionCard = BookingProposalCard | PaymentCard | ChoicesCard;
+export type ActionCardKind = ActionCard['kind'] | 'BOOKING_INTENT';
+
+/** Đơn vừa tạo từ nút Đồng ý — bản rút gọn; VietQR nằm trong thẻ PAYMENT của `action`. */
+export interface ProposalOrder {
+  orderId: string;
+  orderNumber: string;
+  totalVnd: number;
+  checkoutUrl: string | null;
+  paymentExpiresAt: string | null;
+}
+
+/** Phản hồi 201 của `confirmProposal`. 409 (đã xác nhận) mang `order` và `action` trong `ApiError.meta`. */
+export interface ProposalConfirmation {
+  proposalId: string;
+  status: 'CONFIRMED';
+  order: ProposalOrder;
+  action: PaymentCard;
+}
+
 export interface AskResponse {
   sessionId: string;
   answer: string;
   /** Tên tool trợ lý đã gọi. Hữu ích khi gỡ lỗi, không nhất thiết hiện cho khách. */
   toolsUsed: string[];
+  /** Thẻ của lượt này; null khi không có. Luôn có mặt trong JSON. */
+  action: ActionCard | null;
 }
 
 // --- Kho tri thức của trợ lý ------------------------------------------------

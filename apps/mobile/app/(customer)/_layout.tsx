@@ -13,6 +13,7 @@ export default function CustomerLayout() {
         <Stack.Screen name="orders" />
         <Stack.Screen name="saved" />
         <Stack.Screen name="help" />
+        <Stack.Screen name="assistant" />
       </Stack>
     </SavedEventsProvider>
   );

@@ -93,6 +93,17 @@ export default function EventDetailScreen() {
 
         {event.summary ? <Text style={styles.summary}>{event.summary}</Text> : null}
 
+        <Pressable
+          accessibilityRole="button"
+          onPress={() =>
+            router.push({ pathname: '/assistant', params: { eventSlug: event.slug, eventTitle: event.title } })
+          }
+          style={({ pressed }) => [styles.askButton, pressed && styles.askPressed]}
+        >
+          <SymbolView name={{ ios: 'sparkles', android: 'auto_awesome', web: 'auto_awesome' }} tintColor="#D5FF66" size={16} />
+          <Text style={styles.askText}>Hỏi trợ lý về sự kiện này</Text>
+        </Pressable>
+
         <View style={styles.sectionHead}>
           <Text style={styles.sectionTitle}>Chọn suất diễn</Text>
           <Text style={styles.muted}>{event.sessions.length} suất</Text>
@@ -222,6 +233,9 @@ const styles = StyleSheet.create({
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 13 },
   infoText: { color: '#C4CEC5', fontSize: 12, flex: 1 },
   summary: { color: '#C4CEC5', fontSize: 13, lineHeight: 21, marginTop: 17 },
+  askButton: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 8, minHeight: 42, marginTop: 16, paddingHorizontal: 14, borderRadius: 999, borderWidth: 1, borderColor: '#3B493F' },
+  askPressed: { borderColor: '#D5FF66' },
+  askText: { color: '#D5FF66', fontSize: 13, fontWeight: '800' },
   sectionHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 28, marginBottom: 12 },
   sectionTitle: { color: '#F1F5F1', fontSize: 17, fontWeight: '800', marginBottom: 12 },
   muted: { color: '#A6B1A8', fontSize: 12 },

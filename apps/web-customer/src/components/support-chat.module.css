@@ -187,3 +187,179 @@
   outline: 2px solid var(--nt-accent);
   outline-offset: 1px;
 }
+
+/*
+ * Thẻ hành động trong luồng chat (đề xuất đặt vé, thanh toán).
+ *
+ * Là dữ liệu hệ thống, không phải câu của mô hình — nên trông khác bong bóng chữ: viền đậm hơn,
+ * có tiêu đề, có nút. Khách phải nhận ra đây là chỗ để BẤM, không phải một đoạn văn để đọc.
+ */
+.cardItem {
+  max-width: 100%;
+  width: min(100%, 440px);
+}
+
+.card {
+  display: grid;
+  gap: var(--nt-space-2);
+  border: 1px solid var(--nt-primary);
+  border-radius: var(--nt-radius-lg);
+  background: var(--nt-surface);
+  padding: var(--nt-space-4);
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--nt-text-muted);
+}
+
+.cardMeta {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.cardTotal {
+  margin: 0;
+  font-size: 15px;
+}
+
+/* Đồng hồ: số đều nhau để không nhảy chữ mỗi giây. */
+.cardTimer {
+  margin: 0;
+  font-size: 14px;
+  color: var(--nt-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.cardTimerWarn {
+  color: var(--nt-danger, #c0392b);
+  font-weight: 600;
+}
+
+.cardHint {
+  margin: 0;
+  font-size: 14px;
+}
+
+.cardActions {
+  display: flex;
+  gap: var(--nt-space-2);
+  flex-wrap: wrap;
+  margin-top: var(--nt-space-1);
+}
+
+.cardDone {
+  margin: 0;
+  font-size: 14px;
+  color: var(--nt-text-muted);
+}
+
+.cardError {
+  margin: 0;
+  font-size: 14px;
+  color: var(--nt-danger, #c0392b);
+}
+
+.cardLink {
+  font-weight: 600;
+  color: var(--nt-primary-ink);
+  background: var(--nt-primary);
+  border-radius: var(--nt-radius);
+  padding: var(--nt-space-2) var(--nt-space-4);
+  text-decoration: none;
+  justify-self: start;
+}
+
+/*
+ * Chip lựa chọn (thẻ CHOICES): suất, hạng vé, số vé.
+ *
+ * Nút thật chứ không phải liên kết — bấm là gửi một câu. Hai dòng: nhãn đậm và dòng phụ (giá, số chỗ
+ * còn) nhỏ hơn, vì khách chọn hạng vé theo giá trước rồi mới theo tên.
+ */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--nt-space-2);
+}
+
+.choice {
+  display: grid;
+  gap: 2px;
+  min-height: 44px;
+  padding: var(--nt-space-2) var(--nt-space-3);
+  border: 1px solid var(--nt-border);
+  border-radius: var(--nt-radius);
+  background: var(--nt-bg-subtle);
+  color: var(--nt-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.choice:hover:not(:disabled) {
+  border-color: var(--nt-primary);
+  background: color-mix(in srgb, var(--nt-primary) 10%, var(--nt-bg-subtle));
+}
+
+.choice:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
+
+.choice:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+.choiceLabel {
+  font-weight: 700;
+}
+
+.choiceHint {
+  font-size: 12px;
+  color: var(--nt-text-muted);
+}
+
+/* Mở từ trang sự kiện: tên sự kiện và lối tắt đặt vé, ngay trên ô nhập. */
+.quickActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--nt-space-2);
+}
+
+.quickLabel {
+  font-size: 13px;
+  color: var(--nt-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.chip {
+  padding: var(--nt-space-1) var(--nt-space-3);
+  border: 1px solid var(--nt-primary);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--nt-primary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.chip:focus-visible {
+  outline: none;
+  box-shadow: var(--nt-focus);
+}
