@@ -35,6 +35,15 @@ export interface NexaAuthOptions {
 /** Id của provider dùng cho đường đăng ký. Truyền vào `signIn()` để mở đúng trang. */
 export const REGISTER_PROVIDER_ID = 'keycloak-register';
 
+/**
+ * Ngôn ngữ của trang đăng nhập Keycloak.
+ *
+ * Keycloak chọn ngôn ngữ theo `ui_locales` trước, rồi mới tới Accept-Language của trình duyệt.
+ * Gửi kèm ở mọi lần chuyển sang Keycloak để trang luôn là tiếng Việt, kể cả trên máy để tiếng Anh.
+ * Chỉ là tham số hiển thị — không ảnh hưởng tới luồng PKCE hay token.
+ */
+const KEYCLOAK_UI_LOCALES = 'vi';
+
 /** Refresh token của Keycloak mặc định sống 30 ngày; giữ bản ghi server đúng bằng ngần đó. */
 const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -138,7 +147,16 @@ function buildConfig(options: NexaAuthOptions, store: RefreshTokenStore): NextAu
   const deps = accessTokenDeps(options, store);
   const { issuer, clientId, clientSecret } = deps;
 
-  const providers = [Keycloak({ clientId, clientSecret, issuer })];
+  // Chỉ khai `params`, không khai `url`: Auth.js vẫn lấy authorization endpoint từ discovery và
+  // vẫn tự thêm `scope=openid profile email` như trước.
+  const providers = [
+    Keycloak({
+      clientId,
+      clientSecret,
+      issuer,
+      authorization: { params: { ui_locales: KEYCLOAK_UI_LOCALES } },
+    }),
+  ];
 
   if (options.registration) {
     // Cùng một client Keycloak, chỉ khác điểm vào: `/registrations` là trang tạo tài khoản, còn
@@ -153,7 +171,7 @@ function buildConfig(options: NexaAuthOptions, store: RefreshTokenStore): NextAu
         issuer,
         authorization: {
           url: `${issuer.replace(/\/$/, '')}/protocol/openid-connect/registrations`,
-          params: { scope: 'openid profile email' },
+          params: { scope: 'openid profile email', ui_locales: KEYCLOAK_UI_LOCALES },
         },
       }),
     );
@@ -172,7 +190,12 @@ function buildConfig(options: NexaAuthOptions, store: RefreshTokenStore): NextAu
     // vào đúng một nguồn.
     useSecureCookies: secure,
     cookies: authCookieNames(options.app, secure),
-    pages: options.signInPage ? { signIn: options.signInPage } : undefined,
+    // Lỗi của luồng đăng nhập cũng về trang đăng nhập của app (kèm `?error=`), thay vì trang lỗi
+    // mặc định của Auth.js — chữ tiếng Anh, nền trắng, không có nút quay lại. Trang `/login` đọc
+    // mã lỗi bằng `signInNotice` và hiện câu tiếng Việt cùng kiểu với theme Keycloak.
+    pages: options.signInPage
+      ? { signIn: options.signInPage, error: options.signInPage }
+      : undefined,
     callbacks: {
       async jwt({ token, account }) {
         if (account) {

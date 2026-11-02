@@ -21,8 +21,10 @@ const allRoles: readonly AppRole[] = ['customer', 'organizer', 'scanner'];
  * của Keycloak chỉ có `ORG_MEMBER` cho cả ban tổ chức lẫn nhân viên soát vé, nên JWT không phân biệt
  * được hai vai đó.
  *
- * Tài khoản có quyền nền tảng hoặc quyền trong tổ chức KHÔNG được vai khách mua vé. Lời mời đang chờ
- * mở thêm vai soát vé vì màn soát vé là nơi nhân viên chấp nhận lời mời.
+ * Mọi tài khoản NexaTicket đều là tài khoản khách — kể cả Staff và ban tổ chức: nhân viên tự đăng ký
+ * như khách rồi mới được thêm vào tổ chức, nên cùng một tài khoản vừa mua vé vừa soát vé. Chỉ tài
+ * khoản quản trị NỀN TẢNG không có vai khách: đó không phải tài khoản mua vé. Lời mời đang chờ mở
+ * thêm vai soát vé cho tài khoản chưa thuộc tổ chức nào, vì màn soát vé là nơi chấp nhận lời mời.
  */
 export async function resolveRoles(): Promise<AppRole[]> {
   const [permissions, invitations] = await Promise.all([
@@ -37,11 +39,10 @@ export async function resolveRoles(): Promise<AppRole[]> {
 
   if (organizations.some((granted) => granted.includes('CATALOG_MANAGE'))) roles.push('organizer');
   if (organizations.some((granted) => granted.includes('CHECKIN_SCAN'))) roles.push('scanner');
+  if (roles.length === 0 && invitations.length > 0) roles.push('scanner');
 
-  if (roles.length === 0 && !platformAccount) {
-    roles.push('customer');
-    if (invitations.length > 0) roles.push('scanner');
-  }
+  // Bản NexaTicket chỉ chặn tài khoản thực sự không có vai khách — quản trị nền tảng.
+  if (!platformAccount) roles.push('customer');
   return roles;
 }
 

@@ -15,6 +15,14 @@ export { safeReturnUrl } from './return-url';
 
 export { resetPasswordUrl, resetPasswordUrlFromEnv } from './reset-password';
 
+export {
+  SESSION_EXPIRED_MESSAGE,
+  SESSION_EXPIRED_REASON,
+  SIGN_IN_ERROR_FALLBACK,
+  signInNotice,
+} from './sign-in-notice';
+export type { SignInNotice, SignInNoticeTone } from './sign-in-notice';
+
 export { ensureAccessToken } from './access-token';
 export type { AccessTokenDeps, AccessTokenState } from './access-token';
 

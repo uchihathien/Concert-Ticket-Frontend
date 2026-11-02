@@ -19,7 +19,8 @@ export default function RootLayout() {
  * hướng tới được, kể cả bằng deep link.
  *
  * Bản NexaTicket chỉ có nhóm (customer) — khách chưa đăng nhập cũng ở đó. Bản NexaTicket Staff chỉ
- * có (organizer) và (scanner), cộng màn đăng nhập nhân viên khi chưa đăng nhập.
+ * có (organizer) và (scanner), cộng màn đăng nhập nhân viên (OIDC, tài khoản của chính họ) khi chưa
+ * đăng nhập.
  */
 function RootNavigator() {
   const { ready, mode, refresh, signOut } = useMobileAuth();
@@ -55,8 +56,8 @@ function RootNavigator() {
         <Text style={styles.title}>{mode === 'not-staff' ? 'Tài khoản không có quyền nhân viên' : 'Không dùng được ở ứng dụng này'}</Text>
         <Text style={styles.copy}>
           {mode === 'not-staff'
-            ? 'Tài khoản này chưa thuộc ban tổ chức hay được giao soát vé. Liên hệ ban tổ chức nếu bạn là nhân viên.'
-            : 'Tài khoản này dùng cho ứng dụng NexaTicket Staff hoặc trang quản trị web.'}
+            ? 'Tài khoản này chưa được thêm vào tổ chức nào với vai Staff. Gửi email hoặc số điện thoại bạn đã đăng ký cho ban tổ chức để được thêm.'
+            : 'Tài khoản quản trị nền tảng không dùng để mua vé. Hãy đăng nhập bằng tài khoản cá nhân, hoặc dùng trang quản trị web.'}
         </Text>
         <Pressable accessibilityRole="button" onPress={() => void signOut()} style={({ pressed }) => [styles.secondary, pressed && styles.pressed]}>
           <Text style={styles.secondaryText}>Đăng xuất</Text>

@@ -4,12 +4,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   acceptInvitation,
   activateOrganization,
-  cancelStaffInvitation,
-  createStaffAccount,
-  extendStaffAccount,
-  lockStaffAccount,
-  resetStaffPin,
-  unlockStaffAccount,
   changeMemberRole,
   createOrganization,
   getAuditLogs,
@@ -20,14 +14,15 @@ import {
   getPendingInvitations,
   getPlatformAuditLogs,
   getRoles,
+  addMember,
   getStaff,
+  lookupMember,
+  setStaffAssignments,
   grantMember,
   inviteMember,
-  inviteStaff,
   listPlatformOrganizations,
   removeMember,
   renameOrganization,
-  resendStaffInvitation,
   revokeInvitation,
   revokeMemberSessions,
   sendMemberPasswordReset,
@@ -39,10 +34,10 @@ import { queryKeys, staleTime } from '../query/keys';
 import type {
   AuditLogParams,
   CreateOrganizationRequest,
+  AddMemberRequest,
+  AssignmentTarget,
   GrantMemberRequest,
   InviteMemberRequest,
-  CreateStaffAccountRequest,
-  InviteStaffRequest,
   OrganizationRole,
   OrganizationSummary,
   Permission,
@@ -384,8 +379,8 @@ export function useStaff(organizationId: string | null | undefined) {
 }
 
 /**
- * Mọi thao tác ở mục Nhân sự đều làm mới CẢ bảng nhân sự lẫn bảng thành viên: mời tạo ra một thành
- * viên mới, huỷ lời mời xoá một thành viên, và hai màn hình đó cùng nhìn vào một tổ chức.
+ * Mọi thao tác thành viên/phân công đều làm mới CẢ bảng phân công lẫn bảng thành viên: thêm một Staff
+ * tạo ra một dòng ở cả hai, và hai màn hình đó cùng nhìn vào một tổ chức.
  */
 function useStaffMutation<TInput, TResult>(
   organizationId: string,
@@ -402,52 +397,35 @@ function useStaffMutation<TInput, TResult>(
   });
 }
 
-export function useInviteStaff(organizationId: string) {
-  return useStaffMutation(organizationId, (client, input: InviteStaffRequest) =>
-    inviteStaff(client, organizationId, input),
+/**
+ * Tìm tài khoản để thêm vào tổ chức. Là mutation chứ không phải query: chỉ chạy khi bấm Tìm, không
+ * cache, và không tự gọi lại khi cửa sổ được focus — tránh biến ô tìm thành vòng dò danh sách.
+ */
+export function useLookupMember(organizationId: string) {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: (contact: string) => lookupMember(client, organizationId, contact),
+  });
+}
+
+/** Thêm thành viên đã đăng ký. Làm mới cả bảng thành viên lẫn bảng phân công. */
+export function useAddMember(organizationId: string) {
+  return useStaffMutation(organizationId, (client, input: AddMemberRequest) =>
+    addMember(client, organizationId, input),
+  );
+}
+
+/** Đặt lại phân công còn hiệu lực của một Staff (theo sự kiện hoặc từng suất). */
+export function useSetStaffAssignments(organizationId: string) {
+  return useStaffMutation(
+    organizationId,
+    (client, input: { userId: string; targets: AssignmentTarget[] }) =>
+      setStaffAssignments(client, organizationId, input.userId, input.targets),
   );
 }
 
 export function useSetStaffEvents(organizationId: string) {
   return useStaffMutation(organizationId, (client, input: { userId: string; eventIds: string[] }) =>
     setStaffEvents(client, organizationId, input.userId, input.eventIds),
-  );
-}
-
-export function useResendStaffInvitation(organizationId: string) {
-  return useStaffMutation(organizationId, (client, userId: string) =>
-    resendStaffInvitation(client, organizationId, userId),
-  );
-}
-
-export function useCancelStaffInvitation(organizationId: string) {
-  return useStaffMutation(organizationId, (client, userId: string) =>
-    cancelStaffInvitation(client, organizationId, userId),
-  );
-}
-
-export function useCreateStaffAccount(organizationId: string) {
-  return useStaffMutation(organizationId, (client, input: CreateStaffAccountRequest) =>
-    createStaffAccount(client, organizationId, input),
-  );
-}
-
-export function useResetStaffPin(organizationId: string) {
-  return useStaffMutation(organizationId, (client, userId: string) => resetStaffPin(client, organizationId, userId));
-}
-
-export function useLockStaffAccount(organizationId: string) {
-  return useStaffMutation(organizationId, (client, userId: string) => lockStaffAccount(client, organizationId, userId));
-}
-
-export function useUnlockStaffAccount(organizationId: string) {
-  return useStaffMutation(organizationId, (client, userId: string) =>
-    unlockStaffAccount(client, organizationId, userId),
-  );
-}
-
-export function useExtendStaffAccount(organizationId: string) {
-  return useStaffMutation(organizationId, (client, input: { userId: string; until?: string }) =>
-    extendStaffAccount(client, organizationId, input.userId, input.until),
   );
 }

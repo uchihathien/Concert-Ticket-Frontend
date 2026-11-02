@@ -186,6 +186,31 @@
   text-decoration: underline;
 }
 
+/* Thông báo ---------------------------------------------------------------------
+   Cùng hình dạng với `.pf-c-alert` trong theme Keycloak (deploy/keycloak/themes/nexaticket):
+   nền lõm, viền mảnh, vạch màu trạng thái bên trái. Đổi một bên thì đổi cả bên kia. */
+
+.notice {
+  margin: 0;
+  padding: var(--nt-space-3) 14px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--nt-text);
+  background: var(--nt-bg-subtle);
+  border: 1px solid var(--nt-border);
+  border-left-width: 4px;
+  border-radius: var(--nt-radius);
+}
+
+.noticeError {
+  border-left-color: var(--nt-danger-text);
+}
+
+.noticeInfo {
+  border-left-color: var(--nt-primary-text);
+}
+
 /* Đường phân cách ----------------------------------------------------------- */
 
 .divider {

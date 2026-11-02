@@ -47,7 +47,7 @@ describe('createSignInRedirect — đường thoát khi gateway trả 401', () =
 
     expect(expired).toHaveBeenCalledOnce();
     expect(assign).toHaveBeenCalledWith(
-      `/login?returnUrl=${encodeURIComponent('/me/orders?page=2&q=a b')}`,
+      `/login?returnUrl=${encodeURIComponent('/me/orders?page=2&q=a b')}&reason=expired`,
     );
     // Token cũ không được dùng lại: lần hỏi sau phải đi mạng.
     const fetchAgain = vi.fn(async () => tokenResponse('at-2', 300_000));

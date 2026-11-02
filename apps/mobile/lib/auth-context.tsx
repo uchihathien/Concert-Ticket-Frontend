@@ -7,8 +7,8 @@ import { loadActiveRole, resolveRoles, saveActiveRole, type AppRole } from './ro
 /**
  * Nhóm màn hình đang mở.
  *
- * - Bản khách: khách chưa đăng nhập ở `customer`; tài khoản không có vai khách (ban tổ chức, nhân
- *   viên, quản trị) ở `not-customer`.
+ * - Bản khách: khách chưa đăng nhập ở `customer`; chỉ tài khoản quản trị nền tảng (không có vai
+ *   khách) ở `not-customer`. Staff và ban tổ chức vẫn mua vé được bằng chính tài khoản của họ.
  * - Bản staff: chưa đăng nhập ở `staff-login`; tài khoản không có vai nhân viên ở `not-staff`.
  * - `error`: đã đăng nhập nhưng chưa hỏi được quyền từ backend.
  */

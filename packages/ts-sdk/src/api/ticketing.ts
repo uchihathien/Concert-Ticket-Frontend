@@ -1,4 +1,5 @@
 import type { ApiClient } from '../http/client';
+import type { MyCheckinAssignments } from '../types/identity';
 import type {
   CheckinBundle,
   CheckinBundleTicket,
@@ -293,5 +294,19 @@ export async function listCheckinConflicts(
   eventSessionId: string,
 ): Promise<CheckinConflict[]> {
   const response = await client.get<CheckinConflict[]>(`${checkinsPath(organizationId, eventSessionId)}/conflicts`);
+  return response.data;
+}
+
+/**
+ * Phân công soát vé CÒN HIỆU LỰC của chính người gọi trong một tổ chức (sắp tới và đang diễn ra).
+ * App Staff dùng làm màn đầu tiên, và chỉ cho chọn suất trong danh sách này.
+ */
+export async function getMyCheckinAssignments(
+  client: ApiClient,
+  organizationId: string,
+): Promise<MyCheckinAssignments> {
+  const response = await client.get<MyCheckinAssignments>(
+    `/v1/organizations/${encodeURIComponent(organizationId)}/checkin-assignments/me`,
+  );
   return response.data;
 }

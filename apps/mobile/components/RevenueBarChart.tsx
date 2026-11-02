@@ -22,7 +22,7 @@ const MAX_BARS = 6;
  * một khối màu sáng cỡ đó trên nền tối chói và át phần chữ. #76A02A (L 0.67) đạt cả dải độ sáng,
  * độ bão hoà và tương phản ≥ 3:1 trên nền thẻ #19221B (kiểm bằng validate_palette của skill dataviz).
  */
-const BAR_COLOR = '#76A02A';
+const BAR_COLOR = '#f8f0e6';
 
 /**
  * Doanh thu theo sự kiện — biểu đồ thanh ngang, một chuỗi, sắp giảm dần.

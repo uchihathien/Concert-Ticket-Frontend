@@ -203,92 +203,116 @@ export interface AuditLogParams {
 }
 
 /* ---------------------------------------------------------------------------
- * Nhân sự soát vé
+ * Thêm thành viên đã đăng ký — `/v1/organizations/{id}/members`
  *
- * Nguồn: `StaffController`, `StaffQueries`, `StaffInvitationHandler`.
+ * Nguồn: `OrganizationController`, `AddMemberHandler`.
  *
- * Nhân viên soát vé không tự đăng ký và không nhận vai trò qua mã lời mời: tài khoản của họ do ban
- * tổ chức tạo ở đây, và thư mời mang liên kết để chính họ đặt mật khẩu.
+ * Hệ thống KHÔNG tạo tài khoản hộ: nhân viên tự đăng ký NexaTicket như khách, rồi ban tổ chức tìm
+ * đúng email hoặc số điện thoại của họ và thêm vào tổ chức với một vai.
  * ------------------------------------------------------------------------- */
 
 /**
- * Trạng thái một dòng của bảng Nhân sự — đọc kèm `kind`:
+ * Một tài khoản tìm thấy theo email/SĐT chính xác. Email và SĐT đã bị che một phần — đủ để người
+ * thêm nhận ra đúng người, không hơn.
  *
- * - `kind: 'ACCOUNT'` (tài khoản tên đăng nhập + PIN): `ACTIVE` đang dùng · `LOCKED` ban tổ chức
- *   khoá · `EXPIRED` hết hạn theo lịch suất diễn.
- * - `kind: 'INVITATION'` (mời bằng email, luồng cũ): `INVITED` đã gửi thư · `ACTIVE` đã kích hoạt ·
- *   `EXPIRED` liên kết hết hạn · `SEND_FAILED` thư chưa đi.
+ * Không tìm thấy thì API trả `ApiError` 404 `USER_NOT_REGISTERED`; nhiều tài khoản cùng SĐT thì 409
+ * `CONTACT_AMBIGUOUS`.
  */
-export type StaffStatus = 'INVITED' | 'ACTIVE' | 'EXPIRED' | 'SEND_FAILED' | 'LOCKED';
+export interface MemberCandidate {
+  userId: string;
+  fullName: string | null;
+  maskedEmail: string | null;
+  maskedPhone: string | null;
+  alreadyMember: boolean;
+  /** Vai hiện tại trong tổ chức này, `null` nếu chưa là thành viên. */
+  currentRole: Role | null;
+}
 
-export type StaffKind = 'ACCOUNT' | 'INVITATION';
+export interface AddMemberRequest {
+  /** Email hoặc số điện thoại, đúng như người đó đã đăng ký. */
+  contact: string;
+  role: OrganizationRole;
+}
+
+/* ---------------------------------------------------------------------------
+ * Phân công soát vé — `/v1/organizations/{id}/staff`
+ *
+ * Nguồn: `StaffController`, `StaffQueries`, `CheckinAssignmentHandler`; dữ liệu phân công nằm ở
+ * ticketing-service.
+ *
+ * Mỗi dòng là một thành viên vai Staff (`CHECKIN_STAFF`). Phân công tự hết hạn khi suất cuối trong
+ * phạm vi được gán kết thúc quá 6 giờ; phân công hết hạn vẫn trả về để xem lịch sử.
+ * ------------------------------------------------------------------------- */
+
+/**
+ * Trạng thái tài khoản của dòng. Thành viên thêm theo cách mới luôn `ACTIVE`; ba trạng thái kia chỉ
+ * còn gặp ở nhân viên được mời bằng email theo luồng cũ (đã ngừng).
+ */
+export type StaffStatus = 'INVITED' | 'ACTIVE' | 'EXPIRED' | 'SEND_FAILED';
+
+/** `UNKNOWN` khi backend chưa đọc được lịch diễn để tính hạn. */
+export type CheckinAssignmentStatus = 'UPCOMING' | 'ONGOING' | 'EXPIRED' | 'UNKNOWN';
+
+export interface StaffAssignment {
+  eventId: string;
+  /** `null` khi gán cả sự kiện (mọi suất, kể cả suất thêm sau). */
+  eventSessionId: string | null;
+  eventTitle: string | null;
+  /** Giờ bắt đầu của suất đầu tiên trong phạm vi được gán. */
+  startsAt: string | null;
+  /** Hết hiệu lực lúc này — suất cuối kết thúc + 6 giờ. */
+  expiresAt: string | null;
+  status: CheckinAssignmentStatus;
+}
 
 export interface StaffMember {
   userId: string;
-  /** `null` với tài khoản PIN — email nội bộ của họ không phải để liên lạc. */
   email: string | null;
   fullName: string | null;
   status: StaffStatus;
-  kind: StaffKind;
-  /** Tên đăng nhập (`nexa-nv01`), chỉ với `ACCOUNT`. */
-  username?: string | null;
-  phone?: string | null;
-  /** Mốc gia hạn tay, chỉ với `ACCOUNT`. */
-  accessUntil?: string | null;
-  /** `null` với nhân viên có từ trước khi có mục Nhân sự. */
+  /** `null` với nhân viên không đến từ lời mời bằng email. */
   invitedAt: string | null;
-  /** Tên người mời, để hiển thị. */
   invitedBy: string | null;
-  /** Hạn của liên kết trong thư gửi gần nhất. */
   expiresAt: string | null;
   activatedAt: string | null;
-  /** Sự kiện người này được soát. Rỗng là chưa soát được sự kiện nào. */
+  /** Sự kiện của các phân công CÒN HIỆU LỰC. */
   eventIds: string[];
+  /** Mọi phân công, kể cả đã hết hạn. */
+  assignments: StaffAssignment[];
 }
 
-export interface CreateStaffAccountRequest {
-  fullName: string;
-  phone?: string | null;
-  eventIds: string[];
+/** Một mục cần gán. Bỏ trống `eventSessionId` là gán cả sự kiện. */
+export interface AssignmentTarget {
+  eventId: string;
+  eventSessionId?: string | null;
 }
 
 /**
- * Phiếu nhân viên. `pin` CHỈ có trong phản hồi của lệnh tạo / cấp lại — không có đường nào đọc lại.
- * `loginUri` là nội dung mã QR đăng nhập (`nexaticket-staff://login?u=…&p=…`).
- */
-export interface StaffCredentials {
-  userId: string;
-  fullName: string;
-  username: string;
-  pin: string;
-  eventIds: string[];
-  loginUri: string;
-}
-
-/** Trạng thái tài khoản cho màn đăng nhập nhân viên (không cần token). */
-export type StaffAccountPublicStatus = 'LOCKED' | 'EXPIRED' | 'UNKNOWN';
-
-export interface InviteStaffRequest {
-  fullName: string;
-  email: string;
-  eventIds: string[];
-}
-
-/**
- * `INVITED` tài khoản mới, đã gửi thư · `SEND_FAILED` tài khoản mới nhưng thư chưa đi ·
- * `PENDING` đã mời từ trước, chưa kích hoạt — chỉ gán thêm sự kiện, không gửi thư trùng ·
- * `ALREADY_STAFF` đã là nhân viên soát vé của tổ chức này — chỉ gán thêm sự kiện.
- */
-export interface InviteStaffResult {
-  outcome: 'INVITED' | 'SEND_FAILED' | 'PENDING' | 'ALREADY_STAFF';
-  userId: string;
-}
-
-/**
- * Sự kiện mà chính người gọi được soát trong một tổ chức.
+ * Phân công còn hiệu lực của CHÍNH người gọi trong một tổ chức — màn đầu tiên của app Staff.
+ * Nguồn: ticketing `GET /v1/organizations/{id}/checkin-assignments/me`.
  *
- * `restricted: false` nghĩa là người gọi quản lý được sự kiện của tổ chức nên soát mọi sự kiện của
- * tổ chức; khi đó `eventIds` rỗng và không mang nghĩa gì.
+ * `restricted: false` nghĩa là người gọi quản lý được sự kiện của tổ chức nên soát mọi suất; khi
+ * đó `assignments` rỗng.
+ */
+export interface MyCheckinAssignments {
+  restricted: boolean;
+  assignments: MyCheckinAssignment[];
+}
+
+export interface MyCheckinAssignment {
+  eventId: string;
+  eventSessionId: string | null;
+  eventTitle: string | null;
+  venueName: string | null;
+  startsAt: string | null;
+  expiresAt: string | null;
+  status: CheckinAssignmentStatus;
+  /** Các suất trong phạm vi được gán, sớm nhất trước. */
+  sessions: { eventSessionId: string; startsAt: string; endsAt: string | null }[];
+}
+
+/**
+ * @deprecated dùng `MyCheckinAssignments` — bản này không có hạn và không gán theo suất.
  */
 export interface MyCheckinEvents {
   restricted: boolean;

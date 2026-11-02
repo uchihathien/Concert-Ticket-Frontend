@@ -40,7 +40,7 @@ export function StaffHistory({ organizationId, staff }: { organizationId: string
     [invited.data, resent.data, cancelled.data, reassigned.data, created.data, pinReset.data, locked.data, expired.data],
   );
 
-  const staffName = useMemo(() => new Map(staff.map((item) => [item.userId, item.fullName ?? item.username ?? item.email])), [staff]);
+  const staffName = useMemo(() => new Map(staff.map((item) => [item.userId, item.fullName ?? item.email])), [staff]);
   const memberName = useMemo(
     () => new Map((members.data ?? []).map((item) => [item.userId, item.fullName ?? item.email ?? item.userId.slice(0, 8)])),
     [members.data],

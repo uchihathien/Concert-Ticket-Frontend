@@ -2,6 +2,7 @@ import * as AuthSession from 'expo-auth-session';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text } from 'react-native';
+import { loginTheme } from '@/constants/login-theme';
 import { useMobileAuth } from '@/lib/auth-context';
 import { discovery, exchangeMobileCode, mobileClientId, redirectUri } from '@/lib/auth-session';
 
@@ -20,6 +21,8 @@ export function LoginButton({ variant = 'button', label }: { variant?: 'button' 
       // Bắt Keycloak luôn hỏi tài khoản: phiên SSO còn sống (của app khác hoặc tài khoản vừa thoát)
       // không được tự đăng nhập vào app này.
       prompt: AuthSession.Prompt.Login,
+      // Trang đăng nhập Keycloak luôn hiện tiếng Việt, kể cả khi điện thoại để tiếng Anh.
+      extraParams: { ui_locales: 'vi' },
     },
     discovery,
   );
@@ -57,17 +60,26 @@ export function LoginButton({ variant = 'button', label }: { variant?: 'button' 
         (!request || busy) && styles.disabled,
       ]}>
       <Text style={variant === 'link' ? styles.linkText : styles.text}>
-        {busy ? 'Đang kết nối...' : label ?? 'Đăng nhập bằng NexaTicket'}
+        {busy ? 'Đang mở trang đăng nhập…' : label ?? 'Đăng nhập'}
       </Text>
     </Pressable>
   );
 }
 
+// Cùng kích thước và chữ với nút "Đăng nhập" trên trang Keycloak (theme nexaticket-lime).
 const styles = StyleSheet.create({
-  button: { minHeight: 50, alignItems: 'center', justifyContent: 'center', borderRadius: 10, backgroundColor: '#D5FF66', paddingHorizontal: 18 },
+  button: {
+    minHeight: loginTheme.buttonHeight,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: loginTheme.radius,
+    backgroundColor: loginTheme.primary,
+    paddingHorizontal: 24,
+  },
   pressed: { opacity: 0.82 },
-  disabled: { opacity: 0.58 },
-  text: { color: '#17210D', fontSize: 14, fontWeight: '800' },
+  disabled: { opacity: 0.55 },
+  text: { color: loginTheme.primaryInk, fontSize: loginTheme.buttonFont, fontWeight: '600' },
   link: { minHeight: 44, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 12 },
-  linkText: { color: '#D5FF66', fontSize: 13, fontWeight: '700' },
+  linkText: { color: loginTheme.primary, fontSize: 14, fontWeight: '600' },
 });

@@ -93,7 +93,7 @@ export function StaffShifts({
   const fail = (error: unknown) => toast.showError(error instanceof ApiError ? error : null);
 
   const staffName = useMemo(
-    () => new Map(staff.map((member) => [member.userId, member.fullName ?? member.username ?? member.email ?? '—'])),
+    () => new Map(staff.map((member) => [member.userId, member.fullName ?? member.email ?? '—'])),
     [staff],
   );
   // Chỉ nhân viên đã được gán sự kiện này mới xếp vào ca được — backend cũng chặn y như vậy.
@@ -381,8 +381,7 @@ export function StaffShifts({
                       }
                     />
                     <span>
-                      {member.fullName ?? member.username ?? member.email}
-                      {member.username ? <span className="font-mono text-[13px] text-muted"> · {member.username}</span> : null}
+                      {member.fullName ?? member.email}
                     </span>
                   </label>
                 ))

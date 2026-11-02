@@ -1,36 +1,43 @@
-import { ApiError, startShift } from '@nexaticket/ts-sdk';
+import { ApiError } from '@nexaticket/ts-sdk';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SessionPicker } from '@/components/SessionPicker';
 import { SwitchRoleButton } from '@/components/SwitchRoleButton';
-import { api } from '@/lib/api';
 import { useMobileAuth } from '@/lib/auth-context';
-import { deviceId, downloadBundle, purgeExpired } from '@/lib/offline/store';
+import { purgeExpired } from '@/lib/offline/store';
 import { formatClock, formatSessionDate } from '@/lib/scan-verdicts';
-import { loadMyShifts, shiftScanParams, type MyShiftItem, type MyShiftsContext } from '@/lib/scanner-sessions';
+import {
+  loadScannerContext,
+  scanParams,
+  type ScannerAssignment,
+  type ScannerContext,
+  type ScannerSession,
+} from '@/lib/scanner-sessions';
 
 /**
- * "Ca của tôi" — màn đầu tiên của nhân viên soát vé sau khi đăng nhập.
+ * "Sự kiện được gán" — màn đầu tiên của Staff sau khi đăng nhập.
  *
- * Nhân viên chỉ có vai soát vé chỉ quét được trong ca đã bắt đầu, nên việc đầu tiên là chọn ca và
- * bấm BẮT ĐẦU CA; cổng lấy theo ca. Người quản lý sự kiện không bị ràng buộc ca: họ có thêm khối
- * "Soát không theo ca" để mở bất kỳ suất nào. Tài khoản chưa có tổ chức nào (lời mời đang chờ) thấy
- * khối nhận lời mời ở cùng chỗ đó.
+ * Staff đăng nhập bằng chính tài khoản NexaTicket của mình; ban tổ chức thêm họ vào tổ chức với vai
+ * Staff rồi gán sự kiện (hoặc từng suất) gần ngày diễn. Màn này liệt kê đúng những phân công còn
+ * hiệu lực — sắp tới và đang diễn ra — và chỉ mở máy quét cho các suất trong đó. Phân công tự hết
+ * hạn 6 giờ sau khi suất cuối kết thúc nên không còn hiện ở đây.
+ *
+ * Người quản lý sự kiện không bị giới hạn theo phân công: họ thấy khối "Soát mọi suất" để mở bất kỳ
+ * suất nào của tổ chức.
  */
-export default function MyShiftsScreen() {
+export default function AssignedEventsScreen() {
   const { signOut } = useMobileAuth();
   const { pick } = useLocalSearchParams<{ pick?: string }>();
-  const [context, setContext] = useState<MyShiftsContext | null>(null);
+  const [context, setContext] = useState<ScannerContext | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [startingId, setStartingId] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    // Dữ liệu vé của ca đã kết thúc quá 6 giờ không còn lý do ở lại trên máy.
+    // Dữ liệu vé của suất đã kết thúc quá 6 giờ không còn lý do ở lại trên máy.
     purgeExpired();
-    return loadMyShifts()
+    return loadScannerContext()
       .then((value) => {
         setContext(value);
         setError(null);
@@ -39,36 +46,21 @@ export default function MyShiftsScreen() {
         setError(
           cause instanceof ApiError && cause.status === 401
             ? 'Phiên đăng nhập đã hết hạn. Đăng nhập lại.'
-            : 'Không tải được ca trực. Kiểm tra kết nối rồi kéo xuống để thử lại.',
+            : 'Không tải được sự kiện được gán. Kiểm tra kết nối rồi kéo xuống để thử lại.',
         );
       });
   }, []);
 
-  // Tải lại mỗi lần quay về màn này (vd sau khi kết thúc ca): trạng thái ca vừa đổi.
+  // Tải lại mỗi lần quay về màn này: ban tổ chức có thể vừa gán thêm hoặc gỡ bớt.
   useFocusEffect(
     useCallback(() => {
       void load();
     }, [load]),
   );
 
-  async function begin(shift: MyShiftItem) {
-    setStartingId(shift.id);
-    setError(null);
-    try {
-      if (!shift.myStartedAt) await startShift(api, shift.organizationId, shift.id, await deviceId());
-      // Tải dữ liệu vé ngay lúc bắt đầu ca, khi chắc chắn còn mạng.
-      await downloadBundle(shift.organizationId, shift.eventSessionId, shift.endsAt).catch(() => undefined);
-      router.push({ pathname: '/scanner/scan', params: shiftScanParams(shift) });
-    } catch (cause) {
-      setError(cause instanceof ApiError && cause.detail ? cause.detail : 'Chưa bắt đầu được ca. Thử lại.');
-      void load();
-    } finally {
-      setStartingId(null);
-    }
-  }
-
-  const today = context?.shifts ?? [];
-  const showPicker = Boolean(pick) || (context !== null && (context.manager || !context.hasScannerOrganization));
+  const manager = context !== null && !context.assignedOnly && context.organizations.length > 0;
+  const assignments = context?.assignments ?? [];
+  const showPicker = Boolean(pick) || manager || (context !== null && context.organizations.length === 0);
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -77,7 +69,7 @@ export default function MyShiftsScreen() {
           <Text style={styles.brand}>NEXATICKET STAFF</Text>
           <View style={styles.status}>
             <View style={styles.statusDot} />
-            <Text style={styles.statusText}>CA CỦA TÔI</Text>
+            <Text style={styles.statusText}>SỰ KIỆN ĐƯỢC GÁN</Text>
           </View>
         </View>
         <View style={styles.headerActions}>
@@ -105,8 +97,8 @@ export default function MyShiftsScreen() {
             }}
           />
         }>
-        <Text style={styles.title}>Ca của tôi</Text>
-        <Text style={styles.subtitle}>Ca hôm nay và sắp tới. Bắt đầu ca để mở máy quét — cổng lấy theo ca.</Text>
+        <Text style={styles.title}>Sự kiện được gán</Text>
+        <Text style={styles.subtitle}>Sự kiện sắp tới và đang diễn ra mà ban tổ chức giao cho bạn soát vé.</Text>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 
@@ -114,24 +106,30 @@ export default function MyShiftsScreen() {
           <View style={styles.loading}><ActivityIndicator color="#D5FF66" size="large" /></View>
         ) : null}
 
-        {context !== null && today.length === 0 && context.hasScannerOrganization && !context.manager ? (
+        {context !== null && context.assignedOnly && assignments.length === 0 ? (
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>Hôm nay bạn chưa có ca trực.</Text>
-            <Text style={styles.emptyCopy}>Liên hệ ban tổ chức để được xếp ca.</Text>
+            <Text style={styles.emptyTitle}>Bạn chưa được gán sự kiện nào.</Text>
+            <Text style={styles.emptyCopy}>Liên hệ ban tổ chức.</Text>
           </View>
         ) : null}
 
-        {today.map((shift) => (
-          <ShiftCard key={shift.id} shift={shift} busy={startingId === shift.id} onStart={() => void begin(shift)} />
-        ))}
+        {context !== null
+          ? assignments.map((assignment) => (
+              <AssignmentCard
+                key={`${assignment.organizationId}:${assignment.eventId}:${assignment.eventSessionId ?? 'all'}`}
+                assignment={assignment}
+                sessions={context.sessions}
+              />
+            ))
+          : null}
 
         {showPicker ? (
           <View style={styles.picker}>
-            <Text style={styles.kicker}>{context?.hasScannerOrganization ? 'SOÁT KHÔNG THEO CA' : 'LỜI MỜI'}</Text>
+            <Text style={styles.kicker}>{context?.organizations.length ? 'SOÁT MỌI SUẤT' : 'CHƯA THUỘC TỔ CHỨC NÀO'}</Text>
             <Text style={styles.pickerCopy}>
-              {context?.hasScannerOrganization
-                ? 'Bạn quản lý sự kiện nên soát được mọi suất mà không cần ca.'
-                : 'Tài khoản chưa thuộc tổ chức nào. Chấp nhận lời mời để bắt đầu.'}
+              {context?.organizations.length
+                ? 'Bạn quản lý sự kiện nên soát được mọi suất của tổ chức mà không cần được gán.'
+                : 'Tài khoản chưa được thêm vào tổ chức nào. Nhờ ban tổ chức thêm bạn với vai Staff.'}
             </Text>
             <SessionPicker />
           </View>
@@ -141,40 +139,54 @@ export default function MyShiftsScreen() {
   );
 }
 
-function ShiftCard({ shift, busy, onStart }: { shift: MyShiftItem; busy: boolean; onStart: () => void }) {
-  const started = Boolean(shift.myStartedAt);
-  const ended = shift.state === 'ENDED';
-  const label = started ? 'TIẾP TỤC CA' : 'BẮT ĐẦU CA';
+const STATUS_TEXT: Record<string, string> = {
+  ONGOING: 'ĐANG DIỄN RA',
+  UPCOMING: 'SẮP TỚI',
+  UNKNOWN: 'CHƯA RÕ LỊCH',
+};
+
+/**
+ * Một phân công: sự kiện, trạng thái, và nút mở máy quét cho từng suất trong phạm vi được gán.
+ *
+ * Chỉ suất còn trong danh sách soát của backend (`sessions`, đã bỏ suất đã kết thúc) mới có nút —
+ * suất trong phạm vi nhưng đã xong thì chỉ hiện giờ, không mời bấm vào một suất sẽ bị từ chối.
+ */
+function AssignmentCard({ assignment, sessions }: { assignment: ScannerAssignment; sessions: ScannerSession[] }) {
+  const ongoing = assignment.status === 'ONGOING';
+  const open = new Map(
+    sessions
+      .filter((session) => session.organizationId === assignment.organizationId)
+      .map((session) => [session.eventSessionId, session]),
+  );
   return (
-    <View style={[styles.card, started && styles.cardActive]}>
-      <Text style={styles.cardOrg}>{shift.organizationName.toUpperCase()}</Text>
-      <Text style={styles.cardTitle}>{shift.eventTitle ?? 'Sự kiện'}</Text>
-      {shift.sessionStartsAt ? <Text style={styles.cardMeta}>Suất {formatSessionDate(shift.sessionStartsAt)}</Text> : null}
-      <View style={styles.cardRow}>
-        <View style={styles.cardCell}>
-          <Text style={styles.cellLabel}>CỔNG</Text>
-          <Text style={styles.cellValue}>{shift.gateName}</Text>
-        </View>
-        <View style={styles.cardCell}>
-          <Text style={styles.cellLabel}>GIỜ CA</Text>
-          <Text style={styles.cellValue}>{formatClock(shift.startsAt)} – {formatClock(shift.endsAt)}</Text>
-        </View>
-      </View>
-      {started ? <Text style={styles.onDuty}>Đang trực từ {formatClock(shift.myStartedAt)}</Text> : null}
-      {ended && !started ? (
-        <Text style={styles.cardMeta}>Ca đã kết thúc.</Text>
-      ) : !shift.canStart && !started ? (
-        <Text style={styles.cardMeta}>Bắt đầu được từ 30 phút trước giờ ca.</Text>
-      ) : (
-        <Pressable
-          accessibilityRole="button"
-          disabled={busy}
-          onPress={onStart}
-          style={({ pressed }) => [styles.primary, pressed && styles.pressed, busy && styles.disabled]}>
-          {busy ? <ActivityIndicator color="#17210D" /> : <Text style={styles.primaryText}>{label}</Text>}
-          <Text style={styles.arrow}>›</Text>
-        </Pressable>
-      )}
+    <View style={[styles.card, ongoing && styles.cardActive]}>
+      <Text style={styles.cardOrg}>{assignment.organizationName.toUpperCase()}</Text>
+      <Text style={styles.cardTitle}>{assignment.eventTitle ?? 'Sự kiện'}</Text>
+      {assignment.venueName ? <Text style={styles.cardMeta}>{assignment.venueName}</Text> : null}
+      <Text style={[styles.cardStatus, ongoing && styles.cardStatusActive]}>
+        {STATUS_TEXT[assignment.status] ?? assignment.status}
+        {assignment.eventSessionId ? '' : ' · CẢ SỰ KIỆN'}
+      </Text>
+      {assignment.sessions.map((item) => {
+        const session = open.get(item.eventSessionId);
+        return session ? (
+          <Pressable
+            key={item.eventSessionId}
+            accessibilityRole="button"
+            onPress={() => router.push({ pathname: '/scanner/scan', params: scanParams(session) })}
+            style={({ pressed }) => [styles.primary, pressed && styles.pressed]}>
+            <Text style={styles.primaryText}>Suất {formatSessionDate(item.startsAt)}</Text>
+            <Text style={styles.arrow}>›</Text>
+          </Pressable>
+        ) : (
+          <Text key={item.eventSessionId} style={styles.cardMeta}>
+            Suất {formatSessionDate(item.startsAt)} · đã kết thúc {item.endsAt ? formatClock(item.endsAt) : ''}
+          </Text>
+        );
+      })}
+      {assignment.expiresAt ? (
+        <Text style={styles.cardMeta}>Phân công hết hiệu lực lúc {formatClock(assignment.expiresAt)} {formatSessionDate(assignment.expiresAt)}</Text>
+      ) : null}
     </View>
   );
 }
@@ -204,16 +216,12 @@ const styles = StyleSheet.create({
   cardOrg: { color: '#95A298', fontSize: 9, fontWeight: '900', letterSpacing: 1.4 },
   cardTitle: { color: '#F1F5F1', fontSize: 18, fontWeight: '900' },
   cardMeta: { color: '#A6B1A8', fontSize: 13 },
-  cardRow: { flexDirection: 'row', gap: 10, marginTop: 6 },
-  cardCell: { flex: 1, borderRadius: 8, backgroundColor: '#151D17', padding: 10 },
-  cellLabel: { color: '#95A298', fontSize: 9, fontWeight: '900', letterSpacing: 1 },
-  cellValue: { color: '#F1F5F1', fontSize: 16, fontWeight: '900', marginTop: 3 },
-  onDuty: { color: '#D5FF66', fontSize: 13, fontWeight: '700', marginTop: 4 },
-  primary: { minHeight: 54, marginTop: 10, paddingHorizontal: 16, borderRadius: 8, backgroundColor: '#D5FF66', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  primaryText: { color: '#17210D', fontSize: 13, fontWeight: '900', letterSpacing: 0.8 },
+  cardStatus: { color: '#A6B1A8', fontSize: 10, fontWeight: '900', letterSpacing: 1.2, marginTop: 2 },
+  cardStatusActive: { color: '#D5FF66' },
+  primary: { minHeight: 52, marginTop: 6, paddingHorizontal: 16, borderRadius: 10, backgroundColor: '#D5FF66', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  primaryText: { color: '#17210D', fontSize: 15, fontWeight: '700' },
   arrow: { color: '#17210D', fontSize: 22, fontWeight: '700' },
   pressed: { opacity: 0.8 },
-  disabled: { opacity: 0.55 },
   picker: { marginTop: 12, gap: 8 },
   kicker: { color: '#D5FF66', fontSize: 10, fontWeight: '900', letterSpacing: 2 },
   pickerCopy: { color: '#A6B1A8', fontSize: 13, lineHeight: 19 },

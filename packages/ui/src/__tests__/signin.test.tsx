@@ -40,3 +40,30 @@ describe('SignInScreen — quên mật khẩu', () => {
     expect(container.querySelector('input[type="password"]')).toBeNull();
   });
 });
+
+describe('SignInScreen — thông báo', () => {
+  it('lỗi đăng nhập được đọc ngay bằng role alert', () => {
+    render(<SignInScreen {...base} notice={{ tone: 'error', message: 'Chưa đăng nhập được.' }} />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Chưa đăng nhập được.');
+  });
+
+  it('phiên hết hạn chỉ là thông tin, không chen ngang trình đọc màn hình', () => {
+    render(
+      <SignInScreen
+        {...base}
+        notice={{ tone: 'info', message: 'Phiên đăng nhập đã hết hạn.' }}
+      />,
+    );
+
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('status')).toHaveTextContent('Phiên đăng nhập đã hết hạn.');
+  });
+
+  it('không có thông báo thì không chừa ô trống', () => {
+    render(<SignInScreen {...base} notice={null} />);
+
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+});

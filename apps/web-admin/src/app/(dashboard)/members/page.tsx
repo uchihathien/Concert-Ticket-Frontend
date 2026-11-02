@@ -3,16 +3,20 @@
 import {
   ApiError,
   ORGANIZATION_ROLES,
+  useAddMember,
   useChangeMemberRole,
   useHasPermission,
   useInviteMember,
+  useLookupMember,
   useOrganizationMembers,
   usePendingInvitations,
   useRemoveMember,
   useRevokeInvitation,
   useRevokeMemberSessions,
   useSendMemberPasswordReset,
+  useStaff,
   type Member,
+  type MemberCandidate,
   type OrganizationRole,
   type OrganizationSummary,
   type PendingInvitation,
@@ -40,20 +44,27 @@ import {
   roleTone,
   useToast,
 } from '@nexaticket/ui';
-import { KeyRound, LogOut, UserCog, UserMinus } from 'lucide-react';
+import { CalendarCheck, KeyRound, LogOut, UserCog, UserMinus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { OrganizationGate } from '@/components/OrganizationGate';
+import { StaffAssignmentDialog } from '@/components/StaffAssignmentDialog';
 
 const ROLE_OPTIONS = ORGANIZATION_ROLES.map((role) => ({ value: role, label: roleLabel(role) }));
 
 /**
  * Vai trò mời được bằng mã ở trang này.
  *
- * Nhân viên soát vé KHÔNG nằm trong đó: họ không tự đăng ký, tài khoản được tạo sẵn ở mục Nhân sự
- * soát vé. Backend từ chối vai trò này trên đường lời mời bằng mã, nên để nó trong danh sách là
- * mời người dùng bấm vào một cánh cửa khoá.
+ * Staff (soát vé) KHÔNG nằm trong đó: Staff được thêm trực tiếp bằng "Thêm thành viên" (tìm đúng
+ * email/SĐT của tài khoản họ tự đăng ký). Backend từ chối vai trò này trên đường lời mời bằng mã,
+ * nên để nó trong danh sách là mời người dùng bấm vào một cánh cửa khoá.
  */
 const INVITE_ROLE_OPTIONS = ROLE_OPTIONS.filter((option) => option.value !== 'CHECKIN_STAFF');
+
+/**
+ * Trang đăng nhập/đăng ký của web khách — gửi cho người chưa có tài khoản. Trang /login ở đó có nút
+ * "Tạo tài khoản mới" dẫn sang Keycloak.
+ */
+const REGISTER_URL = `${(process.env.NEXT_PUBLIC_WEB_CUSTOMER_URL ?? 'http://localhost:3000').replace(/\/$/, '')}/login`;
 
 /** Cùng danh sách vai trò với form mời, dùng lại thay vì gõ lại — hai bản sao sẽ lệch. */
 const MEMBER_ROLE_FILTERS = ROLE_OPTIONS;
@@ -106,6 +117,11 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
   const [token, setToken] = useState<string | null>(null);
   const [editing, setEditing] = useState<Member | null>(null);
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
+  const [adding, setAdding] = useState(false);
+  const [assigning, setAssigning] = useState<Member | null>(null);
+
+  // Phân công soát vé để mở hộp "Gán sự kiện" ngay từ dòng Staff. Chỉ gọi khi có quyền quản lý.
+  const staff = useStaff(canManage ? organizationId : null);
 
   /**
    * Lọc tại chỗ: một tổ chức có vài chục thành viên và `GET /members` trả hết trong một lượt.
@@ -157,7 +173,14 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
         title="Thành viên"
         description={`Người có quyền làm việc trong ${organization.name}.`}
         actions={
-          canManage ? <Button onClick={() => setFormOpen(true)}>Mời thành viên</Button> : undefined
+          canManage ? (
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" onClick={() => setFormOpen(true)}>
+                Mời bằng mã
+              </Button>
+              <Button onClick={() => setAdding(true)}>Thêm thành viên</Button>
+            </div>
+          ) : undefined
         }
       />
 
@@ -269,7 +292,10 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
                 const remove = () =>
                   setConfirm({
                     title: 'Gỡ khỏi tổ chức?',
-                    body: `${row.email ?? row.userId} sẽ mất quyền truy cập ngay lập tức. Tài khoản của họ không bị xoá.`,
+                    body:
+                      row.role === 'CHECKIN_STAFF'
+                        ? `${row.email ?? row.userId} sẽ mất quyền truy cập ngay lập tức, và các phân công soát vé còn hiệu lực của họ bị gỡ theo. Tài khoản và lịch sử quét được giữ lại.`
+                        : `${row.email ?? row.userId} sẽ mất quyền truy cập ngay lập tức. Tài khoản của họ không bị xoá.`,
                     confirmLabel: 'Gỡ thành viên',
                     run: () =>
                       removeMember.mutate(row.userId, {
@@ -284,6 +310,9 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
                 // Quyền quyết định mục nào xuất hiện, như các nút trước đây. Không còn mục nào thì
                 // ActionMenu không vẽ gì.
                 const items: ActionMenuItem[] = [
+                  ...(canManage && row.role === 'CHECKIN_STAFF'
+                    ? [{ label: 'Gán sự kiện', icon: <CalendarCheck />, onSelect: () => setAssigning(row) }]
+                    : []),
                   ...(canManage
                     ? [
                         { label: 'Đổi vai trò', icon: <UserCog />, onSelect: () => setEditing(row) },
@@ -381,7 +410,8 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
           <Input name="email" type="email" label="Email" required />
           <Select name="role" label="Vai trò" required options={INVITE_ROLE_OPTIONS} />
           <p className="m-0 text-[13px] text-muted">
-            Nhân viên soát vé được mời ở mục <a href="/staff">Nhân sự soát vé</a>.
+            Người đã có tài khoản NexaTicket thì dùng &quot;Thêm thành viên&quot; — có hiệu lực ngay, không cần mã. Staff
+            (soát vé) chỉ thêm được theo cách đó.
           </p>
         </form>
       </Modal>
@@ -412,7 +442,8 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
           />
           <p className="m-0 text-[13px] text-muted">
             Chỉ chủ sở hữu mới phong được chủ sở hữu khác, và tổ chức luôn phải còn ít nhất một
-            người ở vai trò đó.
+            người ở vai trò đó. Đổi một Staff sang vai khác thì phân công soát vé còn hiệu lực của họ bị
+            gỡ — vai quản lý soát được mọi sự kiện.
           </p>
         </form>
       </Modal>
@@ -430,6 +461,22 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
         {token ? <CopyField label="Mã lời mời" value={token} /> : null}
         <p className="mb-0 text-[13px] text-muted">Mã chỉ hiện đúng một lần.</p>
       </Modal>
+
+      <AddMemberModal organizationId={organizationId} open={adding} onClose={() => setAdding(false)} />
+
+      <StaffAssignmentDialog
+        organizationId={organizationId}
+        member={
+          assigning
+            ? {
+                userId: assigning.userId,
+                name: assigning.fullName ?? assigning.email ?? assigning.userId,
+                assignments: staff.data?.find((row) => row.userId === assigning.userId)?.assignments ?? [],
+              }
+            : null
+        }
+        onClose={() => setAssigning(null)}
+      />
 
       <Modal
         open={confirm !== null}
@@ -454,6 +501,155 @@ function MembersContent({ organization }: { organization: OrganizationSummary })
         <p className="m-0">{confirm?.body}</p>
       </Modal>
     </>
+  );
+}
+
+/**
+ * Thêm một tài khoản đã đăng ký vào tổ chức.
+ *
+ * Hai bước có chủ ý: Tìm rồi mới Thêm. Bước Tìm hiện tên và email/SĐT đã che để người thêm nhận ra
+ * đúng người trước khi cấp quyền — gõ nhầm một chữ trong email là cấp quyền cho người lạ. Chỉ khớp
+ * chính xác, không gợi ý: ô này không phải công cụ tra cứu người dùng.
+ */
+function AddMemberModal({
+  organizationId,
+  open,
+  onClose,
+}: {
+  organizationId: string;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const toast = useToast();
+  const lookup = useLookupMember(organizationId);
+  const add = useAddMember(organizationId);
+  const [contact, setContact] = useState('');
+  const [role, setRole] = useState<OrganizationRole>('CHECKIN_STAFF');
+  const [found, setFound] = useState<MemberCandidate | null>(null);
+  const [notRegistered, setNotRegistered] = useState(false);
+
+  const reset = () => {
+    setContact('');
+    setRole('CHECKIN_STAFF');
+    setFound(null);
+    setNotRegistered(false);
+    lookup.reset();
+  };
+
+  const close = () => {
+    reset();
+    onClose();
+  };
+
+  const search = () => {
+    setFound(null);
+    setNotRegistered(false);
+    lookup.mutate(contact.trim(), {
+      onSuccess: setFound,
+      onError: (error) => {
+        if (error instanceof ApiError && error.code === 'USER_NOT_REGISTERED') setNotRegistered(true);
+        else toast.showError(error instanceof ApiError ? error : null);
+      },
+    });
+  };
+
+  const submit = () => {
+    add.mutate(
+      { contact: contact.trim(), role },
+      {
+        onSuccess: () => {
+          toast.show({ tone: 'success', message: `Đã thêm ${found?.fullName ?? 'thành viên'} với vai ${roleLabel(role)}` });
+          close();
+        },
+        onError: (error) => toast.showError(error instanceof ApiError ? error : null),
+      },
+    );
+  };
+
+  return (
+    <Modal
+      open={open}
+      onClose={close}
+      title="Thêm thành viên"
+      footer={
+        <>
+          <Button variant="secondary" onClick={close}>
+            Huỷ
+          </Button>
+          <Button onClick={submit} disabled={!found || found.alreadyMember} loading={add.isPending}>
+            Thêm
+          </Button>
+        </>
+      }
+    >
+      <div className="grid gap-4">
+        <form
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (contact.trim()) search();
+          }}
+        >
+          <div className="min-w-0 flex-1">
+            <Input
+              label="Email hoặc số điện thoại"
+              placeholder="vd. lan.tran@gmail.com hoặc 0901234567"
+              value={contact}
+              onChange={(event) => {
+                setContact(event.target.value);
+                setFound(null);
+                setNotRegistered(false);
+              }}
+              autoComplete="off"
+              required
+            />
+          </div>
+          <Button type="submit" variant="secondary" loading={lookup.isPending} disabled={!contact.trim()}>
+            Tìm
+          </Button>
+        </form>
+
+        {notRegistered ? (
+          <div className="grid gap-2">
+            <p className="m-0" role="status">
+              Người này chưa có tài khoản NexaTicket. Hãy nhờ họ đăng ký trước rồi thêm lại.
+            </p>
+            <CopyField label="Link đăng ký" value={REGISTER_URL} />
+          </div>
+        ) : null}
+
+        {found ? (
+          <div className="grid gap-3">
+            <div className="grid gap-0.5 rounded-nt border border-border p-3">
+              <span className="font-medium">{found.fullName ?? 'Chưa đặt tên'}</span>
+              <span className="text-[13px] text-muted">
+                {[found.maskedEmail, found.maskedPhone].filter(Boolean).join(' · ')}
+              </span>
+              {found.alreadyMember && found.currentRole ? (
+                <span className="text-[13px]">
+                  Đã là thành viên với vai <Badge tone={roleTone(found.currentRole)}>{roleLabel(found.currentRole)}</Badge>.
+                  Đổi vai ở bảng thành viên.
+                </span>
+              ) : null}
+            </div>
+            {found.alreadyMember ? null : (
+              <Select
+                label="Vai trò"
+                value={role}
+                options={ROLE_OPTIONS}
+                onChange={(event) => setRole(event.target.value as OrganizationRole)}
+              />
+            )}
+            {role === 'CHECKIN_STAFF' && !found.alreadyMember ? (
+              <p className="m-0 text-[13px] text-muted">
+                Staff chỉ soát vé được ở sự kiện bạn gán — gán ở trang Phân công soát vé, hoặc &quot;Gán sự kiện&quot;
+                ở dòng của họ sau khi thêm.
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    </Modal>
   );
 }
 

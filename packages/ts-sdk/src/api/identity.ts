@@ -4,14 +4,14 @@ import type {
   AuditLogParams,
   CreateOrganizationRequest,
   CreatedOrganization,
+  AddMemberRequest,
+  AssignmentTarget,
   GrantMemberRequest,
   GrantMemberResult,
   InvitationCreated,
   InviteMemberRequest,
-  CreateStaffAccountRequest,
-  InviteStaffRequest,
-  InviteStaffResult,
   Member,
+  MemberCandidate,
   MyCheckinEvents,
   MyInvitation,
   MyPermissions,
@@ -19,8 +19,6 @@ import type {
   OrganizationSummary,
   PendingInvitation,
   RoleView,
-  StaffAccountPublicStatus,
-  StaffCredentials,
   StaffMember,
 } from '../types/identity';
 
@@ -302,124 +300,94 @@ function auditQuery(params: AuditLogParams): string {
 }
 
 /* ---------------------------------------------------------------------------
- * Nhân sự soát vé — `/v1/organizations/{id}/staff`
+ * Thêm thành viên đã đăng ký
+ * ------------------------------------------------------------------------- */
+
+function membersPath(organizationId: string): string {
+  return `/v1/organizations/${encodeURIComponent(organizationId)}/members`;
+}
+
+/**
+ * Tìm một tài khoản NexaTicket theo email hoặc số điện thoại CHÍNH XÁC (không tìm mờ).
+ *
+ * Không thấy: `ApiError` 404 `USER_NOT_REGISTERED`. Nhiều tài khoản cùng SĐT: 409
+ * `CONTACT_AMBIGUOUS`.
+ */
+export async function lookupMember(
+  client: ApiClient,
+  organizationId: string,
+  contact: string,
+): Promise<MemberCandidate> {
+  const response = await client.get<MemberCandidate>(
+    `${membersPath(organizationId)}/lookup?contact=${encodeURIComponent(contact)}`,
+  );
+  return response.data;
+}
+
+/** Thêm một tài khoản đã đăng ký vào tổ chức. Trả lại bảng thành viên mới. */
+export async function addMember(
+  client: ApiClient,
+  organizationId: string,
+  request: AddMemberRequest,
+): Promise<Member[]> {
+  const response = await client.post<Member[]>(membersPath(organizationId), request);
+  return response.data;
+}
+
+/* ---------------------------------------------------------------------------
+ * Phân công soát vé — `/v1/organizations/{id}/staff`
  * ------------------------------------------------------------------------- */
 
 function staffPath(organizationId: string): string {
   return `/v1/organizations/${encodeURIComponent(organizationId)}/staff`;
 }
 
-/** Bảng Nhân sự: chỉ nhân viên soát vé, kèm trạng thái lời mời và sự kiện được gán. */
+/** Thành viên vai Staff kèm mọi phân công (kể cả đã hết hạn). */
 export async function getStaff(client: ApiClient, organizationId: string): Promise<StaffMember[]> {
   const response = await client.get<StaffMember[]>(staffPath(organizationId));
   return response.data;
 }
 
 /**
- * Mời một nhân viên soát vé.
- *
- * Email không mời được (đã là khách, thuộc tổ chức khác, đang giữ vai trò khác) trả `ApiError` 409
- * `EMAIL_NOT_INVITABLE` — một lỗi chung, cố ý không nói lý do.
+ * Đặt lại phân công CÒN HIỆU LỰC của một Staff thành đúng `targets` — theo cả sự kiện hoặc từng suất.
+ * Rỗng là gỡ hết; phân công đã hết hạn được giữ làm lịch sử.
  */
-export async function inviteStaff(
+export async function setStaffAssignments(
   client: ApiClient,
   organizationId: string,
-  request: InviteStaffRequest,
-): Promise<InviteStaffResult> {
-  const response = await client.post<InviteStaffResult>(staffPath(organizationId), request);
+  userId: string,
+  targets: AssignmentTarget[],
+): Promise<StaffMember[]> {
+  const response = await client.put<StaffMember[]>(
+    `${staffPath(organizationId)}/${encodeURIComponent(userId)}/events`,
+    {
+      assignments: targets.map((target) => ({
+        eventId: target.eventId,
+        eventSessionId: target.eventSessionId ?? null,
+      })),
+    },
+  );
   return response.data;
 }
 
-/** Đặt lại danh sách sự kiện của một nhân viên. Rỗng là gỡ khỏi mọi sự kiện, giữ tài khoản. */
+/** Bản cũ: gán theo cả sự kiện. */
 export async function setStaffEvents(
   client: ApiClient,
   organizationId: string,
   userId: string,
   eventIds: string[],
 ): Promise<StaffMember[]> {
-  const response = await client.put<StaffMember[]>(
-    `${staffPath(organizationId)}/${encodeURIComponent(userId)}/events`,
-    { eventIds },
-  );
-  return response.data;
-}
-
-/** Gửi lại thư mời. Liên kết trong thư cũ hết dùng được. */
-export async function resendStaffInvitation(
-  client: ApiClient,
-  organizationId: string,
-  userId: string,
-): Promise<void> {
-  await client.post<void>(
-    `${staffPath(organizationId)}/${encodeURIComponent(userId)}/invitation/resend`,
+  return setStaffAssignments(
+    client,
+    organizationId,
+    userId,
+    eventIds.map((eventId) => ({ eventId })),
   );
 }
 
-/** Huỷ lời mời chưa kích hoạt: xoá tài khoản và mọi sự kiện đã gán. */
-export async function cancelStaffInvitation(
-  client: ApiClient,
-  organizationId: string,
-  userId: string,
-): Promise<void> {
-  await client.delete<void>(`${staffPath(organizationId)}/${encodeURIComponent(userId)}/invitation`);
-}
-
-/** Cấp tài khoản nhân viên (tên đăng nhập tự sinh + PIN 6 số). Phản hồi mang PIN — chỉ một lần. */
-export async function createStaffAccount(
-  client: ApiClient,
-  organizationId: string,
-  request: CreateStaffAccountRequest,
-): Promise<StaffCredentials> {
-  const response = await client.post<StaffCredentials>(`${staffPath(organizationId)}/accounts`, request);
-  return response.data;
-}
-
-/** Cấp PIN mới cho tài khoản nhân viên; mọi phiên đang mở của họ bị đóng. */
-export async function resetStaffPin(
-  client: ApiClient,
-  organizationId: string,
-  userId: string,
-): Promise<StaffCredentials> {
-  const response = await client.post<StaffCredentials>(
-    `${staffPath(organizationId)}/${encodeURIComponent(userId)}/pin`,
-  );
-  return response.data;
-}
-
-export async function lockStaffAccount(client: ApiClient, organizationId: string, userId: string): Promise<void> {
-  await client.post<void>(`${staffPath(organizationId)}/${encodeURIComponent(userId)}/lock`);
-}
-
-/** Mở khoá tài khoản bị khoá tay. Tài khoản hết hạn trả 409 `STAFF_ACCOUNT_EXPIRED` — dùng gia hạn. */
-export async function unlockStaffAccount(client: ApiClient, organizationId: string, userId: string): Promise<void> {
-  await client.post<void>(`${staffPath(organizationId)}/${encodeURIComponent(userId)}/unlock`);
-}
-
-/** Gia hạn tới `until` (bỏ trống là 24 giờ nữa); tài khoản đang hết hạn được bật lại. */
-export async function extendStaffAccount(
-  client: ApiClient,
-  organizationId: string,
-  userId: string,
-  until?: string,
-): Promise<{ accessUntil: string }> {
-  const response = await client.post<{ accessUntil: string }>(
-    `${staffPath(organizationId)}/${encodeURIComponent(userId)}/extend`,
-    until ? { until } : {},
-  );
-  return response.data;
-}
-
-/** Bị khoá hay hết hạn — màn đăng nhập nhân viên hỏi sau khi Keycloak báo "Account disabled". */
-export async function getStaffAccountStatus(
-  client: ApiClient,
-  username: string,
-): Promise<StaffAccountPublicStatus> {
-  const response = await client.get<{ status: StaffAccountPublicStatus }>(
-    `/v1/staff-accounts/status?username=${encodeURIComponent(username)}`,
-  );
-  return response.data.status;
-}
-
+/**
+ * @deprecated dùng `getMyCheckinAssignments` (ticketing) — có hạn và theo suất.
+ */
 /** Sự kiện mà chính người gọi được soát — app soát vé dùng để chỉ hiện đúng những suất đó. */
 export async function getMyCheckinEvents(
   client: ApiClient,

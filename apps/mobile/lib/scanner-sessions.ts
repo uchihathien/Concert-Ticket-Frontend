@@ -1,15 +1,22 @@
 import {
-  getMyCheckinEvents,
+  getMyCheckinAssignments,
   getMyOrganizations,
   getMyPermissions,
   listCheckinSessions,
   listMyShifts,
   type CheckinSession,
+  type MyCheckinAssignment,
   type MyShift,
 } from '@nexaticket/ts-sdk';
 import { api } from './api';
 
 export interface ScannerSession extends CheckinSession {
+  organizationId: string;
+  organizationName: string;
+}
+
+/** Một phân công còn hiệu lực, kèm tổ chức để hiện. */
+export interface ScannerAssignment extends MyCheckinAssignment {
   organizationId: string;
   organizationName: string;
 }
@@ -20,10 +27,12 @@ export interface ScannerContext {
   /** Tổ chức mà tài khoản được cho vào thủ công (ghi đè kết quả của máy). */
   overrideOrganizations: string[];
   /**
-   * Tài khoản chỉ soát được những sự kiện ban tổ chức đã gán (nhân viên soát vé được mời), không
+   * Tài khoản chỉ soát được những sự kiện/suất ban tổ chức đã gán (thành viên vai Staff), không
    * phải người quản lý sự kiện của tổ chức.
    */
   assignedOnly: boolean;
+  /** Phân công còn hiệu lực (sắp tới, đang diễn ra) của mọi tổ chức — màn đầu tiên của Staff. */
+  assignments: ScannerAssignment[];
   /** Tổ chức mà tài khoản được soát vé — kể cả khi chưa có suất nào. */
   organizations: { id: string; name: string }[];
 }
@@ -31,9 +40,10 @@ export interface ScannerContext {
 /**
  * Suất mà nhân viên này soát được.
  *
- * Backend đã bỏ suất đã kết thúc và đã kiểm quyền theo từng tổ chức; ở đây gộp lại và, với nhân
- * viên soát vé, giữ đúng những suất thuộc sự kiện được gán. Quyền cho
- * vào thủ công đi kèm vì cùng một lời gọi `/v1/me/permissions` trả lời được cả hai câu hỏi.
+ * Backend đã bỏ suất đã kết thúc và đã kiểm quyền theo từng tổ chức; ở đây gộp lại và, với Staff,
+ * giữ đúng những suất nằm trong phân công còn hiệu lực (cả sự kiện, hoặc từng suất được gán). Phân
+ * công đã hết hạn (suất cuối xong quá 6 giờ) không còn ở đây. Quyền cho vào thủ công đi kèm vì cùng
+ * một lời gọi `/v1/me/permissions` trả lời được cả hai câu hỏi.
  */
 export async function loadScannerContext(): Promise<ScannerContext> {
   const [organizations, permissions] = await Promise.all([getMyOrganizations(api), getMyPermissions(api)]);
@@ -42,17 +52,24 @@ export async function loadScannerContext(): Promise<ScannerContext> {
       organization.status === 'ACTIVE' && permissions.organizations[organization.id]?.includes('CHECKIN_SCAN'),
   );
   let assignedOnly = permitted.length > 0;
+  const assignments: ScannerAssignment[] = [];
   const lists = await Promise.all(
     permitted.map(async (organization) => {
       const [sessions, mine] = await Promise.all([
         listCheckinSessions(api, organization.id),
-        getMyCheckinEvents(api, organization.id),
+        getMyCheckinAssignments(api, organization.id),
       ]);
       if (!mine.restricted) assignedOnly = false;
+      mine.assignments.forEach((assignment) =>
+        assignments.push({ ...assignment, organizationId: organization.id, organizationName: organization.name }),
+      );
+      const allowed = new Set(
+        mine.assignments.flatMap((assignment) => assignment.sessions.map((session) => session.eventSessionId)),
+      );
       return sessions
-        // Nhân viên soát vé chỉ thấy suất của sự kiện được gán. Đây là để màn hình khỏi mời họ
-        // bấm vào một suất sẽ bị từ chối — chốt chặn thật nằm ở backend, ở mỗi lượt quét.
-        .filter((session) => !mine.restricted || mine.eventIds.includes(session.eventId))
+        // Staff chỉ thấy suất nằm trong phân công còn hiệu lực. Đây là để màn hình khỏi mời họ bấm
+        // vào một suất sẽ bị từ chối — chốt chặn thật nằm ở backend, ở mỗi lượt quét.
+        .filter((session) => !mine.restricted || allowed.has(session.eventSessionId))
         .map((session) => ({
           ...session,
           organizationId: organization.id,
@@ -62,6 +79,7 @@ export async function loadScannerContext(): Promise<ScannerContext> {
   );
   return {
     sessions: lists.flat().sort((a, b) => a.startsAt.localeCompare(b.startsAt)),
+    assignments: assignments.sort((a, b) => (a.startsAt ?? '').localeCompare(b.startsAt ?? '')),
     overrideOrganizations: permitted
       .filter((organization) => permissions.organizations[organization.id]?.includes('CATALOG_MANAGE'))
       .map((organization) => organization.id),

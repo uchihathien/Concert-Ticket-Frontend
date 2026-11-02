@@ -58,6 +58,14 @@ export interface SignInScreenProps {
    * nút đăng nhập nằm trong tầm ngón cái, không phải một khối quảng cáo phải cuộn qua.
    */
   aside?: ReactNode;
+  /**
+   * Thông báo ở đầu thẻ: lỗi đăng nhập hoặc "phiên đã hết hạn" — dựng bằng `signInNotice` của
+   * `@nexaticket/auth`.
+   *
+   * Cùng hình dạng với ô thông báo trên trang Keycloak (nền lõm, vạch màu bên trái), để người dùng
+   * đi qua lại giữa hai trang không thấy hai kiểu báo lỗi khác nhau.
+   */
+  notice?: { tone: 'error' | 'info'; message: ReactNode } | null;
 }
 
 /**
@@ -80,6 +88,7 @@ export function SignInScreen({
   secondary,
   footer,
   aside,
+  notice,
 }: SignInScreenProps) {
   return (
     <div className={aside ? styles.screenSplit : styles.screen}>
@@ -92,6 +101,16 @@ export function SignInScreen({
             <h1 className={styles.title}>{title}</h1>
             {description ? <p className={styles.description}>{description}</p> : null}
           </div>
+
+          {notice ? (
+            // Lỗi đọc ngay (`alert`); "phiên hết hạn" chỉ là thông tin nên đọc lịch sự (`status`).
+            <p
+              role={notice.tone === 'error' ? 'alert' : 'status'}
+              className={`${styles.notice} ${notice.tone === 'error' ? styles.noticeError : styles.noticeInfo}`}
+            >
+              {notice.message}
+            </p>
+          ) : null}
 
           {/* Cùng khối này với modal ở header — xem `AuthOptions`. */}
           <AuthOptions

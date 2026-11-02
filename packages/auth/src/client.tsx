@@ -137,7 +137,11 @@ export function createSignInRedirect(signInPath = '/login'): () => void {
 
     redirecting = true;
     const returnUrl = `${window.location.pathname}${window.location.search}`;
-    window.location.assign(`${signInPath}?returnUrl=${encodeURIComponent(returnUrl)}`);
+    // `reason=expired`: trang đăng nhập nói rõ "phiên đã hết hạn" thay vì im lặng hiện form —
+    // người đang thao tác dở sẽ không hiểu vì sao mình bị đẩy ra ngoài.
+    window.location.assign(
+      `${signInPath}?returnUrl=${encodeURIComponent(returnUrl)}&reason=expired`,
+    );
   };
 }
 
